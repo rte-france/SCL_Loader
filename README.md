@@ -15,6 +15,9 @@ This is still at an early stage. The current actual "application" is to automtic
 - Table of all MMS adresses data object,including the expected value (from date type definition, and from DAI / DAI /SDI...)
 - Generate scripts to verify that a given IED has actually correctly loaded the initial value.
 
+Most of python file can be launched individually.
+
+There are more information in the README in WORD format
 
 
 
