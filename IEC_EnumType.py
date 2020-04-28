@@ -13,31 +13,7 @@ import xml.dom.minidom as dom
 from IEC_FileListe import FileListe as FL
 from IEC_Trace import IEC_Console  as TConsole
 from IEC_Trace import TraceLevel as TL
-
-# Cette classe s'occupe de charger les définitions des EnumType et EnumVal
-#< EnumType id = "Health" >
-#    < EnumVal ord = "1" > Ok < / EnumVal >
-#    < EnumVal ord = "2" > Warning < / EnumVal >
-#    < EnumVal ord = "3" > Alarm < / EnumVal >
-#< / EnumType >
-
-class EnumType:
-    def __init__(self, _id, _desc):
-        self.id       = _id         # id du type
-        self.tEnumval = []
-        self.desc     = _desc
-        self.min      = 0           # Not part of IEC61850, added in order to verify that
-        self.max      = 0           # values are in the correct range from min to max (included)
-
-    # Child class to handle the list 'EnumVal BDA' associated to a EnumType
-    #    < EnumVal ord = "1" > Ok < / EnumVal >
-    #    < EnumVal ord = "2" > Warning < / EnumVal >
-
-    class EnumVal:
-        def __init__(self, _ord, _strValue, _desc):
-            self.ord      = _ord        # Actual nuemrical value used
-            self.strValue = _strValue   # String used to state the value
-            self.desc     = _desc
+from IEC61850_XML_Class import DataTypeTemplates as IECType
 
 class Parse_EnumType:
     def __init__(self, _scl, _TRX):
@@ -58,7 +34,7 @@ class Parse_EnumType:
         _min         = iEnumType.get('min')
         _max         = iEnumType.get('max')
         _tEnumval    = iEnumType.get('tEnumVal')
-        instEnumType = EnumType(_id, _desc)
+        instEnumType = IECType.EnumType(_id, _desc)
 
         instEnumType.min      = _min
         instEnumType.max      = _max
@@ -84,7 +60,7 @@ class Parse_EnumType:
             if pEnumVal.firstChild is not None:
                 text  = pEnumVal.firstChild.data      # Enum_Type.txtValue =
 
-            iEnumVal = EnumType.EnumVal(ord, text, desc)
+            iEnumVal = IECType.EnumType.EnumVal(ord, text, desc)
             tEnumVal.append(iEnumVal)
             pEnumVal = pEnumVal.nextSibling
 
@@ -92,7 +68,7 @@ class Parse_EnumType:
 
     def Create_EnumType_Dict(self, DataType):
 # Parcours de l'arbre de l'arbre de la balise <DataTypeTemplates..
-# en cherchant les sections DATypes
+# en cherchant les sections EnumTypes
         for pEnum in DataType:
             pEnum = pEnum.firstChild.nextSibling
             while pEnum.nextSibling:

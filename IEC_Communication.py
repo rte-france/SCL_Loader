@@ -13,76 +13,7 @@ import xml.dom.minidom as dom
 from IEC_Trace      import IEC_Console   as TConsole
 from IEC_FileListe  import FileListe     as FL
 from IEC_Trace      import TraceLevel    as TL
-
-#
-#< Communication >
-#    <SubNetwork name = "ELECTRE" type = "8-MMS" >
-#    <Private type = "Siemens-Start-Address" > 10.3.86.1 < / Private >
-#    <ConnectedAP iedName = "SIP5TERNA" apName = "E" >
-#        <Address >
-#            <P type = "IP" xsi:type = "tP_IP" > 10.3.86.19 < / P >
-#            <P type = "IP-SUBNET" xsi:type = "tP_IP-SUBNET" > 255.255.255.0 </P>
-class SubNetWork:                                         # <SubNetwork name="LAN"  type="8-MMS" desc="blabla..."
-    def __init__(self, _name, _type, _desc, _text, _bitRate, _ConnectedAP):
-        self.name         = _name                         # <SubNetwork name="Subnet1"
-        self.type         = _type                         #  ...                       type="8-MMS"
-        self.desc         = _desc                         #  ...                       desc="blabla" />
-        self.text         = _text                         #  <Text>Station bus</Text>
-        self.bitRate      = _bitRate                      #  <BitRate unit="b/s">10</BitRate>
-        self.tConnectedAP = _ConnectedAP                  #  <ConnectedAP apName="AP1" iedName="SF6P1">
-
-    class BitRate:
-        def __init__(self, _unit, _value):                # <BitRate unit="b/s">10</BitRate>
-            self.unit = _unit
-            self.value = _value
-
-    class ConnectedAP:
-        def __init__(self, _iedName, _apName, _desc):  #<ConnectedAP iedName="TEMPLATE" apName="P1" desc= "... ">
-            self.iedName   = _iedName
-            self.apName    = _apName
-            self.desc      = _desc
-            self.tAddress  = []             # Table of adresses (P Type) et val
-            self.tSMV      = []             # Table of SMV classes
-            self.tGSE      = []             # Table of GSE classes
-            self.PhysConn  = []             # Table of PhysConn classes
-
-        class GSE:
-            def __init__(self, _ldInst, _cbName, _desc):
-                self.ldInst      = _ldInst
-                self.cbName      = _cbName
-                self.desc        = _desc
-                self.min         = None         # Will be to a 'Min' class if present
-                self.max         = None         # Will be to a 'Max' class if present
-                self.tGSEAddress = []           # Table of GSE adresses
-
-            class Min:
-                def __init__(self, _unit, _min, _mul):
-                    self.unit       = _unit
-                    self.min        = _min  # <MinTime unit="s" multiplier="m">1000</MinTime>
-                    self.multiplier = _mul
-
-            class Max:
-                def __init__(self, _unit, _max, _mul):
-                    self.unit       = _unit
-                    self.max        = _max  # <MaxTime unit="s" multiplier="m">10</MaxTime>
-                    self.multiplier = _mul
-
-        class SMV:                                       #  <SMV ldInst="MU01" cbName="MSVCB01">
-            def __init__(self,_ldInst,_cbName, _desc):   #   	<Address>
-                self.ldInst      = _ldInst               #   		<P type="MAC-Address">01#-0C-CD-04-00-00</P>
-                self.cbName      = _cbName               #   		<P type="VLAN-ID">000</#P>
-                self.desc        = _desc                 #   		<P type="VLAN-PRIORITY#">4</P>
-                self.tSMVAddress = []                    #        <P type="APPID">4000</#P>sociés
-
-        class PhysConn:                                  # <PhysConn type="Connection">
-            def __init__(self, _type, _PhysAddress):     #     <P type="Type">FOC</P>
-                self.type        =  _type                #     <P type="Plug">LC</P>
-                self.tPhysAddress = _PhysAddress         # </PhysConn>
-
-            class PType:                                               # <Address>
-                def __init__(self, _type, _value):                     # 	<P type="MAC-Address">01-0C-CD-04-00-00</P>
-                    self.type  = _type                                 # 	<P type="VLAN-ID">000</P>
-                    self.value = _value                                # </Address>
+from IEC61850_XML_Class import SubNetWork
 
 class Communication:
     def __init__(self,_SubNetwork):

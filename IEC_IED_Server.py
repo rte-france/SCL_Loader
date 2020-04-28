@@ -12,10 +12,14 @@
 
 import xml.dom.minidom as dom
 
-from IEC_FileListe import FileListe  as  FL
-from IEC_Trace     import IEC_Console as TConsole
-from IEC_Trace     import TraceLevel  as TL
-from IEC_LN        import Parse_LN
+from IEC_FileListe      import FileListe  as  FL
+from IEC_Trace          import IEC_Console as TConsole
+from IEC_Trace          import TraceLevel  as TL
+from IEC_LN             import Parse_LN
+
+from IEC61850_XML_Class import IED
+from IEC_LN             import Parse_LN
+
 
 # Class definition for the 'Communication' part
 #
@@ -31,59 +35,7 @@ from IEC_LN        import Parse_LN
 #                       - LDevice [n
 #                            - LN [n]
 #
-# Certains classes remain to be added (GOOSESecurity/SMV Security ServerAt...).
-# This is just because it is not needed yet...
 #
-class IED:
-    def __init__(self, _Server, _tDevice, _name, _type, _desc, _originalSclVersion, _originalSclRevision, \
-                       _configVersion, _manufacturer, _engRight, _owner, _ip, _tAddress):
-        self.Server             = _Server
-##      self.tLDevice           = _tDevice              # Table of Ldevices
-        self.name               = _name                 # IEC attribute
-        self.type               = _type                 # IEC attribute
-        self.desc               = _desc                 # IEC attribute
-        self.originalSclVersion = _originalSclVersion   # IEC attribute
-        self.originalSclRevision= _originalSclRevision  # IEC attribute
-        self.configVersion      = _configVersion        # IEC attribute
-        self.manufacturer       = _manufacturer         # IEC attribute
-        self.engRight           = _engRight             # IEC attribute
-        self.owner              = _owner                # IEC attribute
-        self.IP                 = _ip                   # IP adress from the communication
-        self.tAddress           = _tAddress             # Table of MMS adresses
-        self.tDAI               = []                    # Table of actual DOI/..SDI../DAI/ values.
-        self.tAccessPoint       = []                    # Table of AccessPoint
-
-    class AccessPoint:
-        def __init__(self, _name, _desc, _router, _clock):
-            self.name   = _name
-            self.desc   = _desc
-            self.router = _router
-            self.clock  = _clock
-            self.tServer = []
-
-        class Server:
-            def __init__(self, _desc, _timeout):
-                self.desc    = _desc
-                self.timeout = _timeout
-                self.authentication = None
-                self.tLDevice= []               # LDevices are created by setattr(...)
-                self.tAddress= []               # Adresses for communication section
-
-            class LDevice:
-                def __init__(self, _inst, _ldName, _desc):
-                    self.inst   = _inst
-                    self.ldName = _ldName
-                    self.desc   = _desc
-#                    self.LN0    = _LN0         # Dynamically added by name
-#                    self.tLNode = []           # Dynamically added by name
-
-            class Authentication:
-                def __init__(self, _none, _password, _weak, _strong, _certificate):
-                    self.none          = _none
-                    self.password      = _password
-                    self.weak          = _weak
-                    self.strong        = _strong
-                    self.certificate   = _certificate
 
 
 # ParseServerDataModel:
@@ -138,7 +90,7 @@ class Parse_Server:
                 pLNi = pLNi.nextSibling
                 continue
 
-            iLN = self.pLN.Parse_LN_LN0(pLNi, iIED_array.name, iIED_array.tAccessPoint[idxAP].name, iIED_array.tDAI)
+            iLN = self.pLN.Parse_LN(pLNi, iIED_array.name, iIED_array.tAccessPoint[idxAP].name, iIED_array.tDAI)
             tLN.append(iLN)
 
             LNtxt = ("       LN: " + iLN.lnPrefix + '_' + iLN.lnType + '_' + iLN.lnInst + \

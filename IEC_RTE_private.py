@@ -12,8 +12,11 @@
 
 # Implementation of PrivateClass:
 
-from IEC_LN        import Parse_LN
-from IEC_LN        import LN_LN0
+from IEC_LN              import Parse_LN
+from IEC61850_XML_Class  import IED
+from IEC_Trace           import IEC_TraceFile as TConsole
+from IEC_Trace           import TraceLevel as TL
+import sys
 
 class IDRC:  # RTE Specific, SCADA communication
     def __init__(self, _value, _sLabel, _Appear, _Disappear, _Invalid, _Transient, _IndLocal):
@@ -25,53 +28,23 @@ class IDRC:  # RTE Specific, SCADA communication
         self.Transient = _Transient
         self.IndLocal = _IndLocal
 
-class Private_RTE:
+class RTE_Private:
     def __init__(self, _type, _pSCL, _pDataModel):
         self.type        = _type
         self.pSCL        = _pSCL
         self.pDataModel  = _pDataModel
+        self.TR          = TConsole(TL.GENERAL,None)
 
     def RTE_Generic(self, type, _pSCL, _pDataModel):
-        print("RTE Private tag:", type)
 
-    def Private_LN(self, type, _pSCL, _pDataModel):
-        if (type == "RTE_FIP"):
+        if type == "RTE_FunctionUUID":
+            _value = self.pSCL.firstChild.data
+            self.TR.Trace(("Rte Private: ") + type, TL.DETAIL)
+        if type == "RTE_FunctionIndice":
+            _value = self.pSCL.firstChild.data
+            self.TR.Trace(("Rte Private: ") + type, TL.DETAIL)
 
-            pRTE = _pSCL.firstChild.nextSibling
-            while pRTE is not None:
-                _defaultValue  = pRTE.getAttribute("defaultValue")
-                _dataStreamKey = pRTE.getAttribute("dataStreamKey")
-                irteFIP = LN_LN0.Inputs.rteFIP(_defaultValue, _dataStreamKey)
-                try:
-                    _pDataModel.tFIP.append(irteFIP)
-                except:
-                    setattr(_pDataModel,'tFIP',[])
-                    _pDataModel.tFIP.append(irteFIP)
-
-                pRTE = pRTE.nextSibling
-                if pRTE is not None:
-                    pRTE = pRTE.nextSibling
-            return
-
-        if (type == "RTE_BAP"):
-            pRTE = _pSCL.firstChild.nextSibling
-            while pRTE is not None:
-                _variant = pRTE.getAttribute("variant")
-                _defaultValue = pRTE.getAttribute("defaultValue")
-                _dataStreamKey = pRTE.getAttribute("dataStreamKey")
-                irteBAP = LN_LN0.Inputs.rteBAP(_variant, _defaultValue, _dataStreamKey)
-                try:
-                    self._tBAP.append(irteBAP)
-                except:
-                    setattr(_pDataModel,'tBAP',[])
-                    _pDataModel._tBAP.append(irteBAP)
-
-                pRTE = pRTE.nextSibling
-                if pRTE is not None:
-                    pRTE = pRTE.nextSibling
-            return
-
-        if type == "RTE_IDRC":
+        if type == "RTE-IRDC":
             pIDRC       = _pSCL.firstChild.nextSibling
             _value      = pIDRC.getAttribute("value")
             _sLabel     = pIDRC.getAttribute("shortLabel")
@@ -82,14 +55,55 @@ class Private_RTE:
             _IndLocal   = pIDRC.getAttribute("bayLocalModeIndependentSignal")
             iIDRC = IDRC(_value, _sLabel, _Appear, _Disappear, _Invalid, _Transient, _IndLocal)
             setattr(_pDataModel, 'IDRC', iIDRC)
+            self.TR.Trace(("Rte Private: IDRC: ") + _sLabel + " value:" + _value, TL.GENERAL)
 
-        if type == "RTE_FunctionUUID":
-            _value = _pSCL.firstChild.data
-            print("YOUPI:"+_value)
+    def RTE_FIP(self,type, _pSCL, _pDataModel):
+        pRTE = self.pSCL.firstChild.nextSibling
+        while pRTE is not None:
+            _defaultValue  = pRTE.getAttribute("defaultValue")
+            _dataStreamKey = pRTE.getAttribute("dataStreamKey")
+            irteFIP = IED.AccessPoint.Server.LN.Inputs.rteFIP(_defaultValue, _dataStreamKey)
+            self.TR.Trace(("Rte Private: FIP ") + type, TL.DETAIL)
 
-        if type == "RTE_FunctionIndice":
-            _value = _pSCL.firstChild.data
-            print("YOUPI:"+_value)
+            try:
+                self.pDataModel.tFIP.append(irteFIP)
+            except:
+                setattr(self.pDataModel,'tFIP',[])
+                self.pDataModel.tFIP.append(irteFIP)
+            else:
+                __exception = sys.exc_info()[0]
+                if __exception is not None:
+                    print('e' + __exception.__name__)
+
+            pRTE = pRTE.nextSibling
+            if pRTE is not None:
+                pRTE = pRTE.nextSibling
+
+        return
+
+    def RTE_BAP(self, type, _pSCL, _pDataModel):
+
+        pRTE = self.pSCL.firstChild.nextSibling
+        while pRTE is not None:
+            _variant       = pRTE.getAttribute("variant")
+            _defaultValue  =  pRTE.getAttribute("defaultValue")
+            _dataStreamKey = pRTE.getAttribute("dataStreamKey")
+            irteBAP = IED.AccessPoint.Server.LN.Inputs.rteBAP(_variant, _defaultValue, _dataStreamKey)
+            self.TR.Trace(("Rte Private: BAP ") + type, TL.DETAIL)
+            try:
+                self.pDataModel.tBAP.append(irteBAP)
+            except AttributeError:
+                setattr(self.pDataModel,'tBAP',[])
+                self.pDataModel.tBAP.append(irteBAP)
+            else:
+                __exception = sys.exc_info()[0]
+                if __exception is not None:
+                    print('e' + __exception.__name__)
+
+            pRTE = pRTE.nextSibling
+            if pRTE is not None:
+                pRTE = pRTE.nextSibling
+        return
 
 #   RtePrivate = DynImp(_type, pType, LN_LN0.DOI.DAI)
 

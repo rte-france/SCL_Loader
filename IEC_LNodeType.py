@@ -2,6 +2,7 @@ import xml.dom.minidom as dom
 from IEC_Trace import IEC_Console   as TConsole
 from IEC_Trace import TraceLevel    as TL
 from IEC_FileListe import FileListe as FL
+from IEC61850_XML_Class import DataTypeTemplates as IECType
 
 import tkinter as tk
 # Cette classe s'occupe de charger les définitions de LNodeType et la liste des DO associés:
@@ -13,33 +14,7 @@ import tkinter as tk
 #...
 #</LNodeType>
 
-# Une 'sous-classe' est utilisée pour stocker les instances de DO dans le LNodeType
-# La classe principale reflète le contenu de LNodeType
 
-
-#class LNodeType:
-#        def __init__(self,_id,_lnClass,_desc, _iedType):
-#        self.id       = _id
-#        self.lnClass  = _lnClass
-#        self.desc     = _desc
-#        self.iedType  = _iedType
-#        self.tDO      = []
-    # Sous-classe pour stocker les DO instancié dans in LNODE.
-    # Les propriétés sont celles de l'objet DO dans le SCL (dans le LNodeType).
-
-class LNodeType:
-    def __init__(self,_id,_lnClass,_desc, _iedType, _tDO):
-        self.id       = _id
-        self.lnClass  = _lnClass
-        self.desc     = _desc
-        self.iedType  = _iedType
-        self.tDO      = _tDO
-
-    class DOi:
-        def __init__(self, _name, _type, _desc ):
-            self.name    = _name
-            self.type    = _type
-            self.desc    = _desc
 
 class Parse_LNodeType:
     def __init__(self, _scl, _TRX):
@@ -57,7 +32,7 @@ class Parse_LNodeType:
         _desc    = iLNode.get('desc')
         _iedType = iLNode.get('iedType')
         _tDO     = iLNode.get('tDO')
-        instLNode = LNodeType(id, _lnClass, _desc, _iedType, _tDO)
+        instLNode = IECType.LNodeType(id, _lnClass, _desc, _iedType, _tDO)
 
         return instLNode
 
@@ -76,7 +51,7 @@ class Parse_LNodeType:
             _name  = pDO.getAttribute("name")
             _type  = pDO.getAttribute("type")
             _desc  = pDO.getAttribute("desc")
-            iDO= LNodeType.DOi(_name,_type,_desc)
+            iDO= IECType.LNodeType.DOi(_name,_type,_desc)
             self.TRX.Trace(("     DO:"+_name+" type:"+_type+" desc:"+_desc),TL.DETAIL)
             tDO.append(iDO)
             pDO = pDO.nextSibling
@@ -97,7 +72,7 @@ class Parse_LNodeType:
                     _lnClass = pDT.getAttribute("lnClass")   # Used as the key for the python dictionnay
                     _iedType = pDT.getAttribute("iedType")
                     _desc    = pDT.getAttribute("desc")
-                    iLNodeType = LNodeType(_id,_lnClass,_iedType,_desc, [])
+                    iLNodeType = IECType.LNodeType(_id,_lnClass,_iedType,_desc, [])
                     tLNodeType.append(iLNodeType)
                     self.TRX.Trace(("LNodeType: id:" + _id + " lnClass:" + _lnClass + " iedType:" + _iedType + " desc:" + _desc),TL.DETAIL)
                     tDO = self.Get_DO_Attributes(pDT)

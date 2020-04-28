@@ -15,166 +15,8 @@ from IEC_Trace      import IEC_Console  as  TConsole
 from IEC_Trace      import TraceLevel   as TL
 from IEC_PrivateSupport import DynImport
 
+from IEC61850_XML_Class import IED
 
-class LN_LN0:
-    def __init__(self, _localName, _lnPrefix, _lnType, _lnInst, _lnClass, _lnDesc):
-# Partie générique commune à LN0 et LNODE (LN)
-        self.localName  = _localName  # LN or LN0
-        self.lnPrefix   = _lnPrefix
-        self.lnType     = _lnType
-        self.lnInst     = _lnInst
-        self.lnClass    = _lnClass
-        self.lnDesc     = _lnDesc
-        self.tDataSet   =  []       # Array of DataSet associé à ce LN0
-        self.tSVCtrl    =  []       # Array of SampleValueControl block à ce LN0
-        self.tGSECtrl   =  []       # Array of GSEControl
-        self.tInputs    =  []       # Array of inputs/Extrefs
-        self.tLogCtrl   =  []       # Array of LogControl
-        self.tRCB       =  []       # Array of RCB
-###     self.DO_Name    = ...         # Dynamically added with 'setattr' to get actual DO_Name
-
-# Définition de la class Report Control, avec des sous classes
-# pour les parties TrgOps, OptField et rptEnabled
-#
-    class LogControl:
-        def __init__(self, _name, _datSet, _logName, _logEna, __TrgOps):
-            self.name = _name
-            self.datSet = _datSet
-            self.logName = _logName
-            self.logEna = _logEna
-            self.TrgOps = __TrgOps
-    class ReportControl:
-        def __init__(self, _rptID,_confRev,_buffered,_bufTime,_indexed,_intgPd,_name,_desc,_datSet):
-            self.rptID   = _rptID
-            self.confRev = _confRev
-            self.buffered= _buffered
-            self.bufTime = _bufTime
-            self.indexed = _indexed
-            self.intgPd  = _intgPd
-            self.name    = _name
-            self.desc    = _desc
-            self.dataset = _datSet
-            self.TrgOps  = None
-        class OptField:
-            def __init__(self,_seqNum,_timeStamp,_dataSet,_dataRef,_entryID,_configRef,_reasonCode):
-                self.seqNum     = _seqNum
-                self.timeStamp  = _timeStamp
-                self.dataSet    = _dataSet
-                self.dataRef    = _dataRef
-                self.entryID    = _entryID
-                self.configRef  = _configRef
-                self.reasonCode = _reasonCode
-        class RptEnable:
-            def __init__(self, _max):
-                self.max = _max
-# The TrgOps Class is common RCB and LogControl
-    class TrgOps:
-        def __init__(self,_qchg, _dchg, _dupd, _period, _gi ):
-            self.dchg  = _qchg
-            self.qchg  = _dchg
-            self.dupd  = _dupd
-            self.period= _period
-            self.gi    = _gi
-    class Inputs:
-        def __init__(self, _tRef):  #, _tFIP, _tBAP):
-            self.tExtRef = _tRef
-
-        class ExtRef:
-            def __init__(self, _doName, _daName, _service, _iedName, _ldInst, _lnClass, _lnInst, _srcCBName,
-                         _srcLNClass):
-                self.doName = _doName
-                self.daName = _daName
-                self.serviceType = _service
-                self.iedName = _iedName
-                self.ldInst = _ldInst
-                self.lnClass = _lnClass
-                self.lnInst = _lnInst
-                self.srcCBName = _srcCBName
-                self.srcLNClass = _srcLNClass
-        class rteFIP:
-            def __init__(self,_defaultValue, _dataStreamKey):
-                self.defaultValue  = _defaultValue
-                self.dataStreamKey = _dataStreamKey
-        class rteBAP:
-            def __init__(self, _variant,_defaultValue, _dataStreamKey):
-                self.variant       = _variant
-                self.defaultValue  = _defaultValue
-                self.dataStreamKey = _dataStreamKey
-
-    class SampledValueControl:
-        def __init__(self, _name, _smvID, _smpRate, _nofASDU, _confRev, _multicast, _smpMod, _datSet):
-            self.name     = _name
-            self.smvID    = _smvID
-            self.smpRate  = _smpRate
-            self.nofASDU  = _nofASDU
-            self.confRev  = _confRev
-            self.multicast=_multicast
-            self.smpMod   = _smpMod
-            self.datSet   = _datSet
-
-    class GSEControl:
-        def __init__(self,_name,_datSet,_type,_confRev,_appID,_fixedOffs,_securityEnable,_desc):
-            self.name           =_name
-            self.datSet         =_datSet
-            self.type           =_type
-            self.confRev        =_confRev
-            self.appID          =_appID
-            self.fixedOffs      =_fixedOffs
-            self.securityEnable = _securityEnable
-            self.desc           = _desc
-
-    class DOI:
-        def __init__(self, _name, _desc):
-            self.name       = _name
-            self.desc       = _desc
-        class DAI:
-            def __init__(self, _name, _value, _sAddr, _valKind):
-                self.name = _name
-                self.value = _value
-                self.sAddr = _sAddr
-                self.valKind = _valKind
-
-            class SDI:  # Utilisé notamment pour les Contrôles complexes
-                def __init__(self, _name, _sAddr, _ix):  # , _tSDI):
-                    self.name = _name
-                    self.ix = _ix
-                    self.sAddr = _sAddr
-            class RteDAI:  # Rte private data
-                def __init__(self, _type, _desc):
-                    self.type = _type
-                    self.desc = _desc
-
-        class IEC_90_2:             # Private defined by WG10 eTr, technical report for 90-2 communication
-            def __init__(self,_externalScl,_iedName, _ldInst, _prefix,_lnClass,_lnInst,_doName):
-                self.externalScl = _externalScl
-                self.iedName     = _iedName
-                self.ldInst      = _ldInst
-                self.prefix      = _prefix
-                self.lnClass     = _lnClass
-                self.lnInst      = _lnInst
-                self.doName      = _doName
-        class IEC104:              # Private define by WG10 TR 90-2 IEC60870-104 SCADA communication
-            def __init__(self,_casdu,_ioa,_ti,_usedBy,_inverted):
-                self.casdu    = _casdu
-                self.ioa      = _ioa
-                self.ti       = _ti
-                self.usedBy   = _usedBy
-                self.inverted = _inverted
-class DataSet:
-    def __init__(self, _name, _desc):
-        self.name  = _name
-        self.desc  = _desc
-        self.tFCDA = []
-    class FCDA:
-        def __init__(self,_ldInst,_prefix,_lnClass,_lnInst,_doName,_daName,_fc,_ix):
-            self.ldInst  = _ldInst
-            self.prefix  = _prefix
-            self.lnClass = _lnClass
-            self.lnInst  = _lnInst
-            self.doName  = _doName
-            self.daName  = _daName
-            self.fc      = _fc
-            self.ix      = _ix
 
 class Parse_LN:
     def __init__(self, _TR):
@@ -182,7 +24,7 @@ class Parse_LN:
         self.Dyn      = DynImport()
 
     def Parse_ExtRef(self, pLN):
-        _tInputs = LN_LN0.Inputs([])
+        _tInputs = IED.AccessPoint.Server.LN.Inputs([])
 
         pExtRef= pLN.firstChild.nextSibling
         while pExtRef:
@@ -191,8 +33,7 @@ class Parse_LN:
                 continue
             if pExtRef.localName=='Private':
                 type=  pExtRef.getAttribute("type")
-                print("pExtRef.private:", type)
-                self.Dyn.DynImport(type, pExtRef, LN_LN0.Inputs )
+                self.Dyn.DynImport(type, pExtRef, IED.AccessPoint.Server.LN.Inputs )
 
             if pExtRef.localName=='ExtRef':
                 doName      = pExtRef.getAttribute("doName")
@@ -204,7 +45,7 @@ class Parse_LN:
                 lnInst      = pExtRef.getAttribute("lnInst")
                 srcCBName   = pExtRef.getAttribute("srcCBName")
                 srcLNClass  = pExtRef.getAttribute("srcLNClass")
-                iExtRef = LN_LN0.Inputs.ExtRef(doName, daName, serviceType, iedName, ldInst, lnClass, lnInst, srcCBName, srcLNClass)
+                iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(doName, daName, serviceType, iedName, ldInst, lnClass, lnInst, srcCBName, srcLNClass)
                 _tInputs.tExtRef.append(iExtRef)
     
             pExtRef = pExtRef.nextSibling
@@ -218,7 +59,7 @@ class Parse_LN:
             _name    = pDAI.getAttribute("name")
             _sAddr   = pDAI.getAttribute("sAddr")
             _valKind = pDAI.getAttribute("valKind")
-            iDAI = LN_LN0.DOI.DAI(_name, _value, _sAddr, _valKind) # _value !
+            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_name, _value, _sAddr, _valKind) # _value !
             setattr(iDOI, _name, iDAI)
             # Est-ce qu'une valeur est présente
             p1 = pDAI.firstChild
@@ -268,7 +109,7 @@ class Parse_LN:
         sAddr = pDAI_v.getAttribute("sAddr")
         sdi_name = sdi_name + '.' + name  # </SDI>
         sdi_ix   = pDAI_v.getAttribute("ix")
-        iSDI = LN_LN0.DOI.DAI.SDI(name, sAddr, sdi_ix)  # None pointeur vers tableau des SDI DAI
+        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(name, sAddr, sdi_ix)  # None pointeur vers tableau des SDI DAI
         if len(sdi_ix)>0:
             t_IX[n]= sdi_ix
     
@@ -326,7 +167,7 @@ class Parse_LN:
         _name = pDOI.getAttribute("name")        # Nom du DOI
         _desc = pDOI.getAttribute("desc")
         self.TRX.Trace(("DOI: name:" + _name + " desc:" + _desc), TL.DETAIL)
-        iDOI = LN_LN0.DOI(_name, _desc) #, None, None, None)  # None for RTE private Type
+        iDOI = IED.AccessPoint.Server.LN.DOI(_name, _desc) #, None, None, None)  # None for RTE private Type
         setattr( iLN ,iDOI.name,iDOI)
         pDAI = pDOI.firstChild  # Pointeur DAI ou SDI
     
@@ -337,8 +178,7 @@ class Parse_LN:
             if pDAI.localName == "Private":                             # <DAI name="orCat" sAddr="96.1.3.10.4" />
                 type=pDAI.getAttribute("type")
 # WG10 PRIVATE
-                if type == "eTR-IEC61850-90-2":
-                    print("Private tag: eTr-IEC61850-90-2")
+                if type == "eTr-IEC61850-90-2":
                     pI90_2 = pDAI.firstChild.nextSibling
                     if (pI90_2.nodeName == "eTr-IEC61850-90-2:ProxyOf"):
                         _externalScl  = pI90_2.getAttribute("externalScl")
@@ -348,21 +188,22 @@ class Parse_LN:
                         _lnClass      = pI90_2.getAttribute("lnClass")
                         _lnInst       = pI90_2.getAttribute("lnInst")
                         _doName       = pI90_2.getAttribute("doName")
-                        iDOI.IEC_90_2 = LN_LN0.DOI.IEC_90_2(_externalScl,_iedName,_ldInst, _prefix, _lnClass, _lnInst, _doName )
+                        iDOI.IEC_90_2 = IED.AccessPoint.Server.LN.DOI.IEC_90_2(_externalScl,_iedName,_ldInst, _prefix, _lnClass, _lnInst, _doName )
 # WG10 PRIVATE
                 elif type == "IEC_60870_5_104":
-                    print("Private tag: IEC_60870_5_104")
-                    p104 = pDAI.firstChild.nextSibling
+                    p104 = pDAI.firstChild
+                    if p104 is not None:
+                        p104 = p104.nextSibling
 
-                    if (p104.localName == "Address") and (p104.nodeName == "'IEC_60870_5_104:Address'"):
-                        _casdu      = p104.getAttribute("casdu")
-                        _ioa        = p104.getAttribute("ioa")
-                        _ti         = p104.getAttribute("ti")
-                        _usedBy     = p104.getAttribute("usedBy")
-                        _inverted   = p104.getAttribute("inverted")
-                        iDOI.IEC104 = LN_LN0.DOI.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
+                        if (p104.localName == "Address") and (p104.nodeName == "'IEC_60870_5_104:Address'"):
+                            _casdu      = p104.getAttribute("casdu")
+                            _ioa        = p104.getAttribute("ioa")
+                            _ti         = p104.getAttribute("ti")
+                            _usedBy     = p104.getAttribute("usedBy")
+                            _inverted   = p104.getAttribute("inverted")
+                            iDOI.IEC104 = IED.AccessPoint.Server.LN.DOI.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
                 else:
-                    self.Dyn.DynImport(type, pDAI, LN_LN0.DOI.DAI)
+                    self.Dyn.DynImport(type, pDAI, IED.AccessPoint.Server.LN.DOI.DAI)
 
                 pDAI = pDAI.nextSibling                             # </SDI>
                 continue                                            # <DAI name="ctlVal" sAddr="96.1.3.10.3" />
@@ -393,7 +234,7 @@ class Parse_LN:
             _daName  = FCDAi.getAttribute("daName")
             _cf      = FCDAi.getAttribute("fc")
             _ix      = FCDAi.getAttribute("ix")
-            iFCDA    = DataSet.FCDA(_ldInst, _prefix, _lnInst, _lnClass, _doName, _daName, _cf, _ix)
+            iFCDA    = IED.AccessPoint.Server.DataSet.FCDA(_ldInst, _prefix, _lnInst, _lnClass, _doName, _daName, _cf, _ix)
             DS.tFCDA.append(iFCDA)
             FCDAi = FCDAi.nextSibling
     
@@ -409,7 +250,7 @@ class Parse_LN:
         _name     = pLN.getAttribute("name")
         _desc     = pLN.getAttribute("desc")
     #    _Opt      = LN.getAttribute("optFields")
-        iRCB = LN_LN0.ReportControl(_RptID, _confRev, _Buffered, _BufTime, _Indexed, _intgPd, \
+        iRCB = IED.AccessPoint.Server.LN.ReportControl(_RptID, _confRev, _Buffered, _BufTime, _Indexed, _intgPd, \
                              _datSet, _name, _desc)
         self.TRX.Trace(("ReportControl: " + _RptID + " name:" + _name + " datSet" + _datSet),TL.DETAIL)
         # Récupération des attribues des sous-sections: TrgOps, OptFields et RptEnabled
@@ -428,7 +269,7 @@ class Parse_LN:
                 _dupd   = rptCtrl.getAttribute("dupd")
                 _period = rptCtrl.getAttribute("period")
                 _gi = rptCtrl.getAttribute("gi")
-                iRCB.TrgOps = LN_LN0.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
+                iRCB.TrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
     
                 rptCtrl = rptCtrl.nextSibling
                 continue
@@ -442,7 +283,7 @@ class Parse_LN:
                 _configRef  = rptCtrl.getAttribute("configRef")
                 _reasonCode = rptCtrl.getAttribute("reasonCode")
     
-                iRCB.OptField=LN_LN0.ReportControl.OptField(_seqNum, _timeStamp, _dataSet, _dataRef,
+                iRCB.OptField=IED.AccessPoint.Server.LN.ReportControl.OptField(_seqNum, _timeStamp, _dataSet, _dataRef,
                                  _entryID, _configRef, _reasonCode)
                 rptCtrl = rptCtrl.nextSibling
                 continue
@@ -460,7 +301,7 @@ class Parse_LN:
         _datSet  = pLN.getAttribute("datSet")
         _logName = pLN.getAttribute("logName")
         _logName = pLN.getAttribute("logEna")
-        iLogControl = LN_LN0.LogControl(_name, _datSet, _logName, _logName, None)  # None pour la class TrgOps.
+        iLogControl = IED.AccessPoint.Server.LN.LogControl(_name, _datSet, _logName, _logName, None)  # None pour la class TrgOps.
         self.TRX.Trace(("      LogControl: name:" + _name + " datSet: " + _datSet + " logName:" + _logName), TL.DETAIL)
         logCtrl = pLN.firstChild
         while logCtrl:
@@ -479,7 +320,7 @@ class Parse_LN:
                 _period = logCtrl.getAttribute("period")
                 _gi = logCtrl.getAttribute("gi")
     
-                iTrgOps = LN_LN0.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
+                iTrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
                 self.TRX.Trace(("        TrgOps qchg" + _qchg + " dchg:" + _dchg + " dupd:" + _dupd + \
                            " period+" + _period + "_gi" + _gi), TL.DETAIL)
                 iLogControl.TrgOps = iTrgOps
@@ -488,7 +329,7 @@ class Parse_LN:
         tiLCB.append(iLogControl)
         return tiLCB
 
-    def Parse_LN_LN0(self, pLN, IEDname, AP_Name, tDAI):
+    def Parse_LN(self, pLN, IEDname, AP_Name, tDAI):
     #
     # LN contains DataSet, ReportControl, GooseControl and DOI/SDI.../SDI/DAI sections (up to 3 levels of SDI
     #
@@ -498,9 +339,9 @@ class Parse_LN:
         _lnType  = pLN.getAttribute("lnType")
         _desc    = pLN.getAttribute("desc")
         if pLN.localName=="LN0":
-            iLN = LN_LN0("LN0:", _lnPrefix, _lnType, _inst, _lnClass, _desc )
+            iLN = IED.AccessPoint.Server.LN("LN0:", _lnPrefix, _lnType, _inst, _lnClass, _desc )
         else:
-            iLN = LN_LN0("LN:" , _lnPrefix, _lnType, _inst, _lnClass, _desc)
+            iLN = IED.AccessPoint.Server.LN("LN:" , _lnPrefix, _lnType, _inst, _lnClass, _desc)
     
         if pLN.firstChild is not None:          # LN est utilisé pour le parcour de l'arbre XML
             pLN = pLN.firstChild.nextSibling    #
@@ -565,7 +406,7 @@ class Parse_LN:
                 fixedOffs       = pLN.getAttribute("fixedOffs")
                 securityEnable  = pLN.getAttribute("securityEnable")
                 desc            = pLN.getAttribute("desc")
-                GOOSE = LN_LN0.GSEControl(name, datSet,type,confRev,appID,fixedOffs,securityEnable,desc)
+                GOOSE = IED.AccessPoint.Server.LN.GSEControl(name, datSet,type,confRev,appID,fixedOffs,securityEnable,desc)
     # TODO LISTE DES IEDs à accrocjer GSECONTROL
     
                 tiGCB.append(GOOSE)
@@ -583,7 +424,7 @@ class Parse_LN:
                 smpMod      =   pLN.getAttribute("smpMod")
                 datSet      =   pLN.getAttribute("datSet")
     
-                SVC = LN_LN0.SampledValueControl(name, smvID, smpRate, nofASDU, confRev, multicast, smpMod, datSet)
+                SVC = IED.AccessPoint.Server.LN.SampledValueControl(name, smvID, smpRate, nofASDU, confRev, multicast, smpMod, datSet)
                 tiSVC.append(SVC)
                 self.TRX.Trace(("     SampledValueControl, name:" + name + " smvID:" + smvID + " datSet:" + datSet),TL.DETAIL)
                 pLN= pLN.nextSibling
@@ -599,7 +440,7 @@ class Parse_LN:
                 _name = pLN.getAttribute("name")
                 _desc = pLN.getAttribute("desc")
                 self.TRX.Trace(("     DataSet, dsName:" + _name + " desc:" + _desc),TL.DETAIL)
-                DS = DataSet(_name,_desc)  # "" Tableau des  FCDA
+                DS = IED.AccessPoint.Server.DataSet(_name,_desc)  # "" Tableau des  FCDA
                 DS = self.Parse_FCDA(pLN,DS)
                 tDS.append(DS)
                 pLN= pLN.nextSibling
@@ -632,14 +473,14 @@ class Test_LN:
         TRX.Trace(("ParseLN0................. "+ file),TL.GENERAL)
         for ptrLN in LN_ZERO:
             tDAI = []
-            iLN = instLN.Parse_LN_LN0(ptrLN, "IED_name", "AP_Name", tDAI)
+            iLN = instLN.Parse_LN(ptrLN, "IED_name", "AP_Name", tDAI)
             tiLN.append(iLN)
 
 # Parse classical LN
         pLN= scl.getElementsByTagName("LN")
         for ptrLN in pLN:
             tDAI = []
-            iLN = instLN.Parse_LN_LN0(ptrLN, "IED_name", "AP_Name", tDAI)
+            iLN = instLN.Parse_LN(ptrLN, "IED_name", "AP_Name", tDAI)
             tiLN.append(iLN)
 
         TRX.Trace(("IEC_LN fin"),TL.GENERAL)
@@ -647,7 +488,8 @@ class Test_LN:
 if __name__ == '__main__':
 
 
-    Test_LN.main('SCL_files/', 'IOP_2019_HV_v6_ed2.3.SCL', None)
+#    Test_LN.main('SCL_files/', 'LD_ALL.SCL', None)
+    Test_LN.main('SCL_files/', 'SCL_20200415.scl', None)
 
 #    fileliste = FL.lstFull  # File list for System Level (SCL/SCD...)
 #    for file in fileliste:

@@ -14,11 +14,7 @@ from IEC_Trace import IEC_Console as TConsole
 from IEC_Trace import TraceLevel as TL
 from IEC_FileListe import FileListe as FL
 
-# This class is used to collect the DAType definition and the associated DA:
-#<DAType id="operDWCHT" desc="My Operate suff" >
-#			<BDA name="ctlValxxx" bType="BOOLEAN"/>
-#			<BDA name="originxxx" bType="Struct" type="Originator"/>
-#			<BDA name="ctlNum" bType="INT8U"/>
+from IEC61850_XML_Class import DataTypeTemplates as IECType
 
 
 # Class equivalent to <DAtype>:
@@ -28,32 +24,6 @@ from IEC_FileListe import FileListe as FL
 # 	<DAType id="DPCOperate" desc="DA..."/>
 # 	<DAType id="Originator" desc="DA..."/>
 # 	<DAType id="PulseConfig" desc="DA..."/>
-class DAType:
-    def __init__(self, _id, _desc, _protNs, _iedType):
-        self.id      = _id         # id du type
-        self.desc    = _desc       # descriptiop
-        self.protNs  = _protNs     # NameSpace
-        self.iedType = _iedType    # iedType
-        self.tBDA    = []          # Table of the BDA related to this DA.
-
-    # Sub-classe to handle BDA instanciations.
-    # The properties of the class are the attrobiutes of IEC61850 DA Object.
-    #       <BDA name-="cmdQual" bType="Enum" type="SE_cmdQual_V001" />
-    #       <BDA name="orIdent" bType="Octet64" />
-    #       <BDA name="mag" bType="Struct" type="SE_instMag_V001" />
-    #       <BDA name="numPls" bType="INT32U" />
-
-    class BDA:
-        def __init__(self, _name, _type, _bType, _valKind, _value):
-            self.name    = _name    # Nom du champ dans le SCL
-            self.SDO     = _type
-            self.type    = _type   # Type défini dans le SCL (enum ou Structure)
-            self.bType   = _bType  # Basic Type, usually without futher definition in the SCL
-            self.valKind = _valKind
-            self.value   = _value
-    class ProtNs:                   # TODO
-        def __init__(self, _type):
-            self.type = _type
 
 class Parse_DAType:
     def __init__(self, _scl, _TRX):
@@ -71,7 +41,7 @@ class Parse_DAType:
         _protNs  = iDaType.get('type')
         _iedType = iDaType.get('iedType')
         _tBDA    = iDaType.get('tBDA')
-        instDaType = DAType(id, _desc, _protNs,_iedType)
+        instDaType = IECType.DAType(id, _desc, _protNs,_iedType)
         instDaType.tBDA = _tBDA
         return instDaType
 
@@ -106,7 +76,7 @@ class Parse_DAType:
                         self.TRX.Trace(("     BDA value ##" + _id + ' -' + _type + ' -' + _bType + ' -'
                                                        + _valKind + ' -' + _value ) , TL.DETAIL)
 
-                BDAinst = DAType.BDA(_id, _bType, _type, _valKind, _value)
+                BDAinst = IECType.DAType.BDA(_id, _bType, _type, _valKind, _value)
                 tBDA.append(BDAinst)
 
             if BDA.localName=="ProtNs":     #TODO

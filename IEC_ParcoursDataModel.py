@@ -10,7 +10,6 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-# TODO : extend to n AccessPöint and n Server
 
 import xml.dom.minidom as dom
 import time
@@ -28,17 +27,16 @@ from IEC_Trace              import IEC_Console   as TConsole
 from IEC_Trace              import IEC_TraceFile
 from IEC_Trace              import TraceLevel    as TL
 from IEC_TypeSimpleCheck    import Check
-from IEC_TypeSimpleCheck    import IecType
 
-lstFC = ['ST','MX','CF','DC','SP','SV','SG','SE','SR','OR','BL','EX','CO']
+from IEC61850_XML_Class     import  DataTypeTemplates as IecType
 
 class IECda:
     def __init__(self, Texte, _mmsAdr, _fc, _BasicType,_EnumType, _Value, _Valkind):
-        self.mmsAdr       = _mmsAdr         # Adresse jusqu'au type simple.
+        self.mmsAdr       = _mmsAdr         # Adress down to the IEC bType or Struct.
         self.mmsAdrFinal  = 'xx'
-        self.acsiAdr      = 'zz'            # Adresse au format requis par U-Test
+        self.acsiAdr      = 'zz'            # Adress ready for ACSI services
         self.fc           = _fc             # Functional Constrain
-        self.BasicType    = _BasicType      # Type de base
+        self.BasicType    = _BasicType      # 'bType' see IEC61850_
         self.EnumType     = _EnumType
         self.TypeValue    = _Value          # Value    from  DATA TYPE DEFINITION
         self.ValKind      = _Valkind        # ValKlind from  DATA TYPE DEFINITION
@@ -53,7 +51,7 @@ class IECda:
         posFC = -1                          # Position of functional Constraint
         # La FC (Functional Constraint, n'est pas à la bonne place :
         for i in range(2, len(mmsAdrSplit)):  # La FC est au moins en position
-            if mmsAdrSplit[i] in lstFC:
+            if mmsAdrSplit[i] in IecType.FC.lstFC:
                 FC = mmsAdrSplit[i]
                 posFC = i                     # Position de la FC
                 break
@@ -82,20 +80,20 @@ class IECda:
         _newMmsAdr = _newMmsAdr +'['+FC+']'
         self.mmsAdrFinal = _newMmsAdr
 
-        if _BasicType in IecType.Simple:
+        if _BasicType in IecType.bType.Simple:
             iecType = _BasicType
         else:
             if _EnumType is not None:
                 iecType = "Enum: "+_EnumType
             else:
                 print("#######################")
-        if self.TypeValue != None:
-            TX.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
-                       ', Value:'+ self.TypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
-        else:
-            TX.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ',' + iecType + ', No Value, VK:'+ _Valkind ),TL.DETAIL)
+#        if self.TypeValue != None:
+#            self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
+#                       ', Value:'+ self.TypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
+#        else:
+#            self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ',' + iecType + ', No Value, VK:'+ _Valkind ),TL.DETAIL)
 
-# FOR DEBUGGING        TX.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
+# FOR DEBUGGING        self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
 #                           ', Value:'+ self.iecTypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
 
 # Class GlobalModel
@@ -129,12 +127,12 @@ class globalDataModel:
         self.EnumType.Create_EnumType_Dict(DataType)
 
     def TraceDataPoint(self,entete, DA_type, bType2, bType, DataName, fc):
-        TX.Trace((entete + "    DA_type:" + DA_type + ', bType:' + bType +  ', bType2:' + bType2+
+        self.TR.Trace((entete + "    DA_type:" + DA_type + ', bType:' + bType +  ', bType2:' + bType2+
                            ', DataName: ' + DataName + ', FC:' + fc), TL.GENERAL)
 
     def ParcoursTypeSimple(self,tIEC_adresse, DA_type, bType, idx, DataName, fc, DA, value, valKind):
 
-        if bType in IecType.Simple:  # Type de base ?
+        if bType in IecType.bType.Simple:  # Type de base ?
             _iecAdr= IECda("Simple-0   : ", DataName, fc, bType, None, value, valKind)
             tIEC_adresse.append(_iecAdr)
             return None
@@ -145,7 +143,7 @@ class globalDataModel:
 
             for m in range(len(SDA.tBDA)):
                 bType2= SDA.tBDA[m].type
-                if bType2 in IecType.Simple:
+                if bType2 in IecType.bType.Simple:
                     _iecAdr = IECda("Struct-1   : ", DataName, fc, bType2, None, value, valKind )
                     tIEC_adresse.append(_iecAdr)
                     continue
@@ -161,7 +159,7 @@ class globalDataModel:
                         bValue   = DA1.value
                         bValKind = DA1.valKind
                         BaseName = DataName + '$' + DA1.name
-                        if ( DA1.type in IecType.Simple):
+                        if ( DA1.type in IecType.bType.Simple):
                             DataName2 = BaseName
                             _iecAdr = IECda("Simple-3   : ",BaseName, fc, DA1.type, None, bValue, bValKind)
                             tIEC_adresse.append(_iecAdr)
@@ -249,13 +247,13 @@ class globalDataModel:
             for j in range(len(LD.LN)):                         # Browsing LN du LDEVICE
                 LN = LD.LN[j]
                 txtLN = LD.LN[j].lnPrefix + LD.LN[j].lnClass + LD.LN[j].lnInst
-                TX.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN ) , TL.GENERAL)
-                LNodeType    = GM.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
+                self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN ) , TL.GENERAL)
+                LNodeType    = self.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
                 LD.LN[j].tDO = LNodeType.tDO
     #TODO traiter le cas ou on le trouve pas !!!
                 for k in range(len(LNodeType.tDO)):          # Browsing DO
                     DO  = LN.tDO[k]
-                    iDO = GM.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
+                    iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
                     tDA = iDO.tDA
                     DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
                     DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
@@ -269,7 +267,7 @@ class globalDataModel:
     #
     def GetIPAddress(self, tAddress):
         for i in range (0,len(tAddress)):
-            TX.Trace(("tAddress.type:"+tAddress[i].type + "tAddress.value="+tAddress[i].value),TL.DETAIL)
+            self.TR.Trace(("tAddress.type:"+tAddress[i].type + "tAddress.value="+tAddress[i].value),TL.DETAIL)
             if (tAddress[i].type=="IP"):
                 return(tAddress[i].value)
         return(None)
@@ -285,7 +283,7 @@ class globalDataModel:
         self.tIED = self.getIED_withComm(scl)  # Expect a file list
 
         comm = scl.getElementsByTagName("Communication")
-        subNetWork = ParseCommunication(comm, TX)
+        subNetWork = ParseCommunication(comm, self.TR)
         tNetWork = subNetWork.ParseCommSection(comm)  # <SubNetWork>
         tServices = Test_Services.main('SCL_files/', file, None)
 
@@ -302,16 +300,16 @@ class globalDataModel:
     def getIED_withComm(self, scl):
 
         comm = scl.getElementsByTagName("Communication")
-        tIEDNet  = ParseCommunication(scl, TX)      # Analyse de la section <Communication>
+        tIEDNet  = ParseCommunication(scl, self.TR)      # Analyse de la section <Communication>
         tNetWork = tIEDNet.ParseCommSection(comm)               #                           <SubNetWork>
                                                                 #                               <ConnectedAP...>
         ##      Gather information on server from the data model aspect
-        tIEDComm        = Parse_Server(scl, TX)              # IED / SERVER / LD
-        tIED            = tIEDComm.Parse_IED(TX)
+        tIEDComm        = Parse_Server(scl, self.TR)              # IED / SERVER / LD
+        tIED            = tIEDComm.Parse_IED(self.TR)
     ##
 
-        TX.Trace(("nombre de IED/server: "+str(len(tIED)))     , TL.DETAIL)       # 42
-        TX.Trace(("nombre de subnetWork: "+str(len(tNetWork))) , TL.DETAIL)
+        self.TR.Trace(("nombre de IED/server: "+str(len(tIED)))     , TL.DETAIL)       # 42
+        self.TR.Trace(("nombre de subnetWork: "+str(len(tNetWork))) , TL.DETAIL)
 
     # Supposition: un server par IED !
         for i in range (0,len(tIED)):
@@ -339,7 +337,7 @@ class globalDataModel:
                             tIED[i].tAccessPoint[0].tServer[0].IP = IP
                             tIED[i].IP  = IP
                             tIED[i].tAccessPoint[0].tServer[0].tAddress = iNetwork.tConnectedAP[k].tAddress
-    #                        TX.Trace(("iedNameAP:" + iedNameAP + "iedNameSRV:"+iedNameSrv +"      , apName:" + apName + " adresse IP:" + IP), TL.DETAIL)
+    #                        self.TR.Trace(("iedNameAP:" + iedNameAP + "iedNameSRV:"+iedNameSrv +"      , apName:" + apName + " adresse IP:" + IP), TL.DETAIL)
                             break
             #            else:
             #                tIED[0].Server[0].IP = None
@@ -462,7 +460,7 @@ if __name__ == '__main__':
     global TR
     TX = TConsole(TL.GENERAL)
     tIEDfull=[]
-    for file in FileListe.lstIED :
+    for file in FileListe.lstSystem:
 
         CG = CodeGeneration("CodeGeneration")
         GM = globalDataModel(TX,file)

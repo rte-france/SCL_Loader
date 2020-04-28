@@ -14,86 +14,7 @@ from IEC_FileListe      import FileListe  as FL
 from IEC_Trace          import IEC_Console  as TConsole
 from IEC_Trace          import TraceLevel  as TL
 from IEC_PrivateSupport import DynImport
-
-class SubStation:
-    def __init__(self, _name, _desc ):
-        self.name     = _name
-        self.desc     = _desc
-        self.tVoltage = []
-
-    class VoltageLevel:
-        def __init__(self, _name, _nomFreq, _numPhases, _desc):
-            self.name       = _name
-            self.nomFreq    = _nomFreq
-            self.numPhase   = _numPhases
-            self.desc       = _desc
-
-            self.tBay       = []
-            self.tPwrTfo    = []
-
-        class PowerTransformer:
-            def __init__(self,_name, _desc, _type, _virtual):
-                self.name    = _name
-                self.desc    = _desc
-                self.type    = _type
-                self.virtual = _virtual
-
-        class GeneralEquipment:
-            def __init__(self, _name, _type):
-                self.name    = _name
-                self.type    = _type
-
-        class Voltage:
-            def __init__(self, _unit, _multiplier, _value):
-                self.unit       = _unit
-                self.multiplier = _multiplier
-                self.value      = _value
-
-        class Bay:
-            def __init__(self, _name, _desc, _sxy_x, _sxy_y):
-                self.name  = _name
-                self.desc  = _desc
-                self.sxy_x = _sxy_x
-                self.sxy_y = _sxy_y
-                self.tConductingEquipment = []
-                self.tConnectivityNode    = []
-                self.tFunction            = []
-                self.tLNode               = []
-            class ConductingEquipment:
-                def __init__(self, _name, _desc, _virtual, _sx_y, _sx_x, _sx_dir ):
-                   self.name    = _name    
-                   self.desc    = _desc    
-                   self.virtual = _virtual
-                   self.sx_y    = _sx_y    
-                   self.sx_x    = _sx_x    
-                   self.sx_dir  = _sx_dir
-                   self.tTerminal = []
-                class Terminal:
-                    def __init__(self,_name,_connectivityNode,_substationName,_voltageLevelName,_bayName,_cNodeName):
-                        self.name              = _name
-                        self.connectivityNode  = _connectivityNode
-                        self.substationName    = _substationName
-                        self.voltageLevelName  = _voltageLevelName
-                        self.bayName           = _bayName
-                        self.cNodeName         = _cNodeName
-
-            class ConnectivityNode:
-                def __init__(self,_name, _desc, _pathName, _sx_y, _sx_x):
-                    self.name     = _name     
-                    self.desc     = _desc     
-                    self.pathName = _pathName
-                    self.sx_y     = _sx_y     
-                    self.sx_x     = _sx_x     
-            class Function:
-                def __init__(self,_name, _desc):
-                    self.name     = _name
-                    self.desc     = _desc
-            class LNode:
-                def __init__(self,_iedName,_lnClass,_lnType,_lnInst):
-                    self.iedName = _iedName
-                    self.lnClass = _lnClass
-                    self.lnType  = _lnType
-                    self.lnInst  = _lnInst
+from IEC61850_XML_Class import SubStation
 
 class ParseSubStation:
     def __init__(self, _scl, _TR, _name, _desc):
@@ -273,8 +194,7 @@ class Test_Substation:
 
 if __name__ == '__main__':
 
-    Test_Substation.main('SCL_files/', 'IOP_2019_HV_v6_ed2.3.SCL', None)
-    exit(12345)
+    Test_Substation.main('SCL_files/', 'LD_ALL.SCL', None)
 
     fileliste = FL.lstFull  # Liste de fichier de niveau système et IED
     for file in fileliste:

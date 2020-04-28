@@ -13,88 +13,8 @@
 from IEC_Trace      import IEC_Console  as TRACE
 from IEC_Trace      import TraceLevel   as TL
 
-class IecType:
-    Simple = ["VisString64","VisString129","VisString255","Unicode255",
-              "Quality", "Timestamp", "BOOLEAN", "Check", "Dbpos",
-              "INT8U","INT16U","INT32U","INT8","INT16","INT32","INT64",
-              "FLOAT32", "ObjRef","Tcmd","Octet64"]
+from IEC61850_XML_Class import DataTypeTemplates as IecType
 
-
-    String  = ["BOOLEAN","VisString64","VisString129","VisString255","Unicode255",
-               "ObjRef", "Quality", "Timestamp","Tcmd"]     # TODO String or Number ?
-
-    Number =  ["Check",
-               "INT8U","INT16U","INT32U","INT8","INT16","INT32","INT64",
-               "FLOAT32","Octet64"]
-
-# The following type declaration are only prototypes versions:
-class Quality:
-    def __init__(self,_Validity,_Overflow, _OutofRange,_BadReference,_Oscillatory, \
-                      _Failure,  _OldData, _Inconsistent,_Inaccurate, _Source, _Test, _OperatorBlocked):
-        self.Validity       = _Validity     # Enum 0-3 (Good 0, Invalid 1, Réservé 2, Questionable 3)
-        self.Overflow 	    = _Overflow 	# BOOLEAN
-        self.OutofRange     = _OutofRange   # BOOLEAN
-        self.BadReference   = _BadReference # BOOLEAN
-        self.Oscillatory    = _Oscillatory  # BOOLEAN
-        self.Failure 	    = _Failure 	    # BOOLEAN
-        self.OldData 	    = _OldData 	    # BOOLEAN
-        self.Inconsistent   = _Inconsistent # BOOLEAN
-        self.Inaccurate     = _Inaccurate   # BOOLEAN
-        self.Source         = _Source       # Enum: Process 0, Substituted 1
-        self.Test           = _Test         # BOOLEAN  (Test active with TRUE)
-        self.OperatorBlocked= _OperatorBlocked # BOOLEAN
-
-class TimeQuality:
-    def _init__ (self,_Leap, _Failure_,_NotSync, _Precision):
-        self.LeapSecond     = _Leap          # Boolean
-        self.ClockFailure   = _Failure_      # Boolean
-        self.NotSync        = _NotSync       # Boolean
-        self.Precision      = _Precision     # INT 5 bits Number of significant bits
-                                             # in the FractionOfSecond:
-class Timestamp:
-    def __init__(self,_SecondSinceEpoch,_FractionOfSecond,_TimeQuality):
-        self.second   = _SecondSinceEpoch   # Since 01/01/1970 -UTC
-        self.fraction = _FractionOfSecond   #NOTE 1 The resolution is the smallest unit by
-                                            # which the time stamp is updated (potentially ~60ns)
-        self.quality  = _TimeQuality
-
-### WARNING d'après IEC61850-8-1, le 'EntryTime' des BRCB est exprimé en S depuis 01/01/1984
-class PhyComAddr:
-    def __init__(self, _Addr, _PRIORITY, _VID, _APPID):     # Défini dans IEC61850-1-2
-        self.Addr       = _Addr         #Octet String 6         ==> [Adr Mac] bytes en python
-        self.PRIORITY   = _PRIORITY     #Unsigned8 de 0 à7      ==> int en python
-        self.VID        = _VID          #Unsigned16 de 0 à 4095 ==> int en python
-        self.APPID      = _APPID        #Unsigned16             ==> int en python
-
-### CLASS LIEE AUX GOOSE
-# Use case TbD
-class TriggerConditions:                # 6 bits IEC61850-8-1 § 8.1.3.9
-    def __init_(self, _reserved, _dChg,_qChg,_dUpdate,_IntPeriod,_GI):
-        self.reserved  = _reserved      # N/A
-        self.dChg      = _dChg          # Boolean
-        self.qChg      = _qChg          # Boolean
-        self.dUpdate   = _dUpdate       # Boolean
-        self.IntPeriod = _IntPeriod     # Boolean
-        self.GI        = _GI            # Boolean
-
-class GooseMessage:
-    def __init_(self, _DatSetRef, _GoID, _GoCBRef, _T, _StNum,_SqNum,
-                      _Simulation, _ConfRev, _NdsComn, _DatSet, _mode):
-        self.DatSetRef  = _DatSetRef    # ObjectRefernce    (String129, value from GOCB)
-        self.GoID       = _GoID         # VisibleString     (String129, value from GOCB)
-        self.GoCBRef    = _GoCBRef      # ObjectRefernce    (String129, value from GOCB)
-        self.T          = _T            # TimeStamp (if 0 the driver will the time
-        self.StNum      = _StNum        # INT32U
-        self.SqNum      = _SqNum        # INT32U
-        self.Simulation = _Simulation   # Boolean (True : simulation active)
-        self.ConfRev    = _ConfRev      # INT32U  (value from GOCB)
-        self.NdsCom     = _NdsComn      # BOOLEAN  value from GOCB)
-        self.DatSet     = _DatSet       # Data à encoder et à envoyer
-        self.mode       = _mode         # Envoi d'une seule trame ou d'un flux.
-"""
-    /
-
-"""
 class Check:
 # CHARACTER STRING
 
@@ -244,10 +164,10 @@ class Check:
 # Appel 'dynamique' ... potentiellement peu performant
     def Type(type,value):
 
-        if type in IecType.String:
+        if type in IecType.bType.String:
             fName = 'Check.' + type + '("' + value + '")'
  #           print("Fname String:",fName)
-        elif type in IecType.Number:
+        elif type in IecType.bType.Number:
             fName = 'Check.' + str(type) + '(' +  value + ')'
 #            print("Fname Scalar:",fName)
 
@@ -324,5 +244,5 @@ class Test_TypeSimpleCheck:
 
 if __name__ == '__main__':
 
-    TRX = TRACE(TL.DETAIL,None)
+    TRX = TRACE(TL.DETAIL)
     Test_TypeSimpleCheck.main(TRX)

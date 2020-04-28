@@ -35,6 +35,8 @@
 #
 #
 
+import sys
+
 """
 from class IEC_Rte_private import RTE_private
 
@@ -65,19 +67,19 @@ class DynImport:
 #                  start with TAG         class name
 # Dictionary based:
         self.DicoPrivate['RTE-FIP']     = {"FileName":    'IEC_RTE_private' ,
-                                           "ClassName":   'RTE_private'     ,
-                                           "MethodName": ' private_LN' }
+                                           "ClassName":   'RTE_Private'     ,
+                                           "MethodName":  'RTE_FIP' }
         self.DicoPrivate['RTE-BAP']     = {"FileName":    'IEC_RTE_private' ,
-                                           "ClassName":   'RTE_private'     ,
-                                           "MethodName": ' private_LN' }
+                                           "ClassName":   'RTE_Private'     ,
+                                           "MethodName":  'RTE_BAP' }
 
 # List based, the matching string is the begining of the private tag
 #                                                 KEY/TAG    FileName               ClassName
-        self.TagList.append(DynImport.privateTag('RTE-'     ,'IEC_RTE_private'     ,'Private_RTE'    , 'RTE_Generic'))
-        self.TagList.append(DynImport.privateTag('Siemens-' ,'IEC_Siemens_private' ,'Private_Siemens', 'Siemens_Generic'))
-        self.TagList.append(DynImport.privateTag('ABB_'     ,'IEC_ABB_private'     ,'Private_ABB'    , 'ABB_Generic'))
-        self.TagList.append(DynImport.privateTag('GE_'      ,'IEC_GE_private'      ,'Private_GE'     , 'GE_Generic'))
-        self.TagList.append(DynImport.privateTag('MiCOM-'   ,'IEC_MiCOM'           ,'Private_MiCOM'  , 'MiCOM_Generic'))
+        self.TagList.append(DynImport.privateTag('RTE-'     , 'IEC_RTE_private'     , 'RTE_Private'    , 'RTE_Generic'))
+        self.TagList.append(DynImport.privateTag('Siemens-' , 'IEC_Siemens_private' , 'Private_Siemens', 'Siemens_Generic'))
+        self.TagList.append(DynImport.privateTag('ABB_'     , 'IEC_ABB_private'     , 'Private_ABB'    , 'ABB_Generic'))
+        self.TagList.append(DynImport.privateTag('GE_'      , 'IEC_GE_private'      , 'Private_GE'     , 'GE_Generic'))
+        self.TagList.append(DynImport.privateTag('MiCOM-'   , 'IEC_MiCOM'           , 'Private_MiCOM'  , 'MiCOM_Generic'))
 
 
     def getClassMethod(self, privateTag):
@@ -117,8 +119,13 @@ class DynImport:
 
             iFunction = getattr(iMyClass,FunctionName)
             iFunction(TypePrivate, pSCL, pDataModel)  # Call the actual method
-        except:
+
+        except ImportError:
             print("FAILED TO IMPORT, File:" + FileName + " Class: " + ClassName + " Fonction" + FunctionName)
+        else:
+            __exception = sys.exc_info()[0]
+            if __exception is not None:
+                print('e' + __exception.__name__)
 
         # TODO ? generalise the definition of 'Private_LN' ?
 

@@ -13,52 +13,21 @@ import xml.dom.minidom as dom
 from IEC_Trace import IEC_Console   as TConsole
 from IEC_Trace import TraceLevel    as TL
 from IEC_FileListe import FileListe as FL
+from IEC61850_XML_Class import DataTypeTemplates as IECType
 
-# Cette classe s'occupe de charger les définitions de DAType et la liste des DA associés:
-#<DOType cdc="DPC" id="myPos_248">
-#	<DA bType="Dbpos" dchg="true" fc="ST" name="stVal" />
-#	<DA bType="Quality" fc="ST" name="q" qchg="true" />
-#	<DA bType="Timestamp" fc="ST" name="t" />
-#	<DA bType="Enum" dchg="true" fc="CF" name="ctlModel" valKind="RO" type="CtlModel
-#...
-#</DOType>
-
-# Une 'sous-classe' est utilisée pour stocker les instances de DA dans le DOType
-# La classe principale reflète le contenu de DoType
-
-# Sous-classe pour stocker les DA instancier dans in DO.
-# Les propriétés sont celles de l'objet DA dans le SCL (dans le DoType).
-
-# classe principale les DO Type
-class DOType:
-    def __init__(self, _id, _cdc, _desc, _tDA):
-        self.name = ""
-        self.id   = _id
-        self.cdc  = _cdc
-        self.desc = _desc
-        self.tDA  = _tDA
-
-    class DAinst:
-        def __init__(self, _DO   , _SDO, _type, _fc   , _name, _count, _bType, _valKind,_valImp, \
-                          _sAddr, _qchg, _dchg, _desc ,_dupd, _value):
-            self.DoDaSdo = _DO
-            self.SDO     = _SDO
-            self.type    = _type
-            self.fc      = _fc
-            self.name    = _name
-            self.count   = _count
-            self.bType   = _bType
-            self.valKind = _valKind
-            self.valImport = _valImp
-            self.sAddr   = _sAddr
-            self.qchg    = _qchg
-            self.dchg    = _dchg
-            self.dupd    = _dupd
-            self.desc    = _desc
-            self.value   = _value
 
 class Parse_DOType:
+    ##
+    # @image html LOGO.png
+
+    ## Constructor,
     def __init__(self, _scl, _TRX):
+        ##
+        #@param _scl: pointer to the SCL structure created by miniDOM
+        #@param _TRX: Trace function
+        #@image html LOGO.png (image)
+        #!image html LOGO.png  (image)
+
         self.TRX = _TRX
         self.SCL = _scl
         self.dicDoType = {}
@@ -72,7 +41,7 @@ class Parse_DOType:
         _cdc  = iDoType.get('cdc')
         _desc = iDoType.get('desc')
         _tDA  = iDoType.get('tDA')
-        instDoType = DOType(id, _cdc, _desc, _tDA)
+        instDoType = IECType.DOType(id, _cdc, _desc, _tDA)
         return instDoType
 
     def GetDOTypeDict(self):
@@ -107,8 +76,7 @@ class Parse_DOType:
                     if (p1.firstChild is not None) and p1.localName=="Val":
                         _value = p1.firstChild.data
 
-###IEC_Trace _Type au lieu de FC
-                iDA = DOType.DAinst("DA", _Type  , _Type ,_FC   , _name, None, _bType, _valKind, \
+                iDA = IECType.DOType.DAinst("DA", _Type  , _Type ,_FC   , _name, None, _bType, _valKind, \
                                           _valImp, _sAddr, _qchg, _dchg, _dupd, _desc , _value)
                 tDA.append(iDA)
                 if _value != '__None__':
@@ -124,7 +92,7 @@ class Parse_DOType:
                 _desc = pDA.getAttribute("desc")
                 _count= pDA.getAttribute("count")
 
-                iDA = DOType.DAinst("SDO"    , _type, _type, "", _name,  _count, _type, '_valKind',
+                iDA = IECType.DOType.DAinst("SDO"    , _type, _type, "", _name,  _count, _type, '_valKind',
                                      '_valImp', '_sAddr', '_qchg', '_dchg', '_dupd', _desc, '__None__')
                 tDA.append(iDA)
                 self.TRX.Trace(("     SDO- name:" + _name + ", sdo-type:"+ _type),TL.DETAIL)
@@ -146,7 +114,7 @@ class Parse_DOType:
                     cdc  = DT.getAttribute("cdc")
                     desc = DT.getAttribute("desc")
                     tDA = self.Get_DA_Attributes( DT )
-                    iDO = DOType(id, cdc, cdc, tDA)
+                    iDO = IECType.DOType(id, cdc, cdc, tDA)
                     self.dicDoType[id] = {"cdc":cdc, "desc": desc, "tDA": tDA }
                     tDO.append(iDO)
 
@@ -157,7 +125,6 @@ class Parse_DOType:
 
         return tDO, self.dicDoType
 
-#Le code ci-dessous ne s'execute que si on lance la class seule.
 class Test_DOType:
     def main(directory, file, scl):
         TRX = TConsole(TL.DETAIL)
