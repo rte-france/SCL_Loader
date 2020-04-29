@@ -264,16 +264,16 @@ class IED:
                         self.TrgOps = __TrgOps
                 class ReportControl:
                     def __init__(self, _rptID,_confRev,_buffered,_bufTime,_indexed,_intgPd,_name,_desc,_datSet):
-                        self.rptID   = _rptID
-                        self.confRev = _confRev
-                        self.buffered= _buffered
-                        self.bufTime = _bufTime
-                        self.indexed = _indexed
-                        self.intgPd  = _intgPd
-                        self.name    = _name
-                        self.desc    = _desc
-                        self.dataset = _datSet
-                        self.TrgOps  = None
+                        self.rptID     = _rptID
+                        self.confRev   = _confRev
+                        self.buffered  = _buffered
+                        self.bufTime   = _bufTime
+                        self.indexed   = _indexed
+                        self.intgPd    = _intgPd
+                        self.name      = _name
+                        self.desc      = _desc
+                        self.dataset   = _datSet
+                        self.TrgOps    = None
                     class OptField:
                         def __init__(self,_seqNum,_timeStamp,_dataSet,_dataRef,_entryID,_configRef,_reasonCode):
                             self.seqNum     = _seqNum
@@ -283,9 +283,19 @@ class IED:
                             self.entryID    = _entryID
                             self.configRef  = _configRef
                             self.reasonCode = _reasonCode
+
                     class RptEnable:
                         def __init__(self, _max):
                             self.max = _max
+                            self.tClientLN = []
+                        class ClientLN:
+                                def __init__(self, _apRef,_iedName, _ldInst, _lnPrefix, _lnClass,  _lnInst):
+                                    self.apRef     = _apRef
+                                    self.iedName   = _iedName
+                                    self.ldInst    = _ldInst
+                                    self.lnPrefix  = _lnPrefix
+                                    self.lnClass   = _lnClass
+                                    self.lnInst    = _lnInst
             # The TrgOps Class is common RCB and LogControl
                 class TrgOps:
                     def __init__(self,_qchg, _dchg, _dupd, _period, _gi ):
@@ -300,16 +310,26 @@ class IED:
 
                     class ExtRef:
                         def __init__(self, _doName, _daName, _service, _iedName, _ldInst, _lnClass, _lnInst, _srcCBName,
-                                     _srcLNClass):
-                            self.doName = _doName
-                            self.daName = _daName
+                                     _srcLNClass, _srcLDInst, _pServT, _intAddr, _pLN, _pDO, _desc, _prefix):
+
+                            self.doName      = _doName
+                            self.daName      = _daName
                             self.serviceType = _service
-                            self.iedName = _iedName
-                            self.ldInst = _ldInst
-                            self.lnClass = _lnClass
-                            self.lnInst = _lnInst
-                            self.srcCBName = _srcCBName
-                            self.srcLNClass = _srcLNClass
+                            self.iedName     = _iedName
+                            self.ldInst      = _ldInst
+                            self.lnClass     = _lnClass
+                            self.lnInst      = _lnInst
+                            self.srcCBName   = _srcCBName
+                            self.srcLNClass  = _srcLNClass
+
+                            self.srcLDInst   = _srcLDInst
+                            self.pServT      = _pServT
+                            self.intAddr     = _intAddr
+                            self.pLN         = _pLN
+                            self.pDO         = _pDO
+                            self.desc        = _desc
+                            self.prefix      = _prefix
+
                     class rteFIP:
                         def __init__(self,_defaultValue, _dataStreamKey):
                             self.defaultValue  = _defaultValue
@@ -358,10 +378,6 @@ class IED:
                                 self.name = _name
                                 self.ix = _ix
                                 self.sAddr = _sAddr
-                        class RteDAI:  # Rte private data
-                            def __init__(self, _type, _desc):
-                                self.type = _type
-                                self.desc = _desc
 
                     class IEC_90_2:             # Private defined by WG10 eTr, technical report for 90-2 communication
                         def __init__(self,_externalScl,_iedName, _ldInst, _prefix,_lnClass,_lnInst,_doName):
@@ -406,7 +422,7 @@ class DataTypeTemplates:
         Simple = ["VisString64","VisString129","VisString255","Unicode255",
                   "Quality", "Timestamp", "BOOLEAN", "Check", "Dbpos",
                   "INT8U","INT16U","INT32U","INT8","INT16","INT32","INT64",
-                  "FLOAT32", "ObjRef","Tcmd","Octet64"]
+                  "FLOAT32", "ObjRef","Tcmd","Octet64","EntryID","entryID"]
 
         String  = ["BOOLEAN","VisString64","VisString129","VisString255","Unicode255",
                    "ObjRef", "Quality", "Timestamp","Tcmd"]     # TODO String or Number ?

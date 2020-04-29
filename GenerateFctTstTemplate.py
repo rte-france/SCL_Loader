@@ -50,19 +50,50 @@ class CodeGeneration:
 
         return tIEC_adresse
 
+# RTE/R#Space
+# In each LD/LN0 provides a set of DO named inRef
+# - private BAP ..
+# - private FIP ..
+#  - DAI 'setSrcRef': which give the MMS adresse of the data point/: XX_VirtualLDCMDDJ_LDCMDDJ_1/FXUT1.Op.general
+#  - DAI 'intAddr
+#  - DAI 'Purpose' : description du signal
+
+#     chacun de ses InRef contient
+
+#
+
     def ParcoursDataModel_LD(self, GM, tIEC_adresse, IEDName, LD):
             for j in range(len(LD.LN)):                         # Browsing LN du LDEVICE
                 LN = LD.LN[j]
                 txtLN = LD.LN[j].lnPrefix + LD.LN[j].lnClass + LD.LN[j].lnInst
-                self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN ) , TL.GENERAL)
                 LNodeType    = GM.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
                 if (LNodeType.lnClass=='LLN0'):
+                    self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN), TL.GENERAL)
                     print("Fonction:" + LD.inst)
-                    for inputs in LN.tInputs.tExtRef:
-                        print('INPUT: '  + inputs.iedName + ' LD:' + inputs.ldInst + " Srv: " + inputs.srcCBName)
+                    inputs1 = LN.tInputs
+                    try:
+                        X = inputs1.tExtRef
+                    except AttributeError:
+                        print('No ExtRef table')
+                        continue
+                    else:
+                        for extRef in inputs1.tExtRef:
+                            print('INPUT, pLN: '  + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+
+                    NbRCB = len(LN.tRptCtrl)
+                    for i in range(0,NbRCB):
+                        NbClient = len(LN.tRptCtrl[i].RptEnable.tClientLN)
+
+                        for j in range(0, NbClient):
+                            iClient = LN.tRptCtrl[i].RptEnable.tClientLN[j]
+                            ClientAdresse = (iClient.iedName, iClient.apRef , iClient.ldInst, iClient.lnPrefix, iClient.lnClass, iClient.lnInst)
+
 
 #                        " GET SMV ADRESSE FROM 'RTE_LLN0_CB_SMV_INT'
-
+                    # InReport Control Get the list Client LN
+                    # The ReportControl contains the data Set.
+                    # ==> On peut mettre à jour les données relatives aux clients. Et mettre ces informations en données d'entrées / par LD.
+            #
 
 
 

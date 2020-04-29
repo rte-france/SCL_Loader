@@ -11,5 +11,5 @@
 #
 class FileListe:
     lstIED    = ['LD_all.scl']
-    lstSystem = ['SCL_20200415.scl'] # 'LD_all.scl']
+    lstSystem = ['OUT_SCL_SITE_PALLUAU_3T.scd'] # 'SCL_20200415.scl'] # 'LD_all.scl']
     lstFull   =  lstIED+lstSystem

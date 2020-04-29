@@ -195,6 +195,7 @@ class globalDataModel:
             return None
 
         elif (bType is not None):
+
             DO= self.DOType.getIEC_DoType(bType)
             if DO is not None:
                 self.ParcoursDA(tIEC_adresse, DataName, DO.tDA, 'Yes')
@@ -204,6 +205,11 @@ class globalDataModel:
 
 
     def ParcoursDA(self, tIEC_adresse, DO_Name, DA, FC):
+
+#        if DA is None:
+#            print("Problem DA None !!!!")
+#            return
+
         for i in range(len(DA)):  # Parcours des DA composants le DO.
             type1    = DA[i].type
             bType1   = DA[i].bType

@@ -45,7 +45,17 @@ class Parse_LN:
                 lnInst      = pExtRef.getAttribute("lnInst")
                 srcCBName   = pExtRef.getAttribute("srcCBName")
                 srcLNClass  = pExtRef.getAttribute("srcLNClass")
-                iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(doName, daName, serviceType, iedName, ldInst, lnClass, lnInst, srcCBName, srcLNClass)
+                srcLDInst   = pExtRef.getAttribute("srcLDInst")
+                pServT      = pExtRef.getAttribute("pServT")    ##
+                intAddr     = pExtRef.getAttribute("intAddr")   ##
+                pLN         = pExtRef.getAttribute("pLN")       ##
+                pDO         = pExtRef.getAttribute("pDO")       ##
+                desc        = pExtRef.getAttribute("desc")      ##
+                prefix      = pExtRef.getAttribute("prefix")
+
+                iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(doName, daName, serviceType, iedName, ldInst, lnClass
+                        , lnInst, srcCBName, srcLNClass, srcLDInst, pServT, intAddr, pLN, pDO, desc, prefix)
+
                 _tInputs.tExtRef.append(iExtRef)
     
             pExtRef = pExtRef.nextSibling
@@ -239,7 +249,7 @@ class Parse_LN:
             FCDAi = FCDAi.nextSibling
     
         return DS
-    def Parse_ReportControl(self, pLN, iLN):
+    def Parse_ReportControl(self, pLN):
         _RptID    = pLN.getAttribute("rptID")
         _confRev  = pLN.getAttribute("confRev")
         _Buffered = pLN.getAttribute("buffered")
@@ -287,14 +297,36 @@ class Parse_LN:
                                  _entryID, _configRef, _reasonCode)
                 rptCtrl = rptCtrl.nextSibling
                 continue
+
             if rptCtrl.localName == "RptEnabled":
                 self.TRX.Trace(("ReportControl: RptEnabled"),TL.DETAIL)
                 _max = rptCtrl.getAttribute("max")
-                iRCB.RptEnable=iRCB.RptEnable(_max)
+                iRCB.RptEnable=IED.AccessPoint.Server.LN.ReportControl.RptEnable(_max)
+
+                pClientLN = rptCtrl.firstChild
+                if pClientLN is not None:
+                    pClientLN = pClientLN.nextSibling
+
+                    while pClientLN is not None:
+                        if pClientLN.localName == "ClientLN":
+                            self.TRX.Trace(("ReportControl: ClientLN"), TL.DETAIL)
+
+                            _apRef   = pClientLN.getAttribute("apRef")
+                            _iedName = pClientLN.getAttribute("iedName")
+                            _ldInst  = pClientLN.getAttribute("ldInst")
+                            _prefix  = pClientLN.getAttribute("prefix")
+                            _lnClass  = pClientLN.getAttribute("lnClass")
+                            _lnInst  = pClientLN.getAttribute("lnInst")
+                            iClientLN = IED.AccessPoint.Server.LN.ReportControl.RptEnable.ClientLN(_apRef, _iedName, _ldInst, _prefix,
+                                                                                       _lnClass, _lnInst)
+                            iRCB.RptEnable.tClientLN.append(iClientLN)
+                        pClientLN = pClientLN.nextSibling
+                        continue
+
                 rptCtrl = rptCtrl.nextSibling
                 continue
-        iLN.tRCB.append(iRCB)
-        return iLN
+        return iRCB
+
     def ParseLogControl(self, pLN, tiLCB):
     
         _name    = pLN.getAttribute("name")
@@ -410,7 +442,7 @@ class Parse_LN:
     # TODO LISTE DES IEDs à accrocjer GSECONTROL
     
                 tiGCB.append(GOOSE)
-                self.TRX.Trace(("     GSEControl, name: " + name + " datSet:" + datSet),TL.ERROR)
+                self.TRX.Trace(("     GSEControl, name: " + name + " datSet:" + datSet),TL.DETAIL)
                 pLN= pLN.nextSibling
                 continue
             if pLN.localName == "SampledValueControl":
@@ -448,7 +480,8 @@ class Parse_LN:
     
             if pLN.localName == "ReportControl":
                 self.TRX.Trace(("      ReportControl"), TL.DETAIL)
-                iLN = self.Parse_ReportControl(pLN, iLN)
+                iRCB = self.Parse_ReportControl(pLN)
+                tiRCB.append(iRCB)
                 pLN = pLN.nextSibling
                 continue
             continue
