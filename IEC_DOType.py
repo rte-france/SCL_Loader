@@ -15,41 +15,60 @@ from IEC_Trace import TraceLevel    as TL
 from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
-
+##
+# \b Parse_DOType: this class create the of DoType / Data Attributes elements
+# @brief
+# @b Description
+#   This class is parsing the DOType XML and embed the list of DA for each of the DO.
 class Parse_DOType:
-    ##
-    # @image html LOGO.png
 
-    ## Constructor,
+    ## \b Description
+    #   Constructor is used to keep the dictionary of DOType available.
+    #
+    # @image html DO.png        width=300px
+    # @param _scl: pointer to the SCL structure created by miniDOM
+    # @param _TRX: Trace function
     def __init__(self, _scl, _TRX):
-        ##
-        #@param _scl: pointer to the SCL structure created by miniDOM
-        #@param _TRX: Trace function
-        #@image html LOGO.png (image)
-        #!image html LOGO.png  (image)
 
-        self.TRX = _TRX
-        self.SCL = _scl
+        self.TRX = _TRX     # *!< Detailed description after the member >
+        self.SCL = _scl     # *!< Detailed description after the member >
         self.dicDoType = {}
 
-    #  Get the doType definition from 'doType', based on a Python "dictionary"
+    ##
+    # Return a full DoType for a given doType 'id'
+    # @param doType: the Date Object type to look up.
+    # @return  An instance of the Data Object elements, including the list of DA\n
+    #    Get the doType definition from 'doType', based on a Python "dictionary"
     def getIEC_DoType(self, doType):
+
         iDoType = self.dicDoType.get(doType)
         if iDoType is None:
             return None
-        _id   = iDoType.get('id')
-        _cdc  = iDoType.get('cdc')
-        _desc = iDoType.get('desc')
-        _tDA  = iDoType.get('tDA')
-        instDoType = IECType.DOType(id, _cdc, _desc, _tDA)
+#        _id   = iDoType.get('id')      # This is the 'key' of the dictionary.
+        _cdc     = iDoType.get('cdc')
+        _iedType = iDoType.get('iedType')
+        _desc    = iDoType.get('desc')
+        _tDA     = iDoType.get('tDA')
+        instDoType = IECType.DOType(doType, _cdc, _iedType, _desc, _tDA)
         return instDoType
-
+    ##
+    # @return the dictionary of DoType
     def GetDOTypeDict(self):
         return self.dicDoType
 
 # < DA bType = "VisString255" fc = "DC" name = "hwRev" valKind = "RO" / >
 # < DA bType = "VisString255" fc = "DC" name = "swRev" valKind = "RO" / >
+
+    ##
+    # \b Get_DA_Attributes: retrieve the list of DA and SDO for a DoType.
+    #
+    # @param pDA: pointer to the SCL structure pointing a <DA structure>
+    #
+    # XML extract:
+    #       < DA bType = "VisString255" fc = "DC" name = "hwRev" valKind = "RO" / >
+    #       < DA bType = "VisString255" fc = "DC" name = "swRev" valKind = "RO" / >
     def Get_DA_Attributes(self, pDA):
+
         tDA=[]                          # Allocation of DAinst table
         pDA = pDA.firstChild.nextSibling
         while pDA:
@@ -57,17 +76,23 @@ class Parse_DOType:
                 pDA = pDA.nextSibling
                 continue
             if pDA.localName=="DA":
-                _FC      = pDA.getAttribute("fc")
+
+                _desc    = pDA.getAttribute("desc")
                 _name    = pDA.getAttribute("name")
-                _Type    = pDA.getAttribute("type")
+                _fc      = pDA.getAttribute("fc")
+
+                _dchg    = pDA.getAttribute("dchg")
+                _qchg    = pDA.getAttribute("qchg")
+                _dupd    = pDA.getAttribute("dupd")
+                _sAddr   = pDA.getAttribute("sAddr")
+
                 _bType   = pDA.getAttribute("bType")
+                _type    = pDA.getAttribute("type")
+
+                _count    = pDA.getAttribute("count")
+
                 _valKind = pDA.getAttribute("valKind")
                 _valImp  = pDA.getAttribute("valImport")
-                _sAddr   = pDA.getAttribute("sAddr")
-                _qchg    = pDA.getAttribute("qchg")
-                _dchg    = pDA.getAttribute("dchg")
-                _dupd    = pDA.getAttribute("dupd")
-                _desc    = pDA.getAttribute("desc")
                 _value = '__None__'     # Si on utilise le None de python ça crash lors d'un print...
 
                 tVAL = pDA.firstChild
@@ -76,13 +101,14 @@ class Parse_DOType:
                     if (p1.firstChild is not None) and p1.localName=="Val":
                         _value = p1.firstChild.data
 
-                iDA = IECType.DOType.DAinst("DA", _Type  , _Type ,_FC   , _name, None, _bType, _valKind, \
-                                          _valImp, _sAddr, _qchg, _dchg, _dupd, _desc , _value)
+                iDA = IECType.DOType.DAinst(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
+                 , _count, _valKind, _valImp, "DA", _type, _value)
+
                 tDA.append(iDA)
                 if _value != '__None__':
-                    self.TRX.Trace(("     DA name:"+_name+" FC:"+_FC+" Type"+_Type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
+                    self.TRX.Trace(("     DA name:"+_name+" FC:"+_fc+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
 
-                self.TRX.Trace(("     DA name:"+_name+" FC:"+_FC+" Type"+_Type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
+                self.TRX.Trace(("     DA name:"+_name+" FC:"+_fc+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
                 self.TRX.Trace(("        desc:"+_desc+" valKind:"+_valKind+" sAddr:"+_sAddr+" qchg:"+_qchg+" desc:"+_desc),TL.DETAIL)
                 self.TRX.Trace(("       value:"+_value),TL.DETAIL)
 
@@ -92,13 +118,21 @@ class Parse_DOType:
                 _desc = pDA.getAttribute("desc")
                 _count= pDA.getAttribute("count")
 
-                iDA = IECType.DOType.DAinst("SDO"    , _type, _type, "", _name,  _count, _type, '_valKind',
-                                     '_valImp', '_sAddr', '_qchg', '_dchg', '_dupd', _desc, '__None__')
+                iDA = IECType.DOType.DAinst(_desc, _name, '_fc', '_dchg', '_qchg', '_dupd', '_sAddr', '_bType', '_type'
+                 , _count, '_valKind', '_valImp', "SDO", _type, '_value')
+
                 tDA.append(iDA)
                 self.TRX.Trace(("     SDO- name:" + _name + ", sdo-type:"+ _type),TL.DETAIL)
             pDA = pDA.nextSibling
         return tDA
 
+    ##
+    # Create_DOType_Dict
+    # @param DataType: is the result of scl.getElementsByTagName("DataTypeTemplates")
+    #
+    # @return
+    #       tDO : the table of Data Object Types
+    #       dicDoType: the dictionary (used for __main__)
     def Create_DOType_Dict(self, DataType):
         tDO=[]
         for DT in DataType:
@@ -110,12 +144,13 @@ class Parse_DOType:
                     continue
 
                 if DT.localName == "DOType":
-                    id   = DT.getAttribute("id")
-                    cdc  = DT.getAttribute("cdc")
-                    desc = DT.getAttribute("desc")
+                    _id      = DT.getAttribute("id")
+                    _iedType = DT.getAttribute("iedType")
+                    _cdc     = DT.getAttribute("cdc")
+                    _desc    = DT.getAttribute("desc")
                     tDA = self.Get_DA_Attributes( DT )
-                    iDO = IECType.DOType(id, cdc, cdc, tDA)
-                    self.dicDoType[id] = {"cdc":cdc, "desc": desc, "tDA": tDA }
+                    iDO = IECType.DOType(_id, _iedType, _cdc, _desc, tDA)
+                    self.dicDoType[_id] = {"iedType": _iedType , "cdc":_cdc, "desc": _desc, "tDA": tDA }
                     tDO.append(iDO)
 
                     DT = DT.nextSibling
@@ -125,7 +160,11 @@ class Parse_DOType:
 
         return tDO, self.dicDoType
 
+##
+# \b Test_DOType: unitary test for PARSE DoType
 class Test_DOType:
+    ##
+    # Unitary for ParseDoType, invoked by IEC_test.py
     def main(directory, file, scl):
         TRX = TConsole(TL.DETAIL)
 
@@ -138,6 +177,8 @@ class Test_DOType:
         tDA = xDO.Create_DOType_Dict(DataType)
         TRX.Trace(("END OF IEC_DOType"), TL.GENERAL)
 
+##
+# \b MAIN call the unitary test 'Test_DOTypefor PARSE DoType
 if __name__ == '__main__':
     fileliste = FL.lstFull  # System level file list
     for file in fileliste:

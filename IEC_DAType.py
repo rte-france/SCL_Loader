@@ -16,30 +16,43 @@ from IEC_FileListe import FileListe as FL
 
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
-
+##
+# \b Parse_DAType: this class create the of DaType / Data Attributes elements
+# @brief
+# @b Description
+# An instantiable structured attribute type; referenced from within a DA
+# element of a DOType, or from within another DAType for nested type
+# definitions. Based on the attribute structure definitions of IEC 61850-7-3
+#
 # Class equivalent to <DAtype>:
 #   <DAType id="AnalogueValue" desc="DA..."/>
 # 	<DAType id="CalendarTime" desc="DA..."/>
 # 	<DAType id="Cell" desc="DA..."/>
-# 	<DAType id="DPCOperate" desc="DA..."/>
-# 	<DAType id="Originator" desc="DA..."/>
-# 	<DAType id="PulseConfig" desc="DA..."/>
-
 class Parse_DAType:
-    def __init__(self, _scl, _TRX):
-        self.TRX = _TRX
-        self.SCL = _scl
-        self.dictDaType = {}
 
-    #  Get the doType definition from 'doType', based on a Python "dictionary"
+    ## \b Description
+    #   Constructor is used to keep the dictionary of DAType available.
+    #
+    # @param _scl: pointer to the SCL structure created by miniDOM
+    # @param _TRX: Trace function
+    def __init__(self, _scl, _TRX):
+                                    ##
+        self.TRX = _TRX             ## TRX Trace function
+        self.SCL = _scl             ## Pointer to the sCL
+        self.dictDaType = {}        ## Dictionary used to store and retrieve de DAType
+    ##
+    # Return a full DoType for a given doType 'id'
+    # @param doType: the Date Object type to look up.
+    # @return  An instance of the Data Object elements, including the list of DA\n
+    #    Get the doType definition from 'daType' id , based on a Python "dictionary"
     def getIEC_DaType(self, doType):
         iDaType = self.dictDaType.get(doType)
         if iDaType is None:
             return None
-        _id      = iDaType.get('id')
-        _desc    = iDaType.get('desc')
-        _protNs  = iDaType.get('type')
-        _iedType = iDaType.get('iedType')
+        _id      = iDaType.get('id')        ## id of the DaType
+        _desc    = iDaType.get('desc')      ## desc of the DaType
+        _protNs  = iDaType.get('type')      ## type of the DaType
+        _iedType = iDaType.get('iedType')   ## iedType of the DaType (deprecated)
         _tBDA    = iDaType.get('tBDA')
         instDaType = IECType.DAType(id, _desc, _protNs,_iedType)
         instDaType.tBDA = _tBDA
@@ -62,6 +75,8 @@ class Parse_DAType:
                 _id      = BDA.getAttribute("name")
                 _type    = BDA.getAttribute("type")
                 _bType   = BDA.getAttribute("bType")
+                if _bType=="Enum":
+                    print("xxxx")
                 _valKind = BDA.getAttribute("valKind")
                 self.TRX.Trace(("     BDA: ID=" + _id + " type:" + _type +  ", bType:" + _bType + ", valKind:" +_valKind ),TL.DETAIL)
 

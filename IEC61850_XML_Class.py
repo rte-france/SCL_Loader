@@ -115,16 +115,36 @@ class SubNetWork:   # <SubNetwork name="LAN"  type="8-MMS" desc="blabla...
                 <P type = "IP" xsi:type = "tP_IP" > 10.3.86.19 < / P >
                 <P type = "IP-SUBNET" xsi:type = "tP_IP-SUBNET" > 255.255.255.0 </P>
     """
-    def __init__(self, _name, _type, _desc, _text, _bitRate, _ConnectedAP):
-        """The constructor xxx, IEC61850 class + the Table of ConnectedAP
-        """
-        self.name         = _name                         # <SubNetwork name="Subnet1"
-        self.type         = _type                         #  ...                       type="8-MMS"
-        self.desc         = _desc                         #  ...                       desc="blabla" />
-        self.text         = _text                         #  <Text>Station bus</Text>
-        self.bitRate      = _bitRate                      #  <BitRate unit="b/s">10</BitRate>
-        self.tConnectedAP = _ConnectedAP                  #  <ConnectedAP apName="AP1" iedName="SF6P1">
+    ##
+    # SubNetWork Class description is extracted from IEC61850-6 document
+    # @param _name : A name identifying this bus; unique within this SCL file
+    # @param _type : The SubNetwork protocol type; protocol types are defined by the SCSMs. In the
+    # examples, 8-MMS is used for the protocol defined in IEC 61850-8-1; IP should be used
+    # for all IP based protocols except those explicitly standardized. PHYSICAL should be
+    # used, if only physical connections shall be modeled, e.g. at a hub.
+    # @param _desc : Some descriptive text to this SubNetwork
+    # @param _text : Additional text
 
+
+    def __init__(self, _name, _type, _desc, _text, _bitRate, _ConnectedAP):
+
+    ##  The constructor for SubNetwork is parsing this section of SCL:
+    # <SubNetwork name="Subnet1"
+    #    <Text>Station bus</Text>
+    #    <BitRate unit="b/s">10</BitRate>
+    #  capName="AP1" iedName="SF6P1">
+
+        self.name         = _name       ## name from SCL
+        self.type         = _type       ## type from SCL
+        self.desc         = _desc       ## desc from SCL
+        self.text         = _text       ## text from SCL
+        self.bitRate      = _bitRate    ## bitRate from SCL
+        self.tConnectedAP = _ConnectedAP ## The table of the connected AcessPoint
+
+    ##
+    # SubNetWork/bitRAte Class
+    # @param _bitRate : Precise the bit rate of the network
+    # @param _ConnectedAP   : table of connected Access Point (usually one)
     class BitRate:
         """The class  BitRate, IEC61850 class + the Table of ConnectedAP
         """
@@ -133,58 +153,132 @@ class SubNetWork:   # <SubNetwork name="LAN"  type="8-MMS" desc="blabla...
             """
             self.unit = _unit
             self.value = _value
+    ##
+    # Connected APClass The ApClass reflect the ConnectedAP section of the SCL
+    # @param   iedName(iec)   A name identifying the IED
+    # @param   apName(iec)    A name identifying this access point within the IED
+    # @param   desc(iec)      Some descriptive text for this access point at this subnetwork
+    # @param   redProt(iec)   The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
+    #                          no default value, i.e. value not known if the attribute is missing.
+    #                          The allowed values are restricted by the IED capabilities (Services/RedProt).
+    #
+    # @param   tAddress(app)   Table of adresses (P Type) et val
+    # @param   tSMV(app)       Table of SMV classes
+    # @param   tGSE(app)       Table of GSE classes
+    # @param   PhysConn(app)   Table of PhysConn classes
     class ConnectedAP:
-        def __init__(self, _iedName, _apName, _desc):  #<ConnectedAP iedName="TEMPLATE" apName="P1" desc= "... ">
-            self.iedName   = _iedName
-            self.apName    = _apName
-            self.desc      = _desc
-            self.tAddress  = []             # Table of adresses (P Type) et val
+        def __init__(self, _iedName, _apName, _desc, _redProt):  #<ConnectedAP iedName="TEMPLATE" apName="P1" desc= "... ">
+            self.iedName   = _iedName       # A name identifying the IED
+            self.apName    = _apName        # A name identifying this access point within the IED
+            self.desc      = _desc          # Some descriptive text for this access point at this subnetwork
+            self.redProt   = _redProt       # The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
+                                            # no default value, i.e. value not known if the attribute is missing.
+                                            # The allowed values are restricted by the IED capabilities (Services/RedProt).
+            """
+                Attributes
+            """
+            self.tAddress  = []             ##  Table of adresses (P Type) et val
             self.tSMV      = []             # Table of SMV classes
             self.tGSE      = []             # Table of GSE classes
             self.PhysConn  = []             # Table of PhysConn classes
 
+        ##
+        #  GSE Class:   The GSE element defines the address for a GSE control block in this IED.
+        #
+        #  @param desc(iec)     Textual description
+        #  @param ldInst(iec)   The instance identification of the LD within this IED, on which the control block is located. An
+        #                       LN is not necessary, as these control blocks are only in LLN0.
+        #  @param cbName(iec)   The name of the control block within the LLN0 of the LD ldInst.
+        #
         class GSE:
             def __init__(self, _ldInst, _cbName, _desc):
-                self.ldInst      = _ldInst
-                self.cbName      = _cbName
-                self.desc        = _desc
-                self.min         = None         # Will be to a 'Min' class if present
-                self.max         = None         # Will be to a 'Max' class if present
-                self.tGSEAddress = []           # Table of GSE adresses
-
-            class Min:
+                self.ldInst      = _ldInst      ## ldInst from SCL
+                self.cbName      = _cbName      ## cbName from SCL
+                self.desc        = _desc        ## desc from SCL
+                self.MinTime     = None         ## Will be to a 'MinTime' class if present
+                self.MaxTime     = None         ## Will be to a 'MaxTime' class if present
+                self.tGSEAddress = []           ## Table of GSE adresses
+            ##
+            # MinTime: the sending delay on a data change between the first immediate sending
+            # of the change and the first repetition in ms.
+            # SCL: <nit="s" multiplier="m">2</MinTime>
+            class MinTime:
                 def __init__(self, _unit, _min, _mul):
-                    self.unit       = _unit
-                    self.min        = _min  # <MinTime unit="s" multiplier="m">1000</MinTime>
-                    self.multiplier = _mul
+                    ## <MinTime unit="s" multiplier="m">1000</MinTime>
+                    self.unit       = _unit # unit from SCL
+                    self.min        = _min  # MinTime from SCL
+                    self.multiplier = _mul  # Multipler from QXL
 
-            class Max:
+            ##
+            # MaxTime: the source supervision time in ms (supervision heartbeat cycle time).
+            # Within this time, a failed message from the source shall be detected by
+            # the subscriber.
+            # SCL: <MaxTime unit="s" multiplier="m">10</MaxTime>
+            class MaxTime:
                 def __init__(self, _unit, _max, _mul):
-                    self.unit       = _unit
-                    self.max        = _max  # <MaxTime unit="s" multiplier="m">10</MaxTime>
-                    self.multiplier = _mul
+                    ## <MaxTime unit="s" multiplier="m">1000</MaxTime>
+                    self.unit       = _unit # unit from SCL
+                    self.max        = _max  # MinTime from SCL
+                    self.multiplier = _mul  # Multipler from SCL
 
-        class SMV:                                       #  <SMV ldInst="MU01" cbName="MSVCB01">
-            def __init__(self,_ldInst,_cbName, _desc):   #   	<Address>
-                self.ldInst      = _ldInst               #   		<P type="MAC-Address">01#-0C-CD-04-00-00</P>
-                self.cbName      = _cbName               #   		<P type="VLAN-ID">000</#P>
-                self.desc        = _desc                 #   		<P type="VLAN-PRIORITY#">4</P>
-                self.tSMVAddress = []                    #        <P type="APPID">4000</#P>sociés
+        ##
+        # \b SMV: The SMV element defines the address for a sampled value control block, like the GSE
+        # element does for the GSE control blocks. It is also based on the tControlBlock schema type,
+        # and therefore has the same attributes as the GSE control block.
+        #
+        # @param desc(iec):   Textual description.
+        # @param ldInst(iec): The instance identification of the LD within this IED, on which the control block is located. An
+        #                LN is not necessary, as these control blocks are only in LLN0.
+        # @param cbName(iec):  The name of the control block within the LLN0 of the LD ldInst.
+        #
+        # The SCL is looking like this:
+        #  <SMV ldInst="MU01" cbName="MSVCB01">
+        #   	<Address>                                               ### Stored in tSMVAdress.
+        #   		<P type="MAC-Address">01#-0C-CD-04-00-00</P>
+        #   		<P type="VLAN-ID">000</#P>
+        #   		<P type="VLAN-PRIORITY#">4</P>
+        #           <P type="APPID">4000</#P>sociés
 
-        class PhysConn:                                  # <PhysConn type="Connection">
-            def __init__(self, _type, _PhysAddress):     #     <P type="Type">FOC</P>
+        class SMV:
+            def __init__(self,_ldInst,_cbName, _desc):
+                                                        ##
+                self.ldInst      = _ldInst              # ldInst from SCL
+                self.cbName      = _cbName              # cbName from SCL
+                self.desc        = _desc                # desc   from SCL
+                self.tSMVAddress = []                   # tSMVAddress table following the SMV Tag.
+
+        ##
+        #  \b Physical connection parameters
+        #   The element PhysConn defines the type(s) of physical connection for this access point. The
+        #   parameter values depend on the type of physical connection, and their types (meaning) have
+        #    to be defined in the stack mapping. Additional types may be introduced for documentation
+        #    purposes
+        #
+        # @param PhysConn:  type  Connection or RedConn
+
+        class PhysConn:                                  # <PhysConn type="Connection">         # Checked
+            def __init__(self, _type, _PhysAddress):     #     <P type="Type">FOC</P> Type, Plug, Cable, Port
                 self.type        =  _type                #     <P type="Plug">LC</P>
                 self.tPhysAddress = _PhysAddress         # </PhysConn>
 
+            ##
+            # \b P \b type
+            # \b Type 10BaseT, 100BaseT etc. for electrical connection FOC for optical connection Radio for radio connection, for example WLAN
+            #
+            # \b Plug RJ45 for electrical plug ST for bajonet plug (optical glass)
+            #
+            # \b Cable The identification of a physical cable for this connection, which connects this connection point to another connection point
+            #
+            # \b Port The identification of a port or terminal at this access point to which a cable is connected (see connection
             class PType:                                               # <Address>
                 def __init__(self, _type, _value):                     # 	<P type="MAC-Address">01-0C-CD-04-00-00</P>
                     self.type  = _type                                 # 	<P type="VLAN-ID">000</P>
                     self.value = _value                                # </Address>
 
 class IED:
-    def __init__(self, _Server, _tDevice, _name, _type, _desc, _originalSclVersion, _originalSclRevision,
-                       _configVersion, _manufacturer, _engRight, _owner, _ip, _tAddress):
-        self.Server             = _Server
+    def __init__(self, _name, _type, _desc, _originalSclVersion, _originalSclRevision,
+                       _configVersion, _manufacturer, _engRight, _owner):
+        self.Server             = None
 ##      self.tLDevice           = _tDevice              # Table of Ldevices
         self.name               = _name                 # IEC attribute
         self.type               = _type                 # IEC attribute
@@ -195,13 +289,13 @@ class IED:
         self.manufacturer       = _manufacturer         # IEC attribute
         self.engRight           = _engRight             # IEC attribute
         self.owner              = _owner                # IEC attribute
-        self.IP                 = _ip                   # IP adress from the communication
-        self.tAddress           = _tAddress             # Table of MMS adresses
+        self.IP                 = None                  # IP adress from the communication
+        self.tAddress           = []                    # Table of MMS adresses
         self.tDAI               = []                    # Table of actual DOI/..SDI../DAI/ values.
         self.tAccessPoint       = []                    # Table of AccessPoint
 
     class AccessPoint:
-        def __init__(self, _name, _desc, _router, _clock):
+        def __init__(self, _name, _desc, _router, _clock):      # Checked.
             self.name   = _name
             self.desc   = _desc
             self.router = _router
@@ -236,14 +330,14 @@ class IED:
             # This is just because it is not needed yet...
 
             class LN:
-                def __init__(self, _localName, _lnPrefix, _lnType, _lnInst, _lnClass, _lnDesc):
+                def __init__(self, _localName, _prefix, _lnType, _inst, _lnClass, _desc):   # Checked
             # Partie générique commune à LN0 et LNODE (LN)
                     self.localName  = _localName  # LN or LN0
-                    self.lnPrefix   = _lnPrefix
+                    self.lnPrefix   = _prefix
                     self.lnType     = _lnType
-                    self.lnInst     = _lnInst
+                    self.lnInst     = _inst
                     self.lnClass    = _lnClass
-                    self.lnDesc     = _lnDesc
+                    self.lnDesc     = _desc
                     self.tDataSet   =  []       # Array of DataSet associé à ce LN0
                     self.tSVCtrl    =  []       # Array of SampleValueControl block à ce LN0
                     self.tGSECtrl   =  []       # Array of GSEControl
@@ -263,7 +357,7 @@ class IED:
                         self.logEna = _logEna
                         self.TrgOps = __TrgOps
                 class ReportControl:
-                    def __init__(self, _rptID,_confRev,_buffered,_bufTime,_indexed,_intgPd,_name,_desc,_datSet):
+                    def __init__(self, _rptID,_confRev,_buffered,_bufTime,_indexed,_intgPd,_name,_desc,_datSet): # Checked
                         self.rptID     = _rptID
                         self.confRev   = _confRev
                         self.buffered  = _buffered
@@ -309,26 +403,38 @@ class IED:
                         self.tExtRef = _tRef
 
                     class ExtRef:
-                        def __init__(self, _doName, _daName, _service, _iedName, _ldInst, _lnClass, _lnInst, _srcCBName,
-                                     _srcLNClass, _srcLDInst, _pServT, _intAddr, _pLN, _pDO, _desc, _prefix):
+                        def __init__(self,  _iedName, _ldInst, _prefix, _lnClass, _lnInst, _doName, _daName, _intAddr, _desc, _service,
+                                            _srcLDInst, _srcPrefix, _srcLNClass, _srcLNInst, _srcCBName, _pDO, _pLN, _pDA, _pServT):
 
-                            self.doName      = _doName
-                            self.daName      = _daName
-                            self.serviceType = _service
-                            self.iedName     = _iedName
-                            self.ldInst      = _ldInst
-                            self.lnClass     = _lnClass
-                            self.lnInst      = _lnInst
-                            self.srcCBName   = _srcCBName
-                            self.srcLNClass  = _srcLNClass
+                            self.iedName     = _iedName     # The name of the IED from where the input comes. For IED internal references the value @ may be used.
+                            self.ldInst      = _ldInst      # The LD instance name from where the input comes
+                            self.prefix      = _prefix      #The LN prefix
+                            self.lnClass     = _lnClass     # The LN class according to IEC 61850-7-x. Used to indicate the lnClass of the concrete binding part within a SCD.
+                            self.lnInst      = _lnInst      # The instance id of this LN instance of above LN class in the IED; missing for a reference in LLN0.
+                                                            # For backwards compatibility also the empty string shall be accepted for LLN0
+                            self.doName      = _doName      #  A name identifying the DO (within the LN).In case of structured DO, the name
+                                                            # parts are concatenated by dots (.).Used to indicate the DO (within the LN)
+                                                            # of the concrete binding part within a SCD.
+                            self.daName      = _daName      #The attribute designating the input. The IED tool should use an empty value if it has some
+                                                            # default binding (intAddr) for all process input attributes of a DO (fc = ST or MX), especially for t and q.
+                                                            #  If the attribute belongs to a data type structure, then the structure name parts shall be separated by dots (.)
+                            self.intAddr     = _intAddr     # The internal address to which the input is bound. Only the IED tool of the concerned IED
+                                                            # shall use the value. All other tools shall preserve it unchanged
+                            self.desc        = _desc        # A free description / text. Can e.g. be used at system engineering time to
+                                                            # tell the IED engineer the purpose of this incoming data
+                            self.serviceType = _service     #SubNetWork Optional, values: Poll, Report, GOOSE, SMV, Used to indicate the used service if the data flow is configured.
 
-                            self.srcLDInst   = _srcLDInst
-                            self.pServT      = _pServT
-                            self.intAddr     = _intAddr
-                            self.pLN         = _pLN
-                            self.pDO         = _pDO
-                            self.desc        = _desc
-                            self.prefix      = _prefix
+                            self.srcLDInst   = _srcLDInst   # The LD inst of the source control block – if missing, same as ldInst above
+                            self.srcPrefix   = _srcPrefix   # The prefix of the LN instance, where the source control block resides; if missing, no prefix
+                            self.srcLNClass  = _srcLNClass  # The LN class of the LN, where the source control block resides; if missing, LLN0
+                            self.srcLNInst   = _srcLNInst   # The LN instance number of the LN where the source control block resides – if missing, no instance number exists (LLN0)
+                            self.srcCBName   = _srcCBName   # The source CB name; if missing, then all othere srcXX attributes should also be missing, i.e. no source control block is given.
+
+                            self.pDO         = _pDO         # A preconfigured DO name to indicate an expected DO name and CDC. Any binding must match the CDC.
+                            self.pLN         = _pLN         # A preconfigured LN class indicating an expected LN class containing the DO indicated by pDO
+                            self.pDA         = _pDA         # Aa preconfigured data attribute indicating the expected attribute. If configured, any bound
+                                                            # attribute must match the data type specified by specified pDO CDC and pDA attribute value
+                            self.pServT      = _pServT      # A preconfigured service type indicating an expected service type. if configured, serviceType must match its value.
 
                     class rteFIP:
                         def __init__(self,_defaultValue, _dataStreamKey):
@@ -341,7 +447,8 @@ class IED:
                             self.dataStreamKey = _dataStreamKey
 
                 class SampledValueControl:
-                    def __init__(self, _name, _smvID, _smpRate, _nofASDU, _confRev, _multicast, _smpMod, _datSet):
+                    def __init__(self, _name, _smvID, _smpRate, _nofASDU, _confRev, _multicast, _smpMod,
+                                                    _datSet, _desc, _securityEnabled): # checked
                         self.name     = _name
                         self.smvID    = _smvID
                         self.smpRate  = _smpRate
@@ -350,34 +457,62 @@ class IED:
                         self.multicast=_multicast
                         self.smpMod   = _smpMod
                         self.datSet   = _datSet
+                        self.desc     = _desc
+                        self.securityEnabled = _securityEnabled
+
+                    class smvOption:    # todo not parsed !!!! 
+                        def __init__(self, _refreshTime, _sampleRate, _dataSet, _security, _synchSourceId):
+                            self.refreshTime   = _refreshTime
+                            self.sampleRate    = _sampleRate
+                            self.dataSet       = _dataSet
+                            self.security      = _security
+                            self.synchSourceId = _synchSourceId
+
+                class SettingControlBlock:
+                    def __init__(self, _desc, _numOfSGs, _actSG, _resvTms):         # Checked
+                        self.desc      = _desc          # The description text
+                        self.numOfSGs  = _numOfSGs      # The number of setting groups available. The value shall be > 0.
+                        self.actSG     = _actSG         # The number of the setting group to be activated when loading the configuration.
+                                                        # The default value is 1. Any SCL value shall be > 0.
+                        self.resvTms   = _resvTms       # The time in seconds the SGCB stays reserved for editing. After this time
+                                                        # the IED automatically closes an edit session, if the client has not closed
+                                                        # it or not confirmed any changes (see IEC 61850-7-2). If this function is not supported,
+                                                        # the attribute shall be missing. The appropriate IED capability (Table 11) defines
+                                                        # if a system tool can modify any value supplied by the IED tool.
 
                 class GSEControl:
-                    def __init__(self,_name,_datSet,_type,_confRev,_appID,_fixedOffs,_securityEnable,_desc):
+                    def __init__(self,_name,_datSet,_type,_confRev,_appID,_fixedOffs,_securityEnabled,_desc):
                         self.name           =_name
                         self.datSet         =_datSet
                         self.type           =_type
                         self.confRev        =_confRev
                         self.appID          =_appID
                         self.fixedOffs      =_fixedOffs
-                        self.securityEnable = _securityEnable
+                        self.securityEnabled = _securityEnabled
                         self.desc           = _desc
 
                 class DOI:
-                    def __init__(self, _name, _desc):
+                    def __init__(self, _name, _desc, _ix, _accessControl):              #todo _ix Not Managed
                         self.name       = _name
                         self.desc       = _desc
+                        self.ix         = _ix
+                        self.accessControl = _accessControl
                     class DAI:
-                        def __init__(self, _name, _value, _sAddr, _valKind):
-                            self.name = _name
-                            self.value = _value
-                            self.sAddr = _sAddr
-                            self.valKind = _valKind
+                        def __init__(self, _name, _value, _sAddr, _valKind, _desc, _ix, _valImport): #todo _ix Not Managed
+                            self.name      = _name
+                            self.value     = _value
+                            self.sAddr     = _sAddr
+                            self.valKind   = _valKind
+                            self.desc      = _desc
+                            self.ix        = _ix
+                            self.valImport = _valImport
 
                         class SDI:  # Utilisé notamment pour les Contrôles complexes
-                            def __init__(self, _name, _sAddr, _ix):  # , _tSDI):
-                                self.name = _name
-                                self.ix = _ix
+                            def __init__(self, _name, _sAddr, _ix, _desc):  # , _tSDI):
+                                self.name  = _name
+                                self.ix    = _ix
                                 self.sAddr = _sAddr
+                                self.desc  = _desc
 
                     class IEC_90_2:             # Private defined by WG10 eTr, technical report for 90-2 communication
                         def __init__(self,_externalScl,_iedName, _ldInst, _prefix,_lnClass,_lnInst,_doName):
@@ -401,7 +536,7 @@ class IED:
                     self.desc  = _desc
                     self.tFCDA = []
                 class FCDA:
-                    def __init__(self,_ldInst,_prefix,_lnClass,_lnInst,_doName,_daName,_fc,_ix):
+                    def __init__(self,_ldInst,_prefix,_lnClass,_lnInst,_doName,_daName,_fc,_ix):    # Checked
                         self.ldInst  = _ldInst
                         self.prefix  = _prefix
                         self.lnClass = _lnClass
@@ -419,10 +554,22 @@ class DataTypeTemplates:
         lstFC = ['ST', 'MX', 'CF', 'DC', 'SP', 'SV', 'SG', 'SE', 'SR', 'OR', 'BL', 'EX', 'CO']
 
     class bType:
-        Simple = ["VisString64","VisString129","VisString255","Unicode255",
-                  "Quality", "Timestamp", "BOOLEAN", "Check", "Dbpos",
-                  "INT8U","INT16U","INT32U","INT8","INT16","INT32","INT64",
-                  "FLOAT32", "ObjRef","Tcmd","Octet64","EntryID","entryID"]
+        Simple = ["BOOLEAN", "INT8" ,"INT16" ,"INT24" , "INT32" , "INT64",
+                             "INT8U","INT16U","INT24U", "INT32U",
+                  "FLOAT32", "FLOAT64",
+                  "Dbpos"  , "Tcmd",                # 'Enum' is considered in a special in this application.
+                  "Quality", "Timestamp",
+                  "VisString32","VisString64", "VisString65", "VisString129","VisString255","Unicode255",
+                  "Octet64",
+                  "Struct" , "EntryTime",
+                  "Check"  , "ObjRef",
+
+                  "Currency",
+                  "PhyComAddr", "TrgOps", "OptFlds", "SvOptFlds","LogOptFlds",
+                  "EntryID",
+                  "AnalogueValueCtlF",
+                  "Octet6", "Octet16"          # Edition 2.1
+                  ]
 
         String  = ["BOOLEAN","VisString64","VisString129","VisString255","Unicode255",
                    "ObjRef", "Quality", "Timestamp","Tcmd"]     # TODO String or Number ?
@@ -497,51 +644,66 @@ class DataTypeTemplates:
             self.mode       = _mode         # Envoi d'une seule trame ou d'un flux.
 
     class LNodeType:
-        def __init__(self, _id, _lnClass, _desc, _iedType, _tDO):
-            self.id = _id
-            self.lnClass = _lnClass
-            self.desc = _desc
-            self.iedType = _iedType
-            self.tDO = _tDO
+        def __init__(self, _id, _desc, _iedType, _lnClass, _tDO): # Checked
+            self.id         = _id           #SubNetWork A reference identifying this LN type within this SCL section; used by the LN attribute
+                                            # LNType of from a LNode definition in the process section to reference this definition
+            self.desc       = _desc         # An additional text describing this LN type
+            self.iedType    = _iedType      # The manufacturer IED type of the IED to which this LN type belongs - deprecated
+            self.lnClass    = _lnClass      # The LN base class of this type as specified in IEC 61850-7-x; observe that here an enumeration exists,
+                                            # which allows extensions (names containing only capital letters)
+            self.tDO = _tDO                 # Table of the DO element
 
-        class DOi:
-            def __init__(self, _name, _type, _desc):
-                self.name = _name
-                self.type = _type
-                self.desc = _desc
+        class DOi:                          # DO element # Checked
+            def __init__(self, _name, _type, _accessControl, _transient, _desc, ):
+                self.name           = _name             # The data object name as specified for example in IEC 61850-7-4
+                self.type           = _type             # The type references the id of a DOType definition
+                self.accessControl  = _accessControl    # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
+                self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
+                self.desc           = _desc             # Descriptive text for the DO element
 
     # DO Type
     class DOType:
-        def __init__(self, _id, _cdc, _desc, _tDA):
-            self.name = ""
-            self.id   = _id
-            self.cdc  = _cdc
-            self.desc = _desc
-            self.tDA  = _tDA      # Table of DA.
+        def __init__(self, _id, _iedType, _cdc, _desc, _tDA):   # checked
+            self.id      = _id          # The (global) identification of this DOType. Used to reference this type.
+            self.iedType = _iedType     # The type of the IED to which this DOType belongs. The empty string allows
+                                        # references for all IED types, or from the Substation section without IED identification.
+            self.cdc     = _cdc         # The basic CDC (Common Data Class) as defined in IEC 61850-7-3.
+            self.desc    = _desc        # Description of this DOType
+            self.tDA  = _tDA            # Table of DA.
 
         class DAinst:
-            def __init__(self, _DO   , _SDO, _type, _fc   , _name, _count, _bType, _valKind,_valImp,
-                              _sAddr, _qchg, _dchg, _desc ,_dupd, _value):
-                self.DoDaSdo = _DO
-                self.SDO     = _SDO
-                self.type    = _type
-                self.fc      = _fc
-                self.name    = _name
-                self.count   = _count
-                self.bType   = _bType
-                self.valKind = _valKind
-                self.valImport = _valImp
-                self.sAddr   = _sAddr
-                self.qchg    = _qchg
-                self.dchg    = _dchg
+            def __init__(self, _desc,_name,_fc,_dchg,_qchg,_dupd,_sAddr,_bType,_type
+                            ,_count,_valKind,_valImp,_DO,_SDO,_value):
+
+                self.desc    = _desc    # Some descriptive text for the attribute
+                self.name    = _name    # The attribute name; the type tAttributeNameEnum restricts to the attribute names
+                                        # from IEC 61850-7-3, plus new ones starting with lower case letters
+                self.fc      = _fc      # The functional constraint for this attribute; fc=SE always also implies fc=SG;
+                                        # fc=SG means that the values are visible, but not editable
+                self.dchg    = _dchg    # Defines which trigger option is supported by the attribute (value true means supported). One of those allowed according to IEC61850-7-3 shall be chosen.
+                self.qchg    = _qchg    #  One of those allowed according to IEC61850-7-3 shall be chosen.
                 self.dupd    = _dupd
-                self.desc    = _desc
-                self.value   = _value
+
+                self.sAddr   = _sAddr   # an optional short address of this  attribute (see 9.5.4.3)
+
+                self.bType   = _bType   # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                self.type    = _type    # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                self.count   = _count   # Optional. Shall state the number of array elements or reference the attribute stating
+                                        # this number in case that this attribute is an array. A referenced attribute shall exist
+                                        # in the same type definition. The default value 0 states that the attribute is no array.
+                self.valKind  = _valKind # Determines how the value shall be interpreted if any is given – see Table 46
+                self.valImport= _valImp # if true, an IED / IED configurator can import values modified by another tool from an SCD file,
+                                        # even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
+                                        # to assure value consistency and value allowance even if valImport is true.
+
+                self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
+                self.SDO     = _SDO
+                self.value   = _value   #TODO  Actual value ???
 
     class DAType:
         def __init__(self, _id, _desc, _protNs, _iedType):
             self.id = _id  # id du type
-            self.desc = _desc  # descriptiop
+            self.desc = _desc  # description
             self.protNs = _protNs  # NameSpace
             self.iedType = _iedType  # iedType
             self.tBDA = []  # Table of the BDA related to this DA.

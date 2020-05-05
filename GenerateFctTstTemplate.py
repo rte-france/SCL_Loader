@@ -9,6 +9,7 @@ from IEC_TypeSimpleCheck    import Check
 
 from IEC_ParcoursDataModel import globalDataModel
 
+
 class CodeGeneration:
     def __init__(self, ApplicationName, _TL):
         self.application = ApplicationName
@@ -38,15 +39,51 @@ class CodeGeneration:
 
     def ParcoursDataModel(self, GM, IEDinstance):
 
+
         tIEC_adresse=[]
         IEDName   = IEDinstance.name
 
+        cpt= 0
         for i in range (len(IEDinstance.tAccessPoint)):
+            name = IEDinstance.tAccessPoint[i].name
+            desc = IEDinstance.tAccessPoint[i].desc
+
             for j in range (len(IEDinstance.tAccessPoint[i].tServer)):
                 NbLdevice = len(IEDinstance.tAccessPoint[i].tServer[j].tLDevice)
                 for k in range(NbLdevice):                              # Browsing all LDevice of one IED
+
                     LD = IEDinstance.tAccessPoint[i].tServer[j].tLDevice[k]
-                    tIEC_adresse= self.ParcoursDataModel_LD(GM, tIEC_adresse, IEDName, LD)
+                    name = LD.inst
+                    desc = LD.desc
+
+                    cpt = cpt + 1
+                    for h in range(len(LD.LN)):  # Browsing LN du LDEVICE
+                        LN = LD.LN[h]
+                        txtLN = LD.LN[h].lnPrefix + LD.LN[h].lnClass + LD.LN[h].lnInst
+
+                        if LN.localName == 'LN0':
+                            self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN), TL.GENERAL)
+                            print("Fonction:" + LD.inst)
+                            inputs1 = LN.tInputs
+                            try:
+                                X = inputs1.tExtRef
+                            except AttributeError:
+                                print('No ExtRef table')
+                                continue
+                            else:
+                                for extRef in inputs1.tExtRef:
+                                    print(
+                                        'INPUT, pLN: ' + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+
+                            NbRCB = len(LN.tRptCtrl)
+                            for i in range(0, NbRCB):
+                                NbClient = len(LN.tRptCtrl[i].RptEnable.tClientLN)
+
+                                for j in range(0, NbClient):
+                                    iClient = LN.tRptCtrl[i].RptEnable.tClientLN[j]
+                                    ClientAdresse = (
+                                    iClient.iedName, iClient.apRef, iClient.ldInst, iClient.lnPrefix, iClient.lnClass,
+                                    iClient.lnInst)
 
         return tIEC_adresse
 
@@ -98,11 +135,6 @@ class CodeGeneration:
 
 
 
-
-
-
-
-
             return(tIEC_adresse)
 
 
@@ -110,7 +142,7 @@ if __name__ == '__main__':
 
     TX = TConsole(TL.GENERAL)
     tIEDfull=[]
-    for file in FileListe.lstSystem:
+    for file in FileListe.lstIED:
 
         CG = CodeGeneration("CodeGeneration", TX)
         GM = globalDataModel(TX,file)

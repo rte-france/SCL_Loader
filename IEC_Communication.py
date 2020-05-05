@@ -103,7 +103,7 @@ class ParseCommunication:
                         _unit        = pGSE.getAttribute("unit")
                         _multiplier  = pGSE.getAttribute("multiplier")
                         _MinTime     = pGSE.firstChild.nodeValue
-                        minTime=SubNetWork.ConnectedAP.GSE.Min(_unit,_multiplier,_MinTime)
+                        minTime=SubNetWork.ConnectedAP.GSE.MinTime(_unit,_multiplier,_MinTime)
                         iGSE.minTime = minTime
                         self.TRX.Trace(("     GSE: MinTime.unit:"+_unit+" multi:"+_multiplier+" MinTime="+_MinTime),TL.DETAIL)
                         pGSE = pGSE.nextSibling
@@ -111,7 +111,7 @@ class ParseCommunication:
                         _unit       = pGSE.getAttribute("unit")
                         _multiplier = pGSE.getAttribute("multiplier")
                         _MaxTime    = pGSE.firstChild.nodeValue
-                        maxTime    = SubNetWork.ConnectedAP.GSE.Max(_unit, _multiplier, _MaxTime)
+                        maxTime    = SubNetWork.ConnectedAP.GSE.MaxTime(_unit, _multiplier, _MaxTime)
                         iGSE.maxTime= maxTime
                         self.TRX.Trace(("     GSE: MaxTime.unit:"+_unit+" multi:"+_multiplier+" MaxTime="+_MaxTime),TL.DETAIL)
                         pGSE = pGSE.nextSibling
@@ -156,12 +156,13 @@ class ParseCommunication:
                 self.TRX.Trace(("BitRate:     Unit:" + Unit + "Value:" + Value), TL.DETAIL)
 
             if pSubNet.localName == "ConnectedAP":  # def __init__(self,_iedName,_apName,_desc,_Address,_SMV,_PhysConn):
-                pAP = pSubNet
-                _iedName = pAP.getAttribute("iedName")
-                _apName = pAP.getAttribute("apName")
-                _desc = pAP.getAttribute("desc")
+                pAP         = pSubNet
+                _iedName    = pAP.getAttribute("iedName")
+                _apName     = pAP.getAttribute("apName")
+                _desc       = pAP.getAttribute("desc")
+                _redProt    = pAP.getAttribute("redProt")
                 self.TRX.Trace(("        ConnectedAP: iedName:" + _iedName + " apName:" + _apName + " desc: " + _desc), TL.DETAIL)
-                iCnxAP = SubNetWork.ConnectedAP(_iedName, _apName, _desc)
+                iCnxAP = SubNetWork.ConnectedAP(_iedName, _apName, _desc, _redProt)
                 iCnxAP = self.ParseConnectedAP(pAP, iCnxAP, self.TRX)
                 tAP.append(iCnxAP)
                 continue

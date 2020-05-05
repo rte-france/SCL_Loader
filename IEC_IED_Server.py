@@ -1,3 +1,4 @@
+
 #
 # Copyright (c) 2019-2020, RTE (https://www.rte-france.com)
 # See AUTHORS.txt
@@ -128,12 +129,11 @@ class Parse_Server:
             owner               = ied.getAttribute("owner")
             self.TR.Trace(("IED:"+IEDname+' type:'+type+' desc:'+desc),TL.DETAIL)
 
-            # Server et tLDEVICEà ajouter après...
-            iIED_array  = IED(None, None, IEDname, type, desc, originalSclVersion, originalSclRevision \
-                                          , configVersion ,manufacturer, engRight, owner, None, None)
+            iIED_array  = IED(IEDname, type, desc, originalSclVersion, originalSclRevision \
+                                          , configVersion ,manufacturer, engRight, owner)
 
-            iIED_struct = IED(None, None, IEDname, type, desc, originalSclVersion, originalSclRevision \
-                                          , configVersion ,manufacturer, engRight, owner, None, None)
+            iIED_struct = IED(IEDname, type, desc, originalSclVersion, originalSclRevision \
+                                          , configVersion ,manufacturer, engRight, owner)
             Services = ied.firstChild.nextSibling
     # Skip any Private...
             while (Services.localName is None) or (Services.localName=="Private"):

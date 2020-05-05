@@ -48,10 +48,12 @@ class Parse_LNodeType:
             if  pDO.localName is None:
                 pDO = pDO.nextSibling
                 continue
-            _name  = pDO.getAttribute("name")
-            _type  = pDO.getAttribute("type")
+            _name           = pDO.getAttribute("name")
+            _type           = pDO.getAttribute("type")
+            _accessControl  = pDO.getAttribute("accessControl")
+            _transient      = pDO.getAttribute("transient")
             _desc  = pDO.getAttribute("desc")
-            iDO= IECType.LNodeType.DOi(_name,_type,_desc)
+            iDO= IECType.LNodeType.DOi(_name, _type, _accessControl, _transient, _desc)
             self.TRX.Trace(("     DO:"+_name+" type:"+_type+" desc:"+_desc),TL.DETAIL)
             tDO.append(iDO)
             pDO = pDO.nextSibling
@@ -69,10 +71,10 @@ class Parse_LNodeType:
                     continue
                 if pDT.localName == "LNodeType":
                     _id      = pDT.getAttribute("id")
-                    _lnClass = pDT.getAttribute("lnClass")   # Used as the key for the python dictionnay
-                    _iedType = pDT.getAttribute("iedType")
                     _desc    = pDT.getAttribute("desc")
-                    iLNodeType = IECType.LNodeType(_id,_lnClass,_iedType,_desc, [])
+                    _iedType = pDT.getAttribute("iedType")
+                    _lnClass = pDT.getAttribute("lnClass")   # Used as the key for the python dictionnay
+                    iLNodeType = IECType.LNodeType(_id, _desc, _iedType, _lnClass, [])
                     tLNodeType.append(iLNodeType)
                     self.TRX.Trace(("LNodeType: id:" + _id + " lnClass:" + _lnClass + " iedType:" + _iedType + " desc:" + _desc),TL.DETAIL)
                     tDO = self.Get_DO_Attributes(pDT)

@@ -131,6 +131,8 @@ class globalDataModel:
                            ', DataName: ' + DataName + ', FC:' + fc), TL.GENERAL)
 
     def ParcoursTypeSimple(self,tIEC_adresse, DA_type, bType, idx, DataName, fc, DA, value, valKind):
+#        if bType=='Enum' or DA_type=='Enum':
+#             print('yyyyyyyyyyy')
 
         if bType in IecType.bType.Simple:  # Type de base ?
             _iecAdr= IECda("Simple-0   : ", DataName, fc, bType, None, value, valKind)
@@ -206,9 +208,9 @@ class globalDataModel:
 
     def ParcoursDA(self, tIEC_adresse, DO_Name, DA, FC):
 
-#        if DA is None:
-#            print("Problem DA None !!!!")
-#            return
+        if DA is None:
+            print("Problem DA None !!!!" + DO_Name)
+            return
 
         for i in range(len(DA)):  # Parcours des DA composants le DO.
             type1    = DA[i].type
@@ -216,6 +218,9 @@ class globalDataModel:
             value    = DA[i].value
             valKind  = DA[i].valKind
             count    = DA[i].count
+
+            if DA[i].name == "ApcFTrk":
+                print("xxxxxxxxx",DA[i].name)
 
             if FC is None:          # Cas du parcours des structures
                 fc = ''
@@ -259,6 +264,8 @@ class globalDataModel:
     #TODO traiter le cas ou on le trouve pas !!!
                 for k in range(len(LNodeType.tDO)):          # Browsing DO
                     DO  = LN.tDO[k]
+                    if DO.name == 'ApcFTrk':
+                        print("STOP")
                     iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
                     tDA = iDO.tDA
                     DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name

@@ -146,10 +146,10 @@ class Check:
             return None
 #recherche par la chaine
         if value.isprintable() is True:
-##            print("LA valeur est exprimée par son ID:",value)
-                    for iEnum in iEnumType.tEnumval:
-                        if iEnum.strValue == value:
-                            return True
+            print("LA valeur est exprimée par son ID:",value)
+            for iEnum in iEnumType.tEnumval:
+                if iEnum.strValue == value:
+                    return True
 # recherche
         else:
             for iEnum in iEnumType.tEnumval:

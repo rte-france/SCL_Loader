@@ -36,25 +36,32 @@ class Parse_LN:
                 self.Dyn.DynImport(type, pExtRef, IED.AccessPoint.Server.LN.Inputs )
 
             if pExtRef.localName=='ExtRef':
-                doName      = pExtRef.getAttribute("doName")
-                daName      = pExtRef.getAttribute("daName")
-                serviceType = pExtRef.getAttribute("serviceType")
-                iedName     = pExtRef.getAttribute("iedName")
-                ldInst      = pExtRef.getAttribute("ldInst")
-                lnClass     = pExtRef.getAttribute("lnClass")
-                lnInst      = pExtRef.getAttribute("lnInst")
-                srcCBName   = pExtRef.getAttribute("srcCBName")
-                srcLNClass  = pExtRef.getAttribute("srcLNClass")
-                srcLDInst   = pExtRef.getAttribute("srcLDInst")
-                pServT      = pExtRef.getAttribute("pServT")    ##
-                intAddr     = pExtRef.getAttribute("intAddr")   ##
-                pLN         = pExtRef.getAttribute("pLN")       ##
-                pDO         = pExtRef.getAttribute("pDO")       ##
-                desc        = pExtRef.getAttribute("desc")      ##
-                prefix      = pExtRef.getAttribute("prefix")
+                _iedName = pExtRef.getAttribute("iedName")
+                _ldInst  = pExtRef.getAttribute("ldInst")
+                _prefix  = pExtRef.getAttribute("prefix")
+                _lnClass = pExtRef.getAttribute("lnClass")
+                _lnInst  = pExtRef.getAttribute("lnInst")
 
-                iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(doName, daName, serviceType, iedName, ldInst, lnClass
-                        , lnInst, srcCBName, srcLNClass, srcLDInst, pServT, intAddr, pLN, pDO, desc, prefix)
+                _doName  = pExtRef.getAttribute("doName")
+                _daName  = pExtRef.getAttribute("daName")
+                _intAddr = pExtRef.getAttribute("intAddr")
+                _desc    = pExtRef.getAttribute("desc")
+
+                _serviceType = pExtRef.getAttribute("service")
+
+                _srcLDInst = pExtRef.getAttribute("srcLDInst")
+                _srcPrefix = pExtRef.getAttribute("srcPrefix")
+                _srcLNClass= pExtRef.getAttribute("srcLNClass")
+                _srcLNInst = pExtRef.getAttribute("srcLNInst")
+                _srcCBName = pExtRef.getAttribute("srcCBName")
+
+                _pDO        = pExtRef.getAttribute("pDO")
+                _pLN        = pExtRef.getAttribute("pLN")
+                _pDA        = pExtRef.getAttribute("pDA")
+                _pServT     = pExtRef.getAttribute("pServT")
+
+                iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(_iedName, _ldInst, _prefix, _lnClass, _lnInst, _doName, _daName, _intAddr, _desc, _serviceType,
+                                            _srcLDInst, _srcPrefix, _srcLNClass, _srcLNInst, _srcCBName, _pDO, _pLN, _pDA, _pServT)
 
                 _tInputs.tExtRef.append(iExtRef)
     
@@ -66,10 +73,13 @@ class Parse_LN:
     def ParseDAI_VAL(self, pDAI, iDOI):
         _value = None
         if pDAI.localName == "DAI":
-            _name    = pDAI.getAttribute("name")
-            _sAddr   = pDAI.getAttribute("sAddr")
-            _valKind = pDAI.getAttribute("valKind")
-            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_name, _value, _sAddr, _valKind) # _value !
+            _name      = pDAI.getAttribute("name")
+            _sAddr     = pDAI.getAttribute("sAddr")
+            _valKind   = pDAI.getAttribute("valKind")
+            _desc      = pDAI.getAttribute("desc")
+            _ix        = pDAI.getAttribute("ix")
+            _valImport = pDAI.getAttribute("valIùmport")
+            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_name, _value, _sAddr, _valKind,_desc, _ix, _valImport) # _value !
             setattr(iDOI, _name, iDAI)
             # Est-ce qu'une valeur est présente
             p1 = pDAI.firstChild
@@ -115,18 +125,19 @@ class Parse_LN:
     """
     
     def ParseSDI_Val(self, pDAI_v,iDOI,BaseName, n, t_IX, sdi_name):
-        name  = pDAI_v.getAttribute("name")
-        sAddr = pDAI_v.getAttribute("sAddr")
-        sdi_name = sdi_name + '.' + name  # </SDI>
-        sdi_ix   = pDAI_v.getAttribute("ix")
-        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(name, sAddr, sdi_ix)  # None pointeur vers tableau des SDI DAI
-        if len(sdi_ix)>0:
-            t_IX[n]= sdi_ix
+        _name     = pDAI_v.getAttribute("name")
+        _sAddr    = pDAI_v.getAttribute("sAddr")
+        _desc     = pDAI_v.getAttribute("desc")
+        _sdi_ix   = pDAI_v.getAttribute("ix")
+        _sdi_name = sdi_name + '.' + _name  # </SDI>
+        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(_name, _sAddr, _sdi_ix, _desc)  # None pointeur vers tableau des SDI DAI
+        if len(_sdi_ix)>0:
+            t_IX[n]= _sdi_ix
     
-        if sdi_ix is not None and len(sdi_ix)>0:
-            setattr(iDOI, name+sdi_ix, iSDI)
+        if _sdi_ix is not None and len(_sdi_ix)>0:
+            setattr(iDOI, _name+_sdi_ix, iSDI)
         else:
-            setattr(iDOI, name, iSDI)
+            setattr(iDOI, _name, iSDI)
         if pDAI_v.firstChild is None:
     #        print("DAI without value:" + name + "sAddr:" + sAddr)
             return iSDI, sdi_name
@@ -176,8 +187,10 @@ class Parse_LN:
     def Parse_DOI(self, iLN, pDOI, DoName):               # Instance of LN  & DOI is scl pointto DOI tag
         _name = pDOI.getAttribute("name")        # Nom du DOI
         _desc = pDOI.getAttribute("desc")
+        _ix   = pDOI.getAttribute("ix")
+        _accessControl = pDOI.getAttribute("accessControl")
         self.TRX.Trace(("DOI: name:" + _name + " desc:" + _desc), TL.DETAIL)
-        iDOI = IED.AccessPoint.Server.LN.DOI(_name, _desc) #, None, None, None)  # None for RTE private Type
+        iDOI = IED.AccessPoint.Server.LN.DOI(_name, _desc,_ix,_accessControl) #, None, None, None)  # None for RTE private Type
         setattr( iLN ,iDOI.name,iDOI)
         pDAI = pDOI.firstChild  # Pointeur DAI ou SDI
     
@@ -436,9 +449,9 @@ class Parse_LN:
                 confRev         = pLN.getAttribute("confRev")
                 appID           = pLN.getAttribute("appID")
                 fixedOffs       = pLN.getAttribute("fixedOffs")
-                securityEnable  = pLN.getAttribute("securityEnable")
+                securityEnabled = pLN.getAttribute("securityEnabled")
                 desc            = pLN.getAttribute("desc")
-                GOOSE = IED.AccessPoint.Server.LN.GSEControl(name, datSet,type,confRev,appID,fixedOffs,securityEnable,desc)
+                GOOSE = IED.AccessPoint.Server.LN.GSEControl(name, datSet,type,confRev,appID,fixedOffs,securityEnabled,desc)
     # TODO LISTE DES IEDs à accrocjer GSECONTROL
     
                 tiGCB.append(GOOSE)
@@ -455,8 +468,12 @@ class Parse_LN:
                 multicast   =   pLN.getAttribute("multicast")
                 smpMod      =   pLN.getAttribute("smpMod")
                 datSet      =   pLN.getAttribute("datSet")
-    
-                SVC = IED.AccessPoint.Server.LN.SampledValueControl(name, smvID, smpRate, nofASDU, confRev, multicast, smpMod, datSet)
+                desc        =   pLN.getAttribute("desc")
+                securityEnabled = pLN.getAttribute("sesecurityEnabled")
+
+
+                SVC = IED.AccessPoint.Server.LN.SampledValueControl(name, smvID, smpRate, nofASDU, confRev,
+                                                                    multicast, smpMod, datSet, desc, securityEnabled)
                 tiSVC.append(SVC)
                 self.TRX.Trace(("     SampledValueControl, name:" + name + " smvID:" + smvID + " datSet:" + datSet),TL.DETAIL)
                 pLN= pLN.nextSibling
