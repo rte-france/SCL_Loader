@@ -9,11 +9,68 @@ from IEC_TypeSimpleCheck    import Check
 
 from IEC_ParcoursDataModel import globalDataModel
 
+import sys
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView
+from PyQt5.Qt import QStandardItemModel, QStandardItem
+from PyQt5.QtGui import QFont, QColor
 
-class CodeGeneration:
+from PyQt5.QtCore import (QDate, QDateTime, QRegExp, QSortFilterProxyModel, Qt,
+                          QTime)
+
+class StandardItem(QStandardItem):
+    def __init__(self, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
+        super().__init__()
+
+        fnt = QFont('Open Sans', font_size)
+        fnt.setBold(set_bold)
+
+        self.setEditable(False)
+        self.setForeground(color)
+        self.setFont(fnt)
+        self.setText(txt)
+#        self.value  = txt
+
+class CodeGeneration(QMainWindow):
+    IED_LD, DO, FC, DA, SDA, C1, C2, C3 = range(8)
+
     def __init__(self, ApplicationName, _TL):
+
         self.application = ApplicationName
         self.TR          = _TL
+
+        super().__init__()
+        self.setWindowTitle('IEC browser')
+        self.resize(600, 700)
+
+        self.treeView = QTreeView()
+        self.treeView.setHeaderHidden(False)
+        self.treeView.setColumnWidth(self.IED_LD, 100)
+        self.treeView.setColumnWidth(self.DO, 50)
+        self.treeView.setColumnWidth(self.FC, 50)
+        self.treeView.setColumnWidth(self.DA, 50)
+        self.treeView.setColumnWidth(self.C1, 50)
+        self.treeView.setColumnWidth(self.C2, 50)
+        self.treeView.setColumnWidth(self.C3, 50)
+
+        self.treeModel = QStandardItemModel(0, 9)
+        self.treeModel.setColumnCount(10)
+        self.treeModel.setHorizontalHeaderLabels(["IED/AP/SRV/LD/LN", "DO", "SDO", "", "DA", "SDA"])
+        self.treeModel.setHeaderData(self.IED_LD, Qt.Horizontal, "IED...LN")
+        self.treeModel.setHeaderData(self.DO,  Qt.Horizontal, "DO")
+        self.treeModel.setHeaderData(self.FC,  Qt.Horizontal, "FC")
+        self.treeModel.setHeaderData(self.DA,  Qt.Horizontal, "DA")
+        self.treeModel.setHeaderData(self.C1,  Qt.Horizontal, "Struct")
+        self.treeModel.setHeaderData(self.C2,  Qt.Horizontal, "Struct")
+        self.treeModel.setHeaderData(self.C3,  Qt.Horizontal, "Struct")
+
+
+        self.rootNode = self.treeModel.invisibleRootItem()
+
+    def getValue(self, val):
+        print(val.data())
+        print(val.row())
+        print(val.column())
+
     class IEDfull:
         def __init__(self, _IEDcomm, _IEDmmsadresse):
             self.IEDcomm        = _IEDcomm
@@ -36,6 +93,29 @@ class CodeGeneration:
 
         return TR2
 
+    def Parse_LN0(self,LD, LN, txtLN):
+        self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + _txtLN), TL.GENERAL)
+        print("Fonction:" + LD.inst)
+        inputs1 = LN.tInputs
+        try:
+            X = inputs1.tExtRef
+        except AttributeError:
+            print('No ExtRef table')
+            return
+        else:
+            for extRef in inputs1.tExtRef:
+                print(
+                    'INPUT, pLN: ' + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+
+        NbRCB = len(LN.tRptCtrl)
+        for i in range(0, NbRCB):
+            NbClient = len(LN.tRptCtrl[i].RptEnable.tClientLN)
+
+            for j in range(0, NbClient):
+                iClient = LN.tRptCtrl[i].RptEnable.tClientLN[j]
+                ClientAdresse = (
+                    iClient.iedName, iClient.apRef, iClient.ldInst, iClient.lnPrefix, iClient.lnClass,
+                    iClient.lnInst)
 
     def ParcoursDataModel(self, GM, IEDinstance):
 
@@ -45,45 +125,79 @@ class CodeGeneration:
 
         cpt= 0
         for i in range (len(IEDinstance.tAccessPoint)):
-            name = IEDinstance.tAccessPoint[i].name
-            desc = IEDinstance.tAccessPoint[i].desc
+            IED_Name = IEDinstance.name
+
+            AP_name = IEDinstance.tAccessPoint[i].name
+            AP_desc = IEDinstance.tAccessPoint[i].desc
+
+            txt =   IED_Name + ',' + AP_name + ',' + AP_desc
+            _ied =  StandardItem(txt, 12, set_bold=True)
+            self.rootNode.appendRow(_ied)
+
 
             for j in range (len(IEDinstance.tAccessPoint[i].tServer)):
+                iServer = IEDinstance.tAccessPoint[i].tServer[j]
+                _txt = iServer.desc
+                if _txt is None or _txt=='':
+                    _txt = 'Server'
+                else:
+                    _txt = 'Server:'+_srv.desc
+
+                _srv = StandardItem(_txt, 12, set_bold=True)
+                _ied.appendRow(_srv)
+
                 NbLdevice = len(IEDinstance.tAccessPoint[i].tServer[j].tLDevice)
                 for k in range(NbLdevice):                              # Browsing all LDevice of one IED
 
                     LD = IEDinstance.tAccessPoint[i].tServer[j].tLDevice[k]
                     name = LD.inst
                     desc = LD.desc
+                    _txt = LD.inst + LD.desc + '-0' + LD.ldName
+                    _ld = StandardItem(_txt, 12, set_bold=True)
+                    _srv.appendRow(_ld)
 
                     cpt = cpt + 1
-                    for h in range(len(LD.LN)):  # Browsing LN du LDEVICE
-                        LN = LD.LN[h]
-                        txtLN = LD.LN[h].lnPrefix + LD.LN[h].lnClass + LD.LN[h].lnInst
+                    for m in range(len(LD.LN)):  # Browsing LN du LDEVICE
+                        LN = LD.LN[m]
+                        _txtLN = LD.LN[m].lnPrefix + LD.LN[m].lnClass + LD.LN[m].lnInst
+                        _ln = StandardItem(_txtLN, 12, set_bold=True)
+                        _ld.appendRow(_ln)
 
-                        if LN.localName == 'LN0':
-                            self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN), TL.GENERAL)
-                            print("Fonction:" + LD.inst)
-                            inputs1 = LN.tInputs
-                            try:
-                                X = inputs1.tExtRef
-                            except AttributeError:
-                                print('No ExtRef table')
-                                continue
-                            else:
-                                for extRef in inputs1.tExtRef:
-                                    print(
-                                        'INPUT, pLN: ' + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+                        LNodeType = GM.LNode.getIEC_LNodeType(LN.lnType)  # Look-up for LNType
+                        LD.LN[j].tDO = LNodeType.tDO
+                        # TODO traiter le cas ou on le trouve pas !!!
 
-                            NbRCB = len(LN.tRptCtrl)
-                            for i in range(0, NbRCB):
-                                NbClient = len(LN.tRptCtrl[i].RptEnable.tClientLN)
+                        for n in range(len(LNodeType.tDO)):  # Browsing DO
+                            tIEC_adresse = []
+                            DO  = LNodeType.tDO[n]
+                            iDO = GM.DOType.getIEC_DoType(DO.type)  # Look-up for DO Type
+                            tDA = iDO.tDA
+                            DO_Name = IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LD.LN[j].tDO[n].name
 
-                                for j in range(0, NbClient):
-                                    iClient = LN.tRptCtrl[i].RptEnable.tClientLN[j]
-                                    ClientAdresse = (
-                                    iClient.iedName, iClient.apRef, iClient.ldInst, iClient.lnPrefix, iClient.lnClass,
-                                    iClient.lnInst)
+                            _do =  StandardItem(LD.LN[j].tDO[n].name, 10, set_bold=True)
+                            _ln.appendRow(_do)
+
+                            DO_Name2 = (IEDName, LD.inst, LN.lnPrefix + LN.lnClass + LN.lnInst, LD.LN[j].tDO[k].name)
+                            GM.ParcoursDA(tIEC_adresse, DO_Name, tDA, 'Yes')
+
+                            for x in range(len(tIEC_adresse)):
+                                iIECAdr = tIEC_adresse[x]
+                                adrSplit = iIECAdr.mmsAdr.split('$')        #
+                                DO =['...']
+                                for y in range(4, len(adrSplit)):
+                                    DO.append(adrSplit[y])
+
+                                _txtDO = []
+                                for y in range(0, len(DO)):                 #
+                                    _txtDO.append(StandardItem(DO[y],9, set_bold=False))
+
+                                _ln.appendRow(_txtDO)
+
+
+        self.treeView.setModel(self.treeModel)
+#        self.treeView.expandAll()
+        self.treeView.doubleClicked.connect(self.getValue)
+        self.treeView.show()
 
         return tIEC_adresse
 
@@ -144,8 +258,11 @@ if __name__ == '__main__':
     tIEDfull=[]
     for file in FileListe.lstIED:
 
+        app = QApplication(sys.argv)
         CG = CodeGeneration("CodeGeneration", TX)
         GM = globalDataModel(TX,file)
+
+#        GM.treeModel.show()
 
         indIED = 0
         T0 = time.time()
@@ -155,9 +272,10 @@ if __name__ == '__main__':
             t0 = time.time()
             tIEC_adresse = CG.ParcoursDataModel(GM, ied)
 
+            CG.show()
+            sys.exit(app.exec_())
 
-
-#            IEDcomplet   = CG.IEDfull(ied, tIEC_adresse )
+            #            IEDcomplet   = CG.IEDfull(ied, tIEC_adresse )
 #            tIEDfull.append(IEDcomplet)
             nbDa = str(len(tIEC_adresse))
             if ied.IP is None:

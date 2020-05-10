@@ -22,46 +22,44 @@ from IEC61850_XML_Class import IED
 from IEC_LN             import Parse_LN
 
 
-# Class definition for the 'Communication' part
+##
+# \b Parse_Server: this class create the list of DoType / Data Attributes elements
+# @brief
+# @b Description
+#   This class is parsing the Server section of the XML and its subsequent LogicalDevices
 #
-# Each class is named by the IEC class name.
-# The 'classes' are defined as per the IEC definition
-#
-# It looks like this:
-#       IED:
-#           - Services [1]
-#           - AccessPoint [n]
-#                  - Server [n]
-#                       - Authentication [1]
-#                       - LDevice [n
-#                            - LN [n]
-#
-#
+#   The main function is Parse IED, which will invoque Parse_Server method and iterativily call IEC_LN..
 
-
-# ParseServerDataModel:
-#
-#
-#   Extract all information about the data-model.
-#
-#   Nested from   Server                    : Usually one per IED, but several are possible
-#                       Services            : List of available services, if this function this bit is skipped.
-#                       AccessPoint         : Usually one per IED, but several are possible.
-#                       Server              : Usually one per AccessPoint, , but several are possible.
-#                                    : Logical Device (n occurences=
-#                                            : LN0
-#                                            : Other LN..
-#
-# The purpose of the function is to build a set of flat tables for
-#           a table of the Connected_AP / Server of a given IED (a physical box..)
-#           a table of the actual LN of the IED
-#
-#           The two table are sharing a common key.
 class Parse_Server:
-    def __init__(self, _scl, TR):
-        self.scl        = _scl
-        self.TR         = TR
-        self.pLN        = Parse_LN(TR)
+    def __init__(self, _scl, TR):       ## Constructor for Server
+        ## \b Description
+        #   Constructor is used to keep initialize the Parse_LN class (forwarding TRACE class).
+        # @param _scl: pointer to the SCL structure created by miniDOM
+        # @param _TRX: Trace function
+
+        self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
+        self.TR         = TR            ## Instance of the TRACE service.
+        self.pLN        = Parse_LN(TR)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
+
+    ##
+    # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
+    #
+    # Features:
+    #   - Detects IED defined without any Server part.
+    #   - Parse the AccessPoints and the Servers:
+    #       - Created nested tables AccessPoint and tables of servers
+    #   - Once the Server level is reached, the parsing continue with:
+    #       - Parse_LD_LN
+    #           - Parse LN (from IEC_LN class
+    #
+    # @param  iIED_array: the trace Object type to look up.
+    # @param  pServer    pointer to the SCL structure
+    # @param  idxAP         index to access a an instance of AccessPoint
+    # @param  idxServer     index to access a an instance of Server
+    #
+    # @return
+    #
+    # \bThe DataModel is build dynamically by 'setAttr'
 
     def Parse_LD_LN(self, iIED_array, pServer, idxAP, idxServer):
 
@@ -109,12 +107,26 @@ class Parse_Server:
         LDi = LDi.nextSibling
         iDeviceInstance.LN = tLN
         Name = '_' + iDeviceInstance.inst + '_'
-        setattr(iIED_array.tAccessPoint[idxAP].tServer[idxServer], Name, iDeviceInstance)  # = LDeviceInstance
+        setattr(iIED_array.tAccessPoint[idxAP].tServer[idxServer], Name, iDeviceInstance )  # = LDeviceInstance
+
+    ##
+    # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
+    #
+    # Features:
+    #   - Detects IED defined without any Server part.
+    #   - Parse the AccessPoints and the Servers:
+    #       - Created nested tables AccessPoint and tables of servers
+    #   - Once the Server level is reached, the parsing continue with:
+    #       - Parse_LD_LN
+    #           - Parse LN (from IEC_LN class
+    #
+    # @param   TR: the trace Object type to look up.
+    # @return  tIED_array: the table of IED and their full data model
 
     def Parse_IED(self,TR):
         LD_index  = 0
-        tIED_array   = []       # Version du data model qui permet les itérations.
-        tIED_struct  = []       # Version du data model qui permet l'accès direct (en construction...)
+        tIED_array   = []       # Iterative version of the Data Model: Table of LN, Table of DO....
+        tIED_struct  = []       # Named based version of the Data Model:  MEASURE.MMXU.X.X
 
         IEDlst = self.scl.getElementsByTagName("IED")
         for ied in IEDlst:
@@ -227,7 +239,9 @@ class Parse_Server:
         self.TR.Trace(("FIN IED"),TL.DETAIL)
         return tIED_array
 
-#Le code ci-dessous ne s'execute que si on lance la class seule.
+##
+# \b Test_IED_Server: unitary test for Parse_IED
+
 class Test_IED_Server:
     def main(directory, file, scl):
         TRX = TConsole(TL.DETAIL)
@@ -236,11 +250,12 @@ class Test_IED_Server:
         if scl is None:  # UNIT TEST
             scl = dom.parse(directory + file)
         TRX.Trace(("File:" + file), TL.GENERAL)
-        iIED = Parse_Server(scl, TRX)
+        iIED = Test_IED_Server(scl, TRX)
 
         tIEDglobal= iIED.Parse_IED(TRX)
         TRX.Trace(("END of IEC_IED_Server"), TL.GENERAL)
-
+##
+# \b MAIN call the unitary test 'Test_IED_Server for Parse_IED
 if __name__ == '__main__':
     fileliste = FL.lstFull  # List of system files (SCD..)
     for file in fileliste:

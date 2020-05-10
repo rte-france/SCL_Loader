@@ -11,7 +11,7 @@ from PyQt5.QtCore import (QDate, QDateTime, QRegExp, QSortFilterProxyModel, Qt,
 
 
 class StandardItem(QStandardItem):
-    def __init__(self, _Line, _Column, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
+    def __init__(self, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
         super().__init__()
 
         fnt = QFont('Open Sans', font_size)
@@ -21,17 +21,15 @@ class StandardItem(QStandardItem):
         self.setForeground(color)
         self.setFont(fnt)
         self.setText(txt)
-        self.Line   = _Line
-        self.column = _Column
 #        self.value  = txt
 
 class InitData():
     def __init__(self):
 
-        IED1 = IED("IED1", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None,None,None,None,None)
-        IED2 = IED("IED2", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None,None,None,None,None)
-        IED3 = IED("IED3", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None,None,None,None,None)
-        IED4 = IED("IED4", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None,None,None,None,None)
+        IED2 = IED("IED2", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None)
+        IED3 = IED("IED3", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None)
+        IED1 = IED("IED1", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None)
+        IED4 = IED("IED4", "Protection", "Test View", "V1.0", "V1.0", "V2.0", 'RTE", "-', "gilles", None)
 
         AP = IED.AccessPoint("AP1" ,"Server", "No", "PTP")
 
@@ -52,13 +50,27 @@ class InitData():
         LD3 = IED.AccessPoint.Server.LDevice("A", "Test"        , "Test view")
         LD4 = IED.AccessPoint.Server.LDevice("A", "Automation"  , "Test view")
         LD5 = IED.AccessPoint.Server.LDevice("A", "Supervision" , "Test view")
-
         tLD=[]
         tLD.append(LD1)
         tLD.append(LD2)
         tLD.append(LD3)
         tLD.append(LD4)
         tLD.append(LD5)
+
+        tLN=[]
+        LN1 = IED.AccessPoint.Server.LN("LN0", "", "LLN0", "", "LN0_RTE", "essai tree view")
+        LN2 = IED.AccessPoint.Server.LN("LN:", "Gil_", "MMXU", "1", "MMXU_RTE", "essai tree view")
+        LN3 = IED.AccessPoint.Server.LN("LN:", "Adl_", "XCBR", "0", "XCBR_RTE", "essai tree view")
+        tLN.append(LN1)
+        tLN.append(LN2)
+        tLN.append(LN3)
+
+        LD1.tLN=tLN
+        LD2.tLN=tLN
+        LD3.tLN=tLN
+        LD4.tLN=tLN
+        LD5.tLN=tLN
+
 
         IED1.tAccessPoint[0].tServer[0].tLDevice = tLD
         IED2.tAccessPoint[0].tServer[0].tLDevice = tLD
@@ -81,35 +93,34 @@ class AppDemo(QMainWindow):
         self.setWindowTitle('IEC browser')
         self.resize(500, 700)
 
-
         tIED = InitData()
 
-        treeView = QTreeView()
-        treeView.setHeaderHidden(False)
+        self.treeView = QTreeView()
+        self.treeView.setHeaderHidden(False)
 
-        treeModel = QStandardItemModel(0,5)
-        treeModel.setColumnCount(6)
-        treeModel.setHorizontalHeaderLabels(["IED/AP/SRV/LD/LN", "DO","SDO", "", "DA","SDA"])
-        treeModel.setHeaderData(self.IED_LD ,  Qt.Horizontal, "IED/AP/SRV/LD")
-        treeModel.setHeaderData(self.LN     ,  Qt.Horizontal, "LN")
-        treeModel.setHeaderData(self.DO     ,  Qt.Horizontal, "DO")
-        treeModel.setHeaderData(self.SDO    ,  Qt.Horizontal, "SDO")
-        treeModel.setHeaderData(self.DA     ,  Qt.Horizontal, "DA")
+        self.treeModel = QStandardItemModel(0,5)
+        self.treeModel.setColumnCount(6)
+        self.treeModel.setHorizontalHeaderLabels(["IED/AP/SRV/LD/LN", "DO","SDO", "", "DA","SDA"])
+        self.treeModel.setHeaderData(self.IED_LD ,  Qt.Horizontal, "IED/AP/SRV/LD")
+        self.treeModel.setHeaderData(self.LN     ,  Qt.Horizontal, "LN")
+        self.treeModel.setHeaderData(self.DO     ,  Qt.Horizontal, "DO")
+        self.treeModel.setHeaderData(self.SDO    ,  Qt.Horizontal, "SDO")
+        self.treeModel.setHeaderData(self.DA     ,  Qt.Horizontal, "DA")
 
-        rootNode = treeModel.invisibleRootItem()
+        self.rootNode = self.treeModel.invisibleRootItem()
 
         cptObjet=0
         Line= 0
         for i in range(0, len(tIED.IED)):
             iIED = tIED.IED[i]
             txt =   iIED.name + ',' + iIED.type + ',' + iIED.desc
-            _ied =  StandardItem(Line, 0,txt, 12, set_bold=True)
-            rootNode.appendRow(_ied)
+            _ied =  StandardItem(txt, 12, set_bold=True)
+            self.rootNode.appendRow(_ied)
             Line = Line + 1
             for j in range (0, len(iIED.tAccessPoint)):
                 iAP = iIED.tAccessPoint[j]
                 txt = iAP.name + ',' + iAP.desc
-                _ap = StandardItem(Line, 0,txt, 8, set_bold=False)
+                _ap = StandardItem(txt, 8, set_bold=False)
 #                _ied.setData(treeModel.index(0, self.DO), 'XXXX')
                 _ied.appendRow(_ap)
                 Line = Line + 1
@@ -117,36 +128,38 @@ class AppDemo(QMainWindow):
                 for k in range (0, len(iAP.tServer)):
                     iSrv = iAP.tServer[k]
                     txt  = iSrv.desc + ',' + iSrv.timeout
-                    _srv = StandardItem(Line, 0, txt, 8, set_bold=False)
-                    _ap.appendRow(_srv)
-                    Line = Line + 1
+                    _srv1 = StandardItem( txt, 8, set_bold=False)
+                    _ap.appendRow(_srv1)
 
-                    for l in range (0, len(iSrv.tLDevice)):
-                        iLD = iSrv.tLDevice[l]
+                    for idxLD in range (0, len(iSrv.tLDevice)):
+                        iLD = iSrv.tLDevice[idxLD]
                         txt = iLD.ldName + ',' + iLD.inst
-#                        _ld = StandardItem(Line, 1, "SDO", 10, set_bold=True)
-#                        _ld = StandardItem(Line, 2, "222", 10, set_bold=True)
-#                        _ld = StandardItem(Line, 3, "333", 10, set_bold=True)
-                        _ld = StandardItem(Line, 4, "444", 10, set_bold=True)
-                        treeModel.insertRow(1,_ld)
+
+#                   for idxLN in range(0, len(iLD.tLN)):
+#                        iLN = iLD.tLN[0]
+#                        txt = iLN.lnPrefix + iLN.lnClass + iLN.lnInst # ' + iLD.inst
+ #                       _ln = StandardItem(txt, 10, set_bold=True)
+
+                        _ld0 = StandardItem("==>",10, set_bold=True)
+                        _ld2 = StandardItem("DO", 10, set_bold=False)
+                        _ld3 = StandardItem("SDO", 10, set_bold=True)
+                        _ld4 = StandardItem("DA", 10, set_bold=True)
+                        _ld5 = StandardItem("SDA", 10, set_bold=True)
+
+#                        _ied.appendColumn([_ld2, _ld3])
+
+                        self.rootNode.appendRow([_ied,_ld0, _ld2,_ld3,_ld4,_ld5] )
 
                         Line = Line + 1
 
-#                        _ld.setData(
-#                        _srv.appendRow(_ld)
-#                        _ld.setData(0,"XXXX")
 
-#                        cptObjet=cptObjet+1
+        self.treeView.setModel(self.treeModel)
+        self.treeView.expandAll()
+        self.treeView.doubleClicked.connect(self.getValue)
 
-#                        treeModel.insertRow(1,_ld)
-#                        treeModel.setData(treeModel.index(cptObjet, self.DO),  'DO')
-#                        treeModel.setData(treeModel.index(cptObjet, self.SDO), 'SDO')
+        self.setCentralWidget(self.treeView)
 
-        treeView.setModel(treeModel)
-        treeView.expandAll()
-        treeView.doubleClicked.connect(self.getValue)
-
-        self.setCentralWidget(treeView)
+        return None
 
     def getValue(self, val):
         print(val.data())

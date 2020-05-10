@@ -17,12 +17,343 @@ from IEC_PrivateSupport import DynImport
 
 from IEC61850_XML_Class import IED
 
-
+##
+# \b Parse_LN: this class create the list of LN0 and LN as well as all sub-classes
+# @brief
+# @b Description
+#   This class is parsing the Server section of the XML and its subsequent LogicalDevices
+#
+#   The main function is Parse IED, which will invoque Parse_Server method and iterativily call IEC_LN..
 class Parse_LN:
     def __init__(self, _TR):
-        self.TRX      = _TR
-        self.Dyn      = DynImport()
+        self.TRX      = _TR             ## Instance of the TRACE service.
+        self.Dyn      = DynImport()     ## Create an instance of DynImpot for private TAG
 
+    ##
+    # Parse_LN: main function of this class
+    #
+    # The function hierarchy is as follow
+    #
+    # Parse_LN
+    #       - private
+    #       - inputs:
+    #           - Parse_ExtRef()
+    #       - LogControl
+    #       - DOI:
+    #           - Parse_DOI()
+    #               - ParseDAI_VAL()
+    #               - Parse_SDI()
+    #       - GSEControl
+    #       - SampledValueControl
+    #       - DataSet
+    #       - ReportControl()
+    #       - SettingControl (not parsed)   #TODO
+    #       - Log (not parsed)              #TODO
+    #
+    # @param pLN        : is the result of scl.getElementsByTagName("DataTypeTemplates")
+    # @param IEDname    : Use to create the full IEC oath to the data
+    # @param AP_Name    : Use to create the full IEC oath to the data
+    # @param tDAI       : table of DAi
+    #
+    # @return iLN       : The logical node with all its sub-classes.
+
+    def Parse_LN(self, pLN, IEDname, AP_Name, tDAI):
+        #
+        # LN contains DataSet, ReportControl, GooseControl and DOI/SDI.../SDI/DAI sections (up to 3 levels of SDI
+        #
+        _lnPrefix = pLN.getAttribute("prefix")      ## The LN prefix part (none for LN0)
+        _lnClass  = pLN.getAttribute("lnClass")     ## The LN class according to IEC 61850-7-x or other domain specific standards (LLN0 for LN0)
+        _inst     = pLN.getAttribute("inst")        ## The LN instance number identifying this LN – an unsigned integer; leading zeros are
+                                                    ## not recommended, as they formally lead to another instance identification (Not presnet for LN0)
+        _lnType   = pLN.getAttribute("lnType")      ## The instantiable type definition of this logical node, reference to a LNodeType definition
+        _desc     = pLN.getAttribute("desc")        ## The description text for the logical node
+
+        if pLN.localName == "LN0":
+            iLN = IED.AccessPoint.Server.LN("LN0:", _lnPrefix, _lnType, _inst, _lnClass, _desc)
+        else:
+            iLN = IED.AccessPoint.Server.LN("LN:", _lnPrefix, _lnType, _inst, _lnClass, _desc)
+
+        if pLN.firstChild is not None:  # pLN is used to browse the XML tree
+            pLN = pLN.firstChild.nextSibling  #
+        else:
+            return iLN                   # LN0 is empty, usually the case for ICD IID file
+
+        tiRCB = []  # Tableau des instances des RCB du LN0
+        tiSVC = []  # Tableau des instances des SVC du LN0
+        tiGCB = []  # Tableau des instances des GCB du LN0
+        tiLCB = []  # Tableau des instances des LCB du LN0
+        tExtRef = []  # Tableau des ExtRef (Inputs)
+        tDS = []  # Tableau des instances des DatatSet du LN0 (l'objet DA contient la liste des FCDA)
+
+        while pLN:
+            if pLN.localName is None:
+                pLN = pLN.nextSibling
+                continue
+            if pLN.localName == "Private":
+                type = pLN.getAttribute("type")
+                self.Dyn.DynImport(type, pLN, iLN)      # Dynamic import for private
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "Inputs":  # < Inputs >
+                #  < ExtRef doName = "SPCSO3" daName = "q" serviceType = "GOOSE"...
+                self.TRX.Trace(("      *** Inputs"), TL.DETAIL)
+                iLN.tInputs = self.Parse_ExtRef(pLN)
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "DOI":  ### DOI et DAI à TRAITER DANS LE DATA MODEL.
+                self.TRX.Trace(("      *** DOI"), TL.DETAIL)
+                LN_id = iLN.lnPrefix + iLN.lnClass + iLN.lnInst
+                DoName = IEDname + AP_Name + '/' + LN_id  # Use for collecting DAI
+                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName)
+
+                pLN = pLN.nextSibling
+                continue
+
+            # TODO ???gérer les balises Log, et SettingControl? .
+
+            if pLN.localName == "Log":  # Non utilisé dans R#Space
+                self.TRX.Trace(("      Log: NON TRAITE"), TL.ERROR)
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "LogControl":  # Non utilisé dans R#Space
+                self.TRX.Trace(("      LogControl"), TL.DETAIL)
+                tiLCB = self.ParseLogControl(pLN, tiLCB)
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "SettingControl":  # Non utilisé dans R#Space
+                self.TRX.Trace(("      SettingControl: NON TRAITE"), TL.ERROR)
+                # TODO gérer les Settings
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "GSEControl":
+                self.TRX.Trace(("      GSEControl"), TL.DETAIL)
+                name            = pLN.getAttribute("name")
+                datSet          = pLN.getAttribute("datSet")
+                type            = pLN.getAttribute("type")
+                confRev         = pLN.getAttribute("confRev")
+                appID           = pLN.getAttribute("appID")
+                fixedOffs       = pLN.getAttribute("fixedOffs")
+                securityEnabled = pLN.getAttribute("securityEnabled")
+                desc            = pLN.getAttribute("desc")
+                GOOSE = IED.AccessPoint.Server.LN.GSEControl(name, datSet, type, confRev, appID, fixedOffs,
+                                                             securityEnabled, desc)
+                # TODO LISTE DES IEDs à accrocjer GSECONTROL
+
+                tiGCB.append(GOOSE)
+                self.TRX.Trace(("     GSEControl, name: " + name + " datSet:" + datSet), TL.DETAIL)
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "SampledValueControl":
+                self.TRX.Trace(("      SampledValueControl"), TL.DETAIL)
+                smvID       = pLN.getAttribute("smvID")
+                name        = pLN.getAttribute("name")
+                smpRate     = pLN.getAttribute("smpRate")
+                nofASDU     = pLN.getAttribute("nofASDU")
+                confRev     = pLN.getAttribute("confRev")
+                multicast   = pLN.getAttribute("multicast")
+                smpMod      = pLN.getAttribute("smpMod")
+                datSet      = pLN.getAttribute("datSet")
+                desc        = pLN.getAttribute("desc")
+                securityEnabled = pLN.getAttribute("sesecurityEnabled")
+
+                SVC = IED.AccessPoint.Server.LN.SampledValueControl(name, smvID, smpRate, nofASDU, confRev,
+                                                                    multicast, smpMod, datSet, desc, securityEnabled)
+                tiSVC.append(SVC)
+                self.TRX.Trace(("     SampledValueControl, name:" + name + " smvID:" + smvID + " datSet:" + datSet),
+                               TL.DETAIL)
+                pLN = pLN.nextSibling
+                continue
+
+            # Extraction des data Set:
+            #   <DataSet name = "DS_TAXD" desc = "Data Set..." >
+            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "EEName"   fc = "DC" />
+            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "EEHealth" fc = "ST" />
+            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "AxDspSv"  fc = "MX" / >
+            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "SmpRte"   fc = "SP" />
+            #   </DataSet >
+            if pLN.localName == "DataSet":
+                _name = pLN.getAttribute("name")
+                _desc = pLN.getAttribute("desc")
+                self.TRX.Trace(("     DataSet, dsName:" + _name + " desc:" + _desc), TL.DETAIL)
+                DS = IED.AccessPoint.Server.LN.DataSet(_name, _desc)  # "" Tableau des  FCDA
+                DS = self.Parse_DataSet(pLN, DS)
+                tDS.append(DS)
+                pLN = pLN.nextSibling
+                continue
+
+            if pLN.localName == "ReportControl":
+                self.TRX.Trace(("      ReportControl"), TL.DETAIL)
+                iRCB = self.Parse_ReportControl(pLN)
+                tiRCB.append(iRCB)
+                pLN = pLN.nextSibling
+                continue
+            continue
+        iLN.tSVCtrl = tiSVC
+        iLN.tDataSet = tDS
+        iLN.tGSECtrl = tiGCB
+        iLN.tRptCtrl = tiRCB
+        iLN.tLogCtrl = tiLCB
+        return iLN
+
+    ##
+    # Parse_DataSet: parsing the dataset section, the dataset is a list of FCDA
+    #
+    # @param    pLN : pointer to SCL DataSet section
+    # @param    DS  : DataSet object, the tFCDA table is used to collect the list of  FCDA for the DataSet
+    #
+    # @return
+
+    def Parse_DataSet(self, pLN, DS):
+
+        FCDAi = pLN.firstChild
+        while FCDAi:
+            if FCDAi.localName is None:
+                FCDAi = FCDAi.nextSibling
+                continue
+            _ldInst = FCDAi.getAttribute("ldInst")      ##
+            _prefix = FCDAi.getAttribute("prefix")      ##
+            _lnInst = FCDAi.getAttribute("lnInst")      ##
+            _lnClass= FCDAi.getAttribute("lnClass")     ##
+            _doName = FCDAi.getAttribute("doName")      ##
+            _daName = FCDAi.getAttribute("daName")      ##
+            _cf     = FCDAi.getAttribute("fc")
+            _ix     = FCDAi.getAttribute("ix")
+            iFCDA   = IED.AccessPoint.Server.LN.DataSet.FCDA(_ldInst, _prefix, _lnInst, _lnClass, _doName, _daName, _cf,
+                                                           _ix)
+            DS.tFCDA.append(iFCDA)
+            FCDAi = FCDAi.nextSibling
+
+        return DS
+
+    def Parse_ReportControl(self, pLN):
+        _RptID      = pLN.getAttribute("rptID")
+        _confRev    = pLN.getAttribute("confRev")
+        _Buffered   = pLN.getAttribute("buffered")
+        _BufTime    = pLN.getAttribute("bufTime")
+        _Indexed    = pLN.getAttribute("indexed")
+        _intgPd     = pLN.getAttribute("intgPD")
+        _datSet     = pLN.getAttribute("datSet")
+        _name       = pLN.getAttribute("name")
+        _desc       = pLN.getAttribute("desc")
+        #    _Opt      = LN.getAttribute("optFields")
+        iRCB = IED.AccessPoint.Server.LN.ReportControl(_RptID, _confRev, _Buffered, _BufTime, _Indexed, _intgPd, \
+                                                       _datSet, _name, _desc)
+        self.TRX.Trace(("ReportControl: " + _RptID + " name:" + _name + " datSet" + _datSet), TL.DETAIL)
+        # Récupération des attribues des sous-sections: TrgOps, OptFields et RptEnabled
+        rptCtrl = pLN.firstChild
+        while rptCtrl:
+            if rptCtrl.localName is None:
+                rptCtrl = rptCtrl.nextSibling
+                continue
+            if rptCtrl.localName == "Private":
+                rptCtrl = rptCtrl.nextSibling
+                continue
+            if rptCtrl.localName == "TrgOps":
+                self.TRX.Trace(("ReportControl: TrgOps"), TL.DETAIL)
+                _qchg = rptCtrl.getAttribute("qchg")
+                _dchg = rptCtrl.getAttribute("dchg")
+                _dupd = rptCtrl.getAttribute("dupd")
+                _period = rptCtrl.getAttribute("period")
+                _gi = rptCtrl.getAttribute("gi")
+                iRCB.TrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
+
+                rptCtrl = rptCtrl.nextSibling
+                continue
+            if rptCtrl.localName == "OptFields":
+                self.TRX.Trace(("ReportControl: OptFields"), TL.DETAIL)
+                _seqNum = rptCtrl.getAttribute("seqNum")
+                _timeStamp = rptCtrl.getAttribute("timeStamp")
+                _dataSet = rptCtrl.getAttribute("dataSet")
+                _dataRef = rptCtrl.getAttribute("dataSef")
+                _entryID = rptCtrl.getAttribute("entryID")
+                _configRef = rptCtrl.getAttribute("configRef")
+                _reasonCode = rptCtrl.getAttribute("reasonCode")
+
+                iRCB.OptField = IED.AccessPoint.Server.LN.ReportControl.OptField(_seqNum, _timeStamp, _dataSet,
+                                                                                 _dataRef,
+                                                                                 _entryID, _configRef, _reasonCode)
+                rptCtrl = rptCtrl.nextSibling
+                continue
+
+            if rptCtrl.localName == "RptEnabled":
+                self.TRX.Trace(("ReportControl: RptEnabled"), TL.DETAIL)
+                _max = rptCtrl.getAttribute("max")
+                iRCB.RptEnable = IED.AccessPoint.Server.LN.ReportControl.RptEnable(_max)
+
+                pClientLN = rptCtrl.firstChild
+                if pClientLN is not None:
+                    pClientLN = pClientLN.nextSibling
+
+                    while pClientLN is not None:
+                        if pClientLN.localName == "ClientLN":
+                            self.TRX.Trace(("ReportControl: ClientLN"), TL.DETAIL)
+
+                            _apRef = pClientLN.getAttribute("apRef")
+                            _iedName = pClientLN.getAttribute("iedName")
+                            _ldInst = pClientLN.getAttribute("ldInst")
+                            _prefix = pClientLN.getAttribute("prefix")
+                            _lnClass = pClientLN.getAttribute("lnClass")
+                            _lnInst = pClientLN.getAttribute("lnInst")
+                            iClientLN = IED.AccessPoint.Server.LN.ReportControl.RptEnable.ClientLN(_apRef, _iedName,
+                                                                                                   _ldInst, _prefix,
+                                                                                                   _lnClass, _lnInst)
+                            iRCB.RptEnable.tClientLN.append(iClientLN)
+                        pClientLN = pClientLN.nextSibling
+                        continue
+
+                rptCtrl = rptCtrl.nextSibling
+                continue
+        return iRCB
+
+    def ParseLogControl(self, pLN, tiLCB):
+
+        _name = pLN.getAttribute("name")
+        _datSet = pLN.getAttribute("datSet")
+        _logName = pLN.getAttribute("logName")
+        _logName = pLN.getAttribute("logEna")
+        iLogControl = IED.AccessPoint.Server.LN.LogControl(_name, _datSet, _logName, _logName,
+                                                           None)  # None pour la class TrgOps.
+        self.TRX.Trace(("      LogControl: name:" + _name + " datSet: " + _datSet + " logName:" + _logName), TL.DETAIL)
+        logCtrl = pLN.firstChild
+        while logCtrl:
+            if logCtrl.localName is None:
+                logCtrl = logCtrl.nextSibling
+                continue
+            if logCtrl.localName == "Private":
+                self.TRX.Trace(("      LogControl: Private"), TL.DETAIL)
+                logCtrl = logCtrl.nextSibling
+                continue
+            if logCtrl.localName == "TrgOps":
+                self.TRX.Trace(("      LogControl: TrgOps"), TL.DETAIL)
+                _qchg = logCtrl.getAttribute("qchg")
+                _dchg = logCtrl.getAttribute("dchg")
+                _dupd = logCtrl.getAttribute("dupd")
+                _period = logCtrl.getAttribute("period")
+                _gi = logCtrl.getAttribute("gi")
+
+                iTrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
+                self.TRX.Trace(("        TrgOps qchg" + _qchg + " dchg:" + _dchg + " dupd:" + _dupd + \
+                                " period+" + _period + "_gi" + _gi), TL.DETAIL)
+                iLogControl.TrgOps = iTrgOps
+                logCtrl = logCtrl.nextSibling
+                continue
+        tiLCB.append(iLogControl)
+        return tiLCB
+
+    ##
+    # Parse the tInputs sections of a LN0 declaration
+    #
+    # Features:
+    #   - Create instance of an 'ExtRef' object by getting the attributes froml the SCL IED defined without any Server part.
+    #   - Dynamically calling Private support class/method if a private is encountered.
+    #
+    # @return  tInputs: the table of ExtRef objects
     def Parse_ExtRef(self, pLN):
         _tInputs = IED.AccessPoint.Server.LN.Inputs([])
 
@@ -45,9 +376,10 @@ class Parse_LN:
                 _doName  = pExtRef.getAttribute("doName")
                 _daName  = pExtRef.getAttribute("daName")
                 _intAddr = pExtRef.getAttribute("intAddr")
+
                 _desc    = pExtRef.getAttribute("desc")
 
-                _serviceType = pExtRef.getAttribute("service")
+                _serviceType = pExtRef.getAttribute("serviceType")
 
                 _srcLDInst = pExtRef.getAttribute("srcLDInst")
                 _srcPrefix = pExtRef.getAttribute("srcPrefix")
@@ -55,10 +387,10 @@ class Parse_LN:
                 _srcLNInst = pExtRef.getAttribute("srcLNInst")
                 _srcCBName = pExtRef.getAttribute("srcCBName")
 
-                _pDO        = pExtRef.getAttribute("pDO")
-                _pLN        = pExtRef.getAttribute("pLN")
-                _pDA        = pExtRef.getAttribute("pDA")
                 _pServT     = pExtRef.getAttribute("pServT")
+                _pLN        = pExtRef.getAttribute("pLN")
+                _pDO        = pExtRef.getAttribute("pDO")
+                _pDA        = pExtRef.getAttribute("pDA")
 
                 iExtRef = IED.AccessPoint.Server.LN.Inputs.ExtRef(_iedName, _ldInst, _prefix, _lnClass, _lnInst, _doName, _daName, _intAddr, _desc, _serviceType,
                                             _srcLDInst, _srcPrefix, _srcLNClass, _srcLNInst, _srcCBName, _pDO, _pLN, _pDA, _pServT)
@@ -66,124 +398,24 @@ class Parse_LN:
                 _tInputs.tExtRef.append(iExtRef)
     
             pExtRef = pExtRef.nextSibling
-    
-
         return _tInputs
-    
-    def ParseDAI_VAL(self, pDAI, iDOI):
-        _value = None
-        if pDAI.localName == "DAI":
-            _name      = pDAI.getAttribute("name")
-            _sAddr     = pDAI.getAttribute("sAddr")
-            _valKind   = pDAI.getAttribute("valKind")
-            _desc      = pDAI.getAttribute("desc")
-            _ix        = pDAI.getAttribute("ix")
-            _valImport = pDAI.getAttribute("valIùmport")
-            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_name, _value, _sAddr, _valKind,_desc, _ix, _valImport) # _value !
-            setattr(iDOI, _name, iDAI)
-            # Est-ce qu'une valeur est présente
-            p1 = pDAI.firstChild
-            if p1 is not None:
-                p1 = p1.nextSibling
-                if (p1.firstChild is not None):
-                    if p1.localName == "Val":
-                        _value = p1.firstChild.data
-                        iDAI.value = _value
-                        self.TRX.Trace(("    Balise1 <VAL/>: " +_value ), TL.DETAIL)
-                        p1 = p1.firstChild.nextSibling
-    
-                    if p1 is not None and p1.localName == "Private":
-                        pType = pDAI.firstChild.nextSibling
-                        _type = pType.getAttribute("type")
-                        self.Dyn.DynImport(_type, pType, iDOI)
 
-                    setattr(iDOI, _name, iDAI)
-                else:
-                    setattr(iDOI, _name, iDAI)
-                    _value = None
-                    self.TRX.Trace(("    Balise2 <VAL/> vide"), TL.DETAIL)
-            else:
-                pDAI = pDAI.nextSibling
-        return pDAI, _value, iDOI
-    """
-    The code of Parse_SDI(pDAI1, iDOI, n, TRX)is used to collect the
-     value of DO/DA looking like this:
-                </DOI>
-                <DOI name="CosPhi">
-                    <SDI name="phsA">
-                        <SDI name="cVal">
-                            <SDI name="mag">
-                                <DAI name="f" sAddr="MX:0;0x070F2800;DB=0:P;MIN=0;MAX=0"/>
-                            </SDI>
-                        </SDI>
-                        <SDI name="units">
-                            <DAI name="SIUnit" valKind="RO">
-    ==>                           <Val>cos(phi)</Val>           <=== 
-                            </DAI>
-                        </SDI>
-                    </SDI>
-    """
-    
-    def ParseSDI_Val(self, pDAI_v,iDOI,BaseName, n, t_IX, sdi_name):
-        _name     = pDAI_v.getAttribute("name")
-        _sAddr    = pDAI_v.getAttribute("sAddr")
-        _desc     = pDAI_v.getAttribute("desc")
-        _sdi_ix   = pDAI_v.getAttribute("ix")
-        _sdi_name = sdi_name + '.' + _name  # </SDI>
-        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(_name, _sAddr, _sdi_ix, _desc)  # None pointeur vers tableau des SDI DAI
-        if len(_sdi_ix)>0:
-            t_IX[n]= _sdi_ix
-    
-        if _sdi_ix is not None and len(_sdi_ix)>0:
-            setattr(iDOI, _name+_sdi_ix, iSDI)
-        else:
-            setattr(iDOI, _name, iSDI)
-        if pDAI_v.firstChild is None:
-    #        print("DAI without value:" + name + "sAddr:" + sAddr)
-            return iSDI, sdi_name
-    
-        pVAL = pDAI_v.firstChild.nextSibling
-        pVAL , value, iSDI = self.ParseDAI_VAL(pVAL, iSDI)
-        if value is not None:
-            found = False
-            for i in range (0,2):
-                if t_IX[i] is not None:
-                    self.TRX.Trace(("Valeur pour SDI[idx]: " + str(n) + BaseName  + sdi_name + '_' + str(t_IX[i]) + '\t:' + value ),TL.DETAIL)
-                    found = True
-                    break
-            if not found:
-                self.TRX.Trace(("Valeur pour SDI: " + str(n) + BaseName  + sdi_name + '\t:' + value ),TL.DETAIL)
-        return iSDI, sdi_name
-    def Parse_SDI(self, pDAI, iDOI, DoName):
-        pDAI1 = pDAI
-        BaseName = DoName + '.' + iDOI.name
-        t_IX = [None,None,None,None]
-        while pDAI1 is not None:
-            if pDAI1.localName is None:
-                pDAI1 = pDAI1.nextSibling
-                continue
-            iSDI1, sdi_name = self.ParseSDI_Val(pDAI1, iDOI, BaseName, 0, t_IX, '')
-            if pDAI1.firstChild is None:        # No value found by ParseSDI_Val
-                pDAI1 = pDAI1.nextSibling
-                continue
-            pDAI2 = pDAI1.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
-    
-            if pDAI2.localName == "SDI":  # SDI imbriqué
-                while pDAI2 is not None:
-                    if pDAI2.localName == "SDI":  # SDI imbriqué
-                        iSDI2, sdi_name = self.ParseSDI_Val(pDAI2, iSDI1, BaseName, 1, t_IX, sdi_name)
-                        pDAI3 = pDAI2.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
-    
-                        if pDAI3.localName == "SDI":  # SDI imbriqué
-                            while pDAI3 is not None:
-                                if pDAI3.localName == "SDI":  # SDI imbriqué
-                                    iSDI3, sdi_name = self.ParseSDI_Val(pDAI3, iSDI2, BaseName, 2, t_IX, sdi_name)
-                                pDAI3 = pDAI3.nextSibling
-    
-                    pDAI2 = pDAI2.nextSibling
-    
-            pDAI1 = pDAI1.nextSibling
-        return #tDAI #.nextSibling,
+    ##
+    # Parse any DAI+ value structure from the SCL
+    #
+    # Features:
+    #   - Create instance of an 'DAI' and collected sub-sequent value
+    #
+    # The code of Parse_SDI(pDAI1, iDOI, n, TRX)is used to collect the
+    # value of DO/DA looking like this:
+    #         <DAI name="SIUnit" valKind="RO">
+    #==>        <Val>cos(phi)</Val>           <===
+    #          </DAI>
+    #
+    # @return  pDAI    new value of the pointer to SCL
+    # @return  _value   _value found (or None)
+    # @return  iDOI     modified instance DOI.
+
     def Parse_DOI(self, iLN, pDOI, DoName):               # Instance of LN  & DOI is scl pointto DOI tag
         _name = pDOI.getAttribute("name")        # Nom du DOI
         _desc = pDOI.getAttribute("desc")
@@ -241,273 +473,151 @@ class Parse_LN:
             pDAI = pDAI.nextSibling
     
         return iDOI,iLN
+
+    def ParseDAI_VAL(self, pDAI, iDOI):
+        _value = None
+        if pDAI.localName == "DAI":
+            _name       = pDAI.getAttribute("name")
+            _sAddr      = pDAI.getAttribute("sAddr")
+            _valKind    = pDAI.getAttribute("valKind")
+            _desc       = pDAI.getAttribute("desc")
+            _ix         = pDAI.getAttribute("ix")
+            _valImport  = pDAI.getAttribute("valIùmport")
+            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_name, _value, _sAddr, _valKind, _desc, _ix,
+                                                     _valImport)  # _value !
+            setattr(iDOI, _name, iDAI)
+
+            # Is there a value ?
+            p1 = pDAI.firstChild
+            if p1 is not None:  # The SCL may contains empty tag like </xxxx> <xxxx/>
+                p1 = p1.nextSibling
+                if (p1.firstChild is not None):
+
+                    if p1.localName == "Val":
+                        _value = p1.firstChild.data
+                        iDAI.value = _value
+                        self.TRX.Trace(("    Balise1 <VAL/>: " + _value), TL.DETAIL)
+                        p1 = p1.firstChild.nextSibling
+
+                    if p1 is not None and p1.localName == "Private":
+                        pType = pDAI.firstChild.nextSibling
+                        _type = pType.getAttribute("type")
+                        self.Dyn.DynImport(_type, pType, iDOI)
+
+                    setattr(iDOI, _name, iDAI)  # I add the iDAI named '_name' to iDOI
+                else:
+                    setattr(iDOI, _name, iDAI)
+                    _value = None
+                    self.TRX.Trace(("    Balise2 <VAL/> vide"), TL.DETAIL)
+            else:
+                pDAI = pDAI.nextSibling
+        return pDAI, _value, iDOI
+
+    """
+    The code of Parse_SDI(pDAI1, iDOI, n, TRX)is used to collect the
+     value of DO/DA looking like this:
+                </DOI>
+                <DOI name="CosPhi">
+                    <SDI name="phsA">
+                        <SDI name="cVal">
+                            <SDI name="mag">
+                                <DAI name="f" sAddr="MX:0;0x070F2800;DB=0:P;MIN=0;MAX=0"/>
+                            </SDI>
+                        </SDI>
+                        <SDI name="units">
+                            <DAI name="SIUnit" valKind="RO">
+    ==>                           <Val>cos(phi)</Val>           <=== 
+                            </DAI>
+                        </SDI>
+                    </SDI>
+    """
+
+    ##
+    # \b Parameter
+    # @param   pDAI_v   : the SCL pointer to a SDI
+    # @param   iDOI     : an instance of DO, which may have SDI value to add
+    # @param   BaseName :
+    # @param   n        :
+    # @param   t_IX     : in case of an array the index to the array.
+    # @param   SDI_name :
+    #
+    # @return  iSDI     : the instance of SDI
+    # @return  sdi_name : the name of the instance
+    #
+    # \b Principle
+    #
+    # The instances of SDI is added to the DOI by dynamic creation of an attribute (setattr)
+
     #<FCDA  ldInst = "System" lnClass = "MMXU" fc = "MX" prefix = "" doName = "A.phsB" daName = "cVal.mag.i" lnInst = "1" / >
-    def Parse_FCDA(self, pLN, DS):
-    
-        FCDAi = pLN.firstChild
-        while FCDAi:
-            if FCDAi.localName is None:
-                FCDAi = FCDAi.nextSibling
-                continue
-            _ldInst  = FCDAi.getAttribute("ldInst")
-            _prefix  = FCDAi.getAttribute("prefix")
-            _lnInst  = FCDAi.getAttribute("lnInst")
-            _lnClass = FCDAi.getAttribute("lnClass")
-            _doName  = FCDAi.getAttribute("doName")
-            _daName  = FCDAi.getAttribute("daName")
-            _cf      = FCDAi.getAttribute("fc")
-            _ix      = FCDAi.getAttribute("ix")
-            iFCDA    = IED.AccessPoint.Server.DataSet.FCDA(_ldInst, _prefix, _lnInst, _lnClass, _doName, _daName, _cf, _ix)
-            DS.tFCDA.append(iFCDA)
-            FCDAi = FCDAi.nextSibling
-    
-        return DS
-    def Parse_ReportControl(self, pLN):
-        _RptID    = pLN.getAttribute("rptID")
-        _confRev  = pLN.getAttribute("confRev")
-        _Buffered = pLN.getAttribute("buffered")
-        _BufTime  = pLN.getAttribute("bufTime")
-        _Indexed  = pLN.getAttribute("indexed")
-        _intgPd   = pLN.getAttribute("intgPD")
-        _datSet   = pLN.getAttribute("datSet")
-        _name     = pLN.getAttribute("name")
-        _desc     = pLN.getAttribute("desc")
-    #    _Opt      = LN.getAttribute("optFields")
-        iRCB = IED.AccessPoint.Server.LN.ReportControl(_RptID, _confRev, _Buffered, _BufTime, _Indexed, _intgPd, \
-                             _datSet, _name, _desc)
-        self.TRX.Trace(("ReportControl: " + _RptID + " name:" + _name + " datSet" + _datSet),TL.DETAIL)
-        # Récupération des attribues des sous-sections: TrgOps, OptFields et RptEnabled
-        rptCtrl = pLN.firstChild
-        while rptCtrl:
-            if rptCtrl.localName is None:
-                rptCtrl = rptCtrl.nextSibling
-                continue
-            if rptCtrl.localName == "Private":
-                rptCtrl = rptCtrl.nextSibling
-                continue
-            if rptCtrl.localName == "TrgOps":
-                self.TRX.Trace(("ReportControl: TrgOps"),TL.DETAIL)
-                _qchg   = rptCtrl.getAttribute("qchg")
-                _dchg   = rptCtrl.getAttribute("dchg")
-                _dupd   = rptCtrl.getAttribute("dupd")
-                _period = rptCtrl.getAttribute("period")
-                _gi = rptCtrl.getAttribute("gi")
-                iRCB.TrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
-    
-                rptCtrl = rptCtrl.nextSibling
-                continue
-            if rptCtrl.localName == "OptFields":
-                self.TRX.Trace(("ReportControl: OptFields"),TL.DETAIL)
-                _seqNum     = rptCtrl.getAttribute("seqNum")
-                _timeStamp  = rptCtrl.getAttribute("timeStamp")
-                _dataSet    = rptCtrl.getAttribute("dataSet")
-                _dataRef    = rptCtrl.getAttribute("dataSef")
-                _entryID    = rptCtrl.getAttribute("entryID")
-                _configRef  = rptCtrl.getAttribute("configRef")
-                _reasonCode = rptCtrl.getAttribute("reasonCode")
-    
-                iRCB.OptField=IED.AccessPoint.Server.LN.ReportControl.OptField(_seqNum, _timeStamp, _dataSet, _dataRef,
-                                 _entryID, _configRef, _reasonCode)
-                rptCtrl = rptCtrl.nextSibling
-                continue
 
-            if rptCtrl.localName == "RptEnabled":
-                self.TRX.Trace(("ReportControl: RptEnabled"),TL.DETAIL)
-                _max = rptCtrl.getAttribute("max")
-                iRCB.RptEnable=IED.AccessPoint.Server.LN.ReportControl.RptEnable(_max)
-
-                pClientLN = rptCtrl.firstChild
-                if pClientLN is not None:
-                    pClientLN = pClientLN.nextSibling
-
-                    while pClientLN is not None:
-                        if pClientLN.localName == "ClientLN":
-                            self.TRX.Trace(("ReportControl: ClientLN"), TL.DETAIL)
-
-                            _apRef   = pClientLN.getAttribute("apRef")
-                            _iedName = pClientLN.getAttribute("iedName")
-                            _ldInst  = pClientLN.getAttribute("ldInst")
-                            _prefix  = pClientLN.getAttribute("prefix")
-                            _lnClass  = pClientLN.getAttribute("lnClass")
-                            _lnInst  = pClientLN.getAttribute("lnInst")
-                            iClientLN = IED.AccessPoint.Server.LN.ReportControl.RptEnable.ClientLN(_apRef, _iedName, _ldInst, _prefix,
-                                                                                       _lnClass, _lnInst)
-                            iRCB.RptEnable.tClientLN.append(iClientLN)
-                        pClientLN = pClientLN.nextSibling
-                        continue
-
-                rptCtrl = rptCtrl.nextSibling
+    def Parse_SDI(self, pDAI, iDOI, DoName):
+        pDAI1 = pDAI
+        BaseName = DoName + '.' + iDOI.name
+        t_IX = [None, None, None, None]
+        while pDAI1 is not None:
+            if pDAI1.localName is None:
+                pDAI1 = pDAI1.nextSibling
                 continue
-        return iRCB
+            iSDI1, sdi_name = self.ParseSDI_Val(pDAI1, iDOI, BaseName, 0, t_IX, '')
+            if pDAI1.firstChild is None:  # No value found by ParseSDI_Val
+                pDAI1 = pDAI1.nextSibling
+                continue
+            pDAI2 = pDAI1.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
 
-    def ParseLogControl(self, pLN, tiLCB):
-    
-        _name    = pLN.getAttribute("name")
-        _datSet  = pLN.getAttribute("datSet")
-        _logName = pLN.getAttribute("logName")
-        _logName = pLN.getAttribute("logEna")
-        iLogControl = IED.AccessPoint.Server.LN.LogControl(_name, _datSet, _logName, _logName, None)  # None pour la class TrgOps.
-        self.TRX.Trace(("      LogControl: name:" + _name + " datSet: " + _datSet + " logName:" + _logName), TL.DETAIL)
-        logCtrl = pLN.firstChild
-        while logCtrl:
-            if logCtrl.localName is None:
-                logCtrl = logCtrl.nextSibling
-                continue
-            if logCtrl.localName == "Private":
-                self.TRX.Trace(("      LogControl: Private"), TL.DETAIL)
-                logCtrl = logCtrl.nextSibling
-                continue
-            if logCtrl.localName == "TrgOps":
-                self.TRX.Trace(("      LogControl: TrgOps"), TL.DETAIL)
-                _qchg = logCtrl.getAttribute("qchg")
-                _dchg = logCtrl.getAttribute("dchg")
-                _dupd = logCtrl.getAttribute("dupd")
-                _period = logCtrl.getAttribute("period")
-                _gi = logCtrl.getAttribute("gi")
-    
-                iTrgOps = IED.AccessPoint.Server.LN.TrgOps(_qchg, _dchg, _dupd, _period, _gi)
-                self.TRX.Trace(("        TrgOps qchg" + _qchg + " dchg:" + _dchg + " dupd:" + _dupd + \
-                           " period+" + _period + "_gi" + _gi), TL.DETAIL)
-                iLogControl.TrgOps = iTrgOps
-                logCtrl = logCtrl.nextSibling
-                continue
-        tiLCB.append(iLogControl)
-        return tiLCB
+            if pDAI2.localName == "SDI":  # SDI imbriqué
+                while pDAI2 is not None:
+                    if pDAI2.localName == "SDI":  # SDI imbriqué
+                        iSDI2, sdi_name = self.ParseSDI_Val(pDAI2, iSDI1, BaseName, 1, t_IX, sdi_name)
+                        pDAI3 = pDAI2.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
 
-    def Parse_LN(self, pLN, IEDname, AP_Name, tDAI):
-    #
-    # LN contains DataSet, ReportControl, GooseControl and DOI/SDI.../SDI/DAI sections (up to 3 levels of SDI
-    #
-        _lnPrefix= pLN.getAttribute("prefix")
-        _lnClass = pLN.getAttribute("lnClass")
-        _inst    = pLN.getAttribute("inst")
-        _lnType  = pLN.getAttribute("lnType")
-        _desc    = pLN.getAttribute("desc")
-        if pLN.localName=="LN0":
-            iLN = IED.AccessPoint.Server.LN("LN0:", _lnPrefix, _lnType, _inst, _lnClass, _desc )
+                        if pDAI3.localName == "SDI":  # SDI imbriqué
+                            while pDAI3 is not None:
+                                if pDAI3.localName == "SDI":  # SDI imbriqué
+                                    iSDI3, sdi_name = self.ParseSDI_Val(pDAI3, iSDI2, BaseName, 2, t_IX, sdi_name)
+                                pDAI3 = pDAI3.nextSibling
+
+                    pDAI2 = pDAI2.nextSibling
+
+            pDAI1 = pDAI1.nextSibling
+        return  # tDAI #.nextSibling,
+
+    def ParseSDI_Val(self, pDAI_v, iDOI, BaseName, n, t_IX, sdi_name):
+        _name = pDAI_v.getAttribute("name")
+        _sAddr = pDAI_v.getAttribute("sAddr")
+        _desc = pDAI_v.getAttribute("desc")
+        _sdi_ix = pDAI_v.getAttribute("ix")
+        _sdi_name = sdi_name + '.' + _name  # </SDI>
+        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(_name, _sAddr, _sdi_ix,
+                                                     _desc)  # None pointeur vers tableau des SDI DAI
+
+        # Is it a table of SDI ?
+        if len(_sdi_ix) > 0:
+            t_IX[n] = _sdi_ix
+
+        if _sdi_ix is not None and len(_sdi_ix) > 0:
+            setattr(iDOI, _name + _sdi_ix, iSDI)
         else:
-            iLN = IED.AccessPoint.Server.LN("LN:" , _lnPrefix, _lnType, _inst, _lnClass, _desc)
-    
-        if pLN.firstChild is not None:          # LN est utilisé pour le parcour de l'arbre XML
-            pLN = pLN.firstChild.nextSibling    #
-        else:
-    #       LN0 is empty, usually the case for ICD IID file
-            return iLN
-    
-        tiRCB   = []  # Tableau des instances des RCB du LN0
-        tiSVC   = []  # Tableau des instances des SVC du LN0
-        tiGCB   = []  # Tableau des instances des GCB du LN0
-        tiLCB   = []  # Tableau des instances des LCB du LN0
-        tExtRef = []  # Tableau des ExtRef (Inputs)
-        tDS     = []  # Tableau des instances des DatatSet du LN0 (l'objet DA contient la liste des FCDA)
-    
-        while pLN:
-            if pLN.localName is None:
-                pLN = pLN.nextSibling
-                continue
-            if pLN.localName == "Private":
-                type = pLN.getAttribute("type")
-                self.Dyn.DynImport(type, pLN, iLN)
-                pLN= pLN.nextSibling
-                continue
-            if pLN.localName == "Inputs":               # < Inputs >
-                  #  < ExtRef doName = "SPCSO3" daName = "q" serviceType = "GOOSE"...
-                self.TRX.Trace(("      *** Inputs"), TL.DETAIL)
-    
-                iLN.tInputs = self.Parse_ExtRef(pLN)
-    
-                pLN = pLN.nextSibling
-                continue
-            if pLN.localName == "DOI":              ### DOI et DAI à TRAITER DANS LE DATA MODEL.
-                self.TRX.Trace(("      *** DOI"), TL.DETAIL)
-                LN_id = iLN.lnPrefix + iLN.lnClass + iLN.lnInst
-                DoName = IEDname + AP_Name + '/' + LN_id                   # Use for collecting DAI
-                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName)
-    
-                pLN = pLN.nextSibling
-                continue
-            # TODO ???gérer les balises Log, et SettingControl? .
-            if pLN.localName == "Log":              # Non utilisé dans R#Space
-                self.TRX.Trace(("      Log: NON TRAITE"), TL.ERROR)
-                pLN= pLN.nextSibling
-                continue
-            if pLN.localName == "LogControl":       # Non utilisé dans R#Space
-                self.TRX.Trace(("      LogControl"), TL.DETAIL)
-                tiLCB = self.ParseLogControl(pLN, tiLCB)
-                pLN= pLN.nextSibling
-                continue
-            if pLN.localName == "SettingControl":   # Non utilisé dans R#Space
-                self.TRX.Trace(("      SettingControl: NON TRAITE"), TL.ERROR)
-                # TODO gérer les LOG.
-                pLN= pLN.nextSibling
-                continue
-            if pLN.localName == "GSEControl":
-                self.TRX.Trace(("      GSEControl"), TL.DETAIL)
-                name            = pLN.getAttribute("name")
-                datSet          = pLN.getAttribute("datSet")
-                type            = pLN.getAttribute("type")
-                confRev         = pLN.getAttribute("confRev")
-                appID           = pLN.getAttribute("appID")
-                fixedOffs       = pLN.getAttribute("fixedOffs")
-                securityEnabled = pLN.getAttribute("securityEnabled")
-                desc            = pLN.getAttribute("desc")
-                GOOSE = IED.AccessPoint.Server.LN.GSEControl(name, datSet,type,confRev,appID,fixedOffs,securityEnabled,desc)
-    # TODO LISTE DES IEDs à accrocjer GSECONTROL
-    
-                tiGCB.append(GOOSE)
-                self.TRX.Trace(("     GSEControl, name: " + name + " datSet:" + datSet),TL.DETAIL)
-                pLN= pLN.nextSibling
-                continue
-            if pLN.localName == "SampledValueControl":
-                self.TRX.Trace(("      SampledValueControl"), TL.DETAIL)
-                smvID       =   pLN.getAttribute("smvID")
-                name        =   pLN.getAttribute("name")
-                smpRate     =   pLN.getAttribute("smpRate")
-                nofASDU     =   pLN.getAttribute("nofASDU")
-                confRev     =   pLN.getAttribute("confRev")
-                multicast   =   pLN.getAttribute("multicast")
-                smpMod      =   pLN.getAttribute("smpMod")
-                datSet      =   pLN.getAttribute("datSet")
-                desc        =   pLN.getAttribute("desc")
-                securityEnabled = pLN.getAttribute("sesecurityEnabled")
+            setattr(iDOI, _name, iSDI)
 
+        if pDAI_v.firstChild is None:
+            #        print("DAI without value:" + name + "sAddr:" + sAddr)
+            return iSDI, sdi_name
 
-                SVC = IED.AccessPoint.Server.LN.SampledValueControl(name, smvID, smpRate, nofASDU, confRev,
-                                                                    multicast, smpMod, datSet, desc, securityEnabled)
-                tiSVC.append(SVC)
-                self.TRX.Trace(("     SampledValueControl, name:" + name + " smvID:" + smvID + " datSet:" + datSet),TL.DETAIL)
-                pLN= pLN.nextSibling
-                continue
-            # Extraction des data Set:
-            #   <DataSet name = "DS_TAXD" desc = "Data Set..." >
-            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "EEName"   fc = "DC" />
-            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "EEHealth" fc = "ST" />
-            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "AxDspSv"  fc = "MX" / >
-            #       <FCDA  ldInst = "LD_all" prefix = "" lnInst = "1" lnClass = "TAXD" doName = "SmpRte"   fc = "SP" />
-            #   </DataSet >
-            if pLN.localName == "DataSet":
-                _name = pLN.getAttribute("name")
-                _desc = pLN.getAttribute("desc")
-                self.TRX.Trace(("     DataSet, dsName:" + _name + " desc:" + _desc),TL.DETAIL)
-                DS = IED.AccessPoint.Server.DataSet(_name,_desc)  # "" Tableau des  FCDA
-                DS = self.Parse_FCDA(pLN,DS)
-                tDS.append(DS)
-                pLN= pLN.nextSibling
-                continue
-    
-            if pLN.localName == "ReportControl":
-                self.TRX.Trace(("      ReportControl"), TL.DETAIL)
-                iRCB = self.Parse_ReportControl(pLN)
-                tiRCB.append(iRCB)
-                pLN = pLN.nextSibling
-                continue
-            continue
-        iLN.tSVCtrl  = tiSVC
-        iLN.tDataSet = tDS
-        iLN.tGSECtrl = tiGCB
-        iLN.tRptCtrl = tiRCB
-        iLN.tLogCtrl = tiLCB
-        return iLN
+        # Reading the Value
+        pVAL = pDAI_v.firstChild.nextSibling
+        pVAL, value, iSDI = self.ParseDAI_VAL(pVAL, iSDI)
+        if value is not None:
+            found = False
+            for i in range(0, 2):
+                if t_IX[i] is not None:
+                    self.TRX.Trace(
+                        ("Value for SDI[idx]: " + str(n) + BaseName + sdi_name + '_' + str(t_IX[i]) + '\t:' + value),
+                        TL.DETAIL)
+                    found = True
+                    break
+            if not found:
+                self.TRX.Trace(("Value for SDI: " + str(n) + BaseName + sdi_name + '\t:' + value), TL.DETAIL)
+        return iSDI, sdi_name
 
 class Test_LN:
     def main(directory, file, scl):

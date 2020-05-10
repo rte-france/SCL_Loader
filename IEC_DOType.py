@@ -16,7 +16,7 @@ from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
 ##
-# \b Parse_DOType: this class create the of DoType / Data Attributes elements
+# \b Parse_DOType: this class create the list of DoType / Data Attributes elements
 # @brief
 # @b Description
 #   This class is parsing the DOType XML and embed the list of DA for each of the DO.

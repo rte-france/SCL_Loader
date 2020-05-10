@@ -275,76 +275,138 @@ class SubNetWork:   # <SubNetwork name="LAN"  type="8-MMS" desc="blabla...
                     self.type  = _type                                 # 	<P type="VLAN-ID">000</P>
                     self.value = _value                                # </Address>
 
+
+
+
+##
+# \b IED
+# @param name   The identification of the IED. Within an ICD file describing a device type, the name shall
+#               be TEMPLATE. The IED name shall not be an empty string and not None and shall be
+#               unique within an SCL file
+#@param desc    The description text
+#@param type    The (manufacturer specific) IED product type
+#@param         manufacturer The manufacturer's name
+#@param         configVersion The basic configuration version of this IED configuration
+#@param         originalSclVersion The original SCL schema version of the IEDs ICD file; optional, default “2003”
+#@param         originalSclRevision The original SCL schema revision of the IEDs ICD file; optional, default “A”
+#@param         originalSclRelease The original SCL schema release of the IEDs ICD file; optional, default ‘1’: Observe that
+#               2003A had no release at all
+#@param engRight The engineering right transferred by a SED file (only fix, dataflow), or the current state
+#               in an SCD file. Values are full, dataflow, fix, the default is full
+#@param owner   The owner project of this IED, i.e. the Header id of that SCD file of that project which
+#               has the right to use the IED tool for this IED. The default is the Header id of the SCD file
+#               containing the IED
 class IED:
     def __init__(self, _name, _type, _desc, _originalSclVersion, _originalSclRevision,
                        _configVersion, _manufacturer, _engRight, _owner):
         self.Server             = None
-##      self.tLDevice           = _tDevice              # Table of Ldevices
-        self.name               = _name                 # IEC attribute
-        self.type               = _type                 # IEC attribute
-        self.desc               = _desc                 # IEC attribute
-        self.originalSclVersion = _originalSclVersion   # IEC attribute
-        self.originalSclRevision= _originalSclRevision  # IEC attribute
-        self.configVersion      = _configVersion        # IEC attribute
-        self.manufacturer       = _manufacturer         # IEC attribute
-        self.engRight           = _engRight             # IEC attribute
-        self.owner              = _owner                # IEC attribute
-        self.IP                 = None                  # IP adress from the communication
-        self.tAddress           = []                    # Table of MMS adresses
-        self.tDAI               = []                    # Table of actual DOI/..SDI../DAI/ values.
-        self.tAccessPoint       = []                    # Table of AccessPoint
+        self.name               = _name                 ## IEC attribute
+        self.type               = _type                 ## IEC attribute
+        self.desc               = _desc                 ## IEC attribute
+        self.originalSclVersion = _originalSclVersion   ## IEC attribute
+        self.originalSclRevision= _originalSclRevision  ## IEC attribute
+        self.configVersion      = _configVersion        ## IEC attribute
+        self.manufacturer       = _manufacturer         ## IEC attribute
+        self.engRight           = _engRight             ## IEC attribute
+        self.owner              = _owner                ## IEC attribute
+    ##
+    # Application data
+        self.IP                 = None                  ## APP IP address from the communication
+        self.tAddress           = []                    ## APP Table of MMS adresses
+        self.tDAI               = []                    ## APP Table of actual DOI/..SDI../DAI/ values.
+        self.tAccessPoint       = []                    ## APP Table of AccessPoint
 
+    ##
+    # \b AccessPoint List of network access point for a given IED (for example ADMIN versus DataModel)
+    # @param name   Reference identifying this access point within the IED
+    # @param desc    Reference identifying this access point within the IED
+    # @param router The presence and setting to true defines this IED to have a router function.
+    #               By default, its value is false (no router function).
+    # @param clock  The presence and setting to true defines this IED to be a master clock at this bus.
+    #               By default, its value is false (no master clock).
     class AccessPoint:
-        def __init__(self, _name, _desc, _router, _clock):      # Checked.
-            self.name   = _name
-            self.desc   = _desc
-            self.router = _router
-            self.clock  = _clock
-            self.tServer = []
+        def __init__(self, _name, _desc, _router, _clock):
+            self.name   = _name         ## IEC   Reference identifying this access point within the IED
+            self.desc   = _desc         ## IEC   Reference identifying this access point within the IED
+            self.router = _router       ## IEC   The presence and setting to true defines this IED to have a router function.
+            self.clock  = _clock        ## IEC   The presence and setting to true defines this IED to be a master clock at this bus.
+            self.tServer = []           ## APP   The table of server for this AccessPoint
 
+        ##
+        # \b Server an IEC1850 data server attached to a AccessPoint (potentially more than one).
+        # The server is where network adresses are defined
+        #
+        # @param timeout(iec)   Time out in seconds: if a started transaction (for example selection of a setting group) is
+        #                       not completed within this time, it is cancelled and reset
+        # @param desc(iec)      A descriptive text
         class Server:
             def __init__(self, _desc, _timeout):
-                self.desc    = _desc
-                self.timeout = _timeout
-                self.authentication = None
-                self.tLDevice= []               # LDevices are created by setattr(...)
-                self.tAddress= []               # Adresses for communication section
+                self.desc            = _desc     ## IEC A descriptive text
+                self.timeout         = _timeout  ## IEC Transaction timeout
+                self.authentication  = None      ## APP default value, else an instance of Authentication
+                self.tLDevice        = []        ## APP LDevices are created by setattr(...)
+                self.tAddress        = []        ## APP Adresses for communication section
 
-            class LDevice:
-                def __init__(self, _inst, _ldName, _desc):
-                    self.inst   = _inst
-                    self.ldName = _ldName
-                    self.desc   = _desc
-#                    self.LN0    = _LN0         # Dynamically added by name
-#                    self.tLNode = []           # Dynamically added by name
-
+            ##
+            # \b Authentication
+            #
+            #  @param none  No authentication
+            #  @param password      defined in the stack mappings (SCSMs)
+            #  @param weak          defined in the stack mappings (SCSMs)
+            #  @param strong        defined in the stack mappings (SCSMs)
+            #  @param certificate   defined in the stack mappings (SCSMs)
             class Authentication:
                 def __init__(self, _none, _password, _weak, _strong, _certificate):
-                    self.none          = _none
-                    self.password      = _password
-                    self.weak          = _weak
-                    self.strong        = _strong
-                    self.certificate   = _certificate
+                    self.none          = _none          ## IEC  No authentication
+                    self.password      = _password      ## Defined in the stack mappings (SCSMs)
+                    self.weak          = _weak          ## Defined in the stack mappings (SCSMs)
+                    self.strong        = _strong        ## Defined in the stack mappings (SCSMs)
+                    self.certificate   = _certificate   ## Defined in the stack mappings (SCSMs)
 
             # Certains classes remain to be added (GOOSESecurity/SMV Security ServerAt...).
             # This is just because it is not needed yet...
+            ##
+            # \b LDevice
+            #
+            #  @param   inst(iec)   Identification of the LDevice within the IED. Its value cannot be the empty string.
+            #                       It is always used as key part for references to logical devices within the SCL file.
+            #  @param   desc(iec)   The description text
+            #  @param   ldName(iec) The explicitly specified name of the logical device according to IEC 61850-7-1 and
+            #                       IEC 61850-7-2 within the communication. If missing, the default is the IED name
+            #                       concatenated with the inst value defined above
+            class LDevice:
+                def __init__(self, _inst, _ldName, _desc):
+                    self.inst    = _inst    ##  IEC  Identification of the LDevice within the IED.
+                    self.desc    = _desc    ##  IEC  Text
+                    self.ldName = _ldName   ##  IEC  The explicitly specified name of the logical device according to IEC 61850-7-1
+                    ##   self.LN0    = _LN0 (APP)   Dynamically added by their name using setAttr.
+                    ##   self.tLNode = [] (APP)     Dynamically added by their name using setAttr
 
+            ##
+            # \b LN
+            #
+            # @param _localName(app)    LN0 or LN (according to IEC61850 standard, there should be two classes).
+            # @param _prefix(iec)       The LN prefix part
+            # @param _lntype(iec)       The instantiable type definition of this logical node, reference to a LNodeType definition
+            # @param _inst(iec)         The LN instance number identifying this LN – an unsigned integer
+            # @param _lnClass(iec)      The LN class according to IEC 61850-7-x
+            # @param _desc(iec)         The description text for the logical node
             class LN:
                 def __init__(self, _localName, _prefix, _lnType, _inst, _lnClass, _desc):   # Checked
             # Partie générique commune à LN0 et LNODE (LN)
-                    self.localName  = _localName  # LN or LN0
-                    self.lnPrefix   = _prefix
-                    self.lnType     = _lnType
-                    self.lnInst     = _inst
-                    self.lnClass    = _lnClass
-                    self.lnDesc     = _desc
-                    self.tDataSet   =  []       # Array of DataSet associé à ce LN0
-                    self.tSVCtrl    =  []       # Array of SampleValueControl block à ce LN0
-                    self.tGSECtrl   =  []       # Array of GSEControl
-                    self.tInputs    =  []       # Array of inputs/Extrefs
-                    self.tLogCtrl   =  []       # Array of LogControl
-                    self.tRCB       =  []       # Array of RCB
-            ###     self.DO_Name    = ...         # Dynamically added with 'setattr' to get actual DO_Name
+                    self.localName  = _localName## (APP) LN or LN0
+                    self.lnPrefix   = _prefix   ## The LN prefix part
+                    self.lnType     = _lnType   ## The instantiable type definition of this logical node, reference to a LNodeType definition
+                    self.lnInst     = _inst     ## The LN instance number identifying this LN – an unsigned integer
+                    self.lnClass    = _lnClass  ## The LN class according to IEC 61850-7-x
+                    self.lnDesc     = _desc     ## The description text for the logical node
+                    self.tDataSet   =  []       ## Array of DataSet associé à ce LN0
+                    self.tSVCtrl    =  []       ## Array of SampleValueControl block à ce LN0
+                    self.tGSECtrl   =  []       ## Array of GSEControl
+                    self.tInputs    =  []       ## Array of inputs/Extrefs
+                    self.tLogCtrl   =  []       ## Array of LogControl
+                    self.tRCB       =  []       ## Array of RCB
+            ##      self.DO_Name    = ...       ## Dynamically added with 'setattr' to get actual DO_Name
 
             # Définition de la class Report Control, avec des sous classes
             # pour les parties TrgOps, OptField et rptEnabled
@@ -530,21 +592,21 @@ class IED:
                             self.ti       = _ti
                             self.usedBy   = _usedBy
                             self.inverted = _inverted
-            class DataSet:
-                def __init__(self, _name, _desc):
-                    self.name  = _name
-                    self.desc  = _desc
-                    self.tFCDA = []
-                class FCDA:
-                    def __init__(self,_ldInst,_prefix,_lnClass,_lnInst,_doName,_daName,_fc,_ix):    # Checked
-                        self.ldInst  = _ldInst
-                        self.prefix  = _prefix
-                        self.lnClass = _lnClass
-                        self.lnInst  = _lnInst
-                        self.doName  = _doName
-                        self.daName  = _daName
-                        self.fc      = _fc
-                        self.ix      = _ix
+                class DataSet:
+                    def __init__(self, _name, _desc):
+                        self.name  = _name
+                        self.desc  = _desc
+                        self.tFCDA = []
+                    class FCDA:
+                        def __init__(self,_ldInst,_prefix,_lnClass,_lnInst,_doName,_daName,_fc,_ix):    # Checked
+                            self.ldInst  = _ldInst
+                            self.prefix  = _prefix
+                            self.lnClass = _lnClass
+                            self.lnInst  = _lnInst
+                            self.doName  = _doName
+                            self.daName  = _daName
+                            self.fc      = _fc
+                            self.ix      = _ix
 
 
 class DataTypeTemplates:
@@ -557,11 +619,11 @@ class DataTypeTemplates:
         Simple = ["BOOLEAN", "INT8" ,"INT16" ,"INT24" , "INT32" , "INT64",
                              "INT8U","INT16U","INT24U", "INT32U",
                   "FLOAT32", "FLOAT64",
-                  "Dbpos"  , "Tcmd",                # 'Enum' is considered in a special in this application.
+                  "Dbpos"  , "Tcmd",                # 'Enum' need to be treated as specific type.
                   "Quality", "Timestamp",
                   "VisString32","VisString64", "VisString65", "VisString129","VisString255","Unicode255",
                   "Octet64",
-                  "Struct" , "EntryTime",
+                  "EntryTime",                      # 'Struct' need to be treated as specific type.
                   "Check"  , "ObjRef",
 
                   "Currency",
@@ -642,10 +704,19 @@ class DataTypeTemplates:
             self.NdsCom     = _NdsComn      # BOOLEAN  value from GOCB)
             self.DatSet     = _DatSet       # Data à encoder et à envoyer
             self.mode       = _mode         # Envoi d'une seule trame ou d'un flux.
+    ##
+    #  GSE Class:   The GSE element defines the address for a GSE control block in this IED.
+
+    #  @param id(iec)       A reference identifying this LN type within this SCL section; used by the LN attribute
+    #                       LNType of from a LNode definition in the process section to reference this definition
+    #  @param desc(iec)     An additional text describing this LN type
+    #  @param iedType(iec)  The manufacturer IED type of the IED to which this LN type belongs - deprecated
+    #  @param lnClass(iec)  The LN base class of this type as specified in IEC 61850-7-x; observe that here an enumeration exists,
+    #  @param _tDO (app)    The table of Data Object of this LNODE Type.
 
     class LNodeType:
-        def __init__(self, _id, _desc, _iedType, _lnClass, _tDO): # Checked
-            self.id         = _id           #SubNetWork A reference identifying this LN type within this SCL section; used by the LN attribute
+        def __init__(self, _id, _desc, _iedType, _lnClass, _tDO):
+            self.id         = _id           # A reference identifying this LN type within this SCL section; used by the LN attribute
                                             # LNType of from a LNode definition in the process section to reference this definition
             self.desc       = _desc         # An additional text describing this LN type
             self.iedType    = _iedType      # The manufacturer IED type of the IED to which this LN type belongs - deprecated
@@ -653,7 +724,16 @@ class DataTypeTemplates:
                                             # which allows extensions (names containing only capital letters)
             self.tDO = _tDO                 # Table of the DO element
 
-        class DOi:                          # DO element # Checked
+
+        ##
+        #  DO element of a LNodeType
+        #
+        #   @param  name(iec)            # The data object name as specified for example in IEC 61850-7-4
+        #   @param  type(iec)            # The type references the id of a DOType definition
+        #   @param  accessControl(iec)   # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
+        #   @param  transient(iec)       # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
+        #   @param  desc(iec)            # Descriptive text for the DO element
+        class DOi:
             def __init__(self, _name, _type, _accessControl, _transient, _desc, ):
                 self.name           = _name             # The data object name as specified for example in IEC 61850-7-4
                 self.type           = _type             # The type references the id of a DOType definition
@@ -661,7 +741,18 @@ class DataTypeTemplates:
                 self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
                 self.desc           = _desc             # Descriptive text for the DO element
 
-    # DO Type
+    ##
+    # DO Type An instantiable data object type; referenced from LNodeType or from the
+    #         SDO element of another DOType. Instantiable version based on the
+    #         CDC definitions from IEC 61850-7-3
+    #
+    #  @param  id(iec)      The (global) identification of this DOType. Used to reference this type.
+    #  @param  iedType(iec) The type of the IED to which this DOType belongs. The empty string allows
+    #                       references for all IED types, or from the Substation section without IED identification.
+    #  @param  cdc(iec)     The basic CDC (Common Data Class) as defined in IEC 61850-7-3.
+    #  @param  desc(iec)    Description of this DOType
+    #  @param  tDA(app)     Table of DA.
+
     class DOType:
         def __init__(self, _id, _iedType, _cdc, _desc, _tDA):   # checked
             self.id      = _id          # The (global) identification of this DOType. Used to reference this type.
@@ -670,6 +761,34 @@ class DataTypeTemplates:
             self.cdc     = _cdc         # The basic CDC (Common Data Class) as defined in IEC 61850-7-3.
             self.desc    = _desc        # Description of this DOType
             self.tDA  = _tDA            # Table of DA.
+
+
+        ##
+        #
+        #  @param _desc(iec)    Some descriptive text for the attribute
+        #  @param _name(iec)    The attribute name; the type tAttributeNameEnum restricts to the attribute names
+        #                       from IEC 61850-7-3, plus new ones starting with lower case letters
+        #  @param _fc(iec)      The functional constraint for this attribute; fc=SE always also implies fc=SG;
+        #                f      c=SG means that the values are visible, but not editable
+        #  @param _dchg(iec)    Defines which trigger option is supported by the attribute (value true means supported).
+        #  @param _qchg(iec     One of those allowed according to IEC61850-7-3 shall be chosen.
+        #  @param _dupd(iec)
+        #
+        #  @param _sAddr(iec)   an optional short address of this  attribute (see 9.5.4.3)
+        #
+        #  @param _bType(iec)   The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+        #  @param _type(iec)    The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+        #  @param _count(iec)   Optional. Shall state the number of array elements or reference the attribute stating
+        #                       this number in case that this attribute is an array. A referenced attribute shall exist
+        #                        in the same type definition. The default value 0 states that the attribute is no array.
+        #  @param _valKind(iec) Determines how the value shall be interpreted if any is given – see Table 46
+        #  @param _valImport(iec) if true, an IED / IED configurator can import values modified by another tool from an SCD file,
+        #                        even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
+        #                        to assure value consistency and value allowance even if valImport is true.
+        #
+        #  @param _DO(app)        Used to distinguish DO from SDO (only one class for both) (implementation specific)
+        #  @param _SDO(app)
+        #  @param _value(iec/app) To store pre-defined value at DAi level
 
         class DAinst:
             def __init__(self, _desc,_name,_fc,_dchg,_qchg,_dupd,_sAddr,_bType,_type

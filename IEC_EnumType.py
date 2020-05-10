@@ -15,16 +15,44 @@ from IEC_Trace import IEC_Console  as TConsole
 from IEC_Trace import TraceLevel as TL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
+##
+# \b Parse_EnumType: this class load and parse the EnumType and their values.
+# In addition, the class identify the minimal and the maximal value of each enumeration, thus
+# allowing to verify that a given value of an enumeration is the appropriate range of value.
+#
+#		<EnumType id="PhaseReferenceKind">
+#			<EnumVal ord="0">A</EnumVal>
+#			<EnumVal ord="1">B</EnumVal>
+#			<EnumVal ord="2">C</EnumVal>
+#			<EnumVal ord="3">Synchrophasor</EnumVal>
+#		</EnumType>
 class Parse_EnumType:
+    ## \b Description
+    #   Constructor is used to keep the dictionary of EnumType available.
+    #
+    # @param _scl: pointer to the SCL structure created by miniDOM
+    # @param _TRX: Trace function
+    #
     def __init__(self, _scl, _TRX):
         self.TRX          = _TRX
         self.SCL          = _scl
-        self.dictEnumType = {}
+        self.dictEnumType = {}      ## Dictionary of the enumeration.
 
+    ##
+    # @return the dictionary of EnumType
     def GetEnumTypDict(self):
         return self.dictEnumType
 
-    #  Get the doType definition from 'doType', based on a Python "dictionary"
+
+    ##
+    # Return a full EnumType for a given Enum 'id'
+    #
+    # @param   pEnumVal: the enumeration id to look up.
+    # @return  An instance of the EnumType Object elements, including the list of values and min / max limits.
+    #
+    #			<EnumVal ord="0">A</EnumVal>
+    #			<EnumVal ord="1">B</EnumVal>
+    #			<EnumVal ord="2">C</EnumVal>
     def getIEC_EnumType(self, EnumTypeId):
         iEnumType = self.dictEnumType.get(EnumTypeId)
         if iEnumType is None:
@@ -42,9 +70,15 @@ class Parse_EnumType:
 
         return instEnumType
 
-
-##  Collecting the list of values / name of the enumeration
-#       <EnumVal name="orIdent" bType="Octet64" />" >
+    ##
+    # Return a full the list of enumeration values
+    #
+    # @param   pEnumVal: XML pointer of EnumType.
+    # @return  The table of values for the EnumType
+    #
+    #			<EnumVal ord="0">A</EnumVal>
+    #			<EnumVal ord="1">B</EnumVal>
+    #			<EnumVal ord="2">C</EnumVal>
     def Get_EnumVal_Atributes(self, pEnumVal):
 
         tEnumVal = []  # Allocation du tableau des valeurs d'énumération
@@ -65,10 +99,13 @@ class Parse_EnumType:
             pEnumVal = pEnumVal.nextSibling
 
         return tEnumVal
-
+    ##
+    # Create_EnumType_Dict
+    # @param DataType: is the result of scl.getElementsByTagName("DataTypeTemplates")
+    #
+    # @return
+    #       dicDoType: the dictionary (used for __main__)
     def Create_EnumType_Dict(self, DataType):
-# Parcours de l'arbre de l'arbre de la balise <DataTypeTemplates..
-# en cherchant les sections EnumTypes
         for pEnum in DataType:
             pEnum = pEnum.firstChild.nextSibling
             while pEnum.nextSibling:
@@ -97,9 +134,9 @@ class Parse_EnumType:
                     self.dictEnumType[id]= {"id": id, "desc": desc,"min":min, "max":max, "tEnumVal": tEnumVal }
 
                 pEnum = pEnum.nextSibling
-
         return self.dictEnumType
-
+##
+# \b Test_EnumType: unitary test for Parse_EnumType
 class Test_EnumType:
     def main(directory, file, scl):
         TRX = TConsole(TL.DETAIL)
@@ -114,6 +151,8 @@ class Test_EnumType:
 
         TRX.Trace(("FIN IEC_EnumType"),TL.GENERAL)
 
+##
+# \b MAIN call the unitary test 'Test_EnumType' for PARSE_EnumType
 if __name__ == '__main__':
     fileliste = FL.lstFull          #  System level file list
     for file in fileliste:
