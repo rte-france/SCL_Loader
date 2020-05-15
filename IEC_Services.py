@@ -11,9 +11,9 @@
 #
 
 import xml.dom.minidom as dom
-from IEC_FileListe import FileListe as FL
-from IEC_Trace import IEC_Console   as TConsole
-from IEC_Trace import TraceLevel as TL
+from IEC_FileListe  import FileListe as FL
+from IEC_Trace      import Trace
+from IEC_Trace      import Level as TL
 
 # The names used are matching the names of the IEC61850 classes, as well as the attributes.
 #
@@ -683,7 +683,7 @@ class Parse_Services:
 ###
 class Test_Services:
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST

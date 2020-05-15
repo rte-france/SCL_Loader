@@ -2,9 +2,8 @@ import xml.dom.minidom as dom
 import time
 from IEC_FileListe import FileListe
 
-from IEC_Trace              import IEC_Console   as TConsole
-from IEC_Trace              import IEC_TraceFile
-from IEC_Trace              import TraceLevel    as TL
+from IEC_Trace              import Trace
+from IEC_Trace              import Level   as TL
 from IEC_TypeSimpleCheck    import Check
 
 from IEC_ParcoursDataModel import globalDataModel
@@ -25,7 +24,7 @@ class CodeGeneration:
             self.tIED            = []
 
     def GenerateFileHead(self, ied):
-        TR2 = IEC_TraceFile(TL.GENERAL, "GeneratedScript/" + ied.name + '.py')
+        TR2 = Trace.File(TL.GENERAL, "GeneratedScript/" + ied.name + '.py')
         TR2.Trace(('from utest.ATL import *\n'), TL.GENERAL)
         TR2.Trace(('from VsUtils import variables as vs\n'), TL.GENERAL)
         TR2.Trace(('from utest import IECToolkit\n'), TL.GENERAL)
@@ -121,7 +120,7 @@ class CodeGeneration:
 
 if __name__ == '__main__':
 
-    TX = TConsole(TL.GENERAL)
+    TX = Trace.Console(TL.GENERAL)
     tIEDfull=[]
     for file in FileListe.lstIED :
 
@@ -150,11 +149,11 @@ if __name__ == '__main__':
 #            directAdress = ied.Server[0]
 #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
 # Manque stVal q t
-            TR2 = CG.GenerateFileHead(ied)
+            TRFile = CG.GenerateFileHead(ied)
             i = 0
             IED_ID = ied.name   # TODO ou ied.name+AP_Name
             for iec in tIEC_adresse:
-                CG.GenerateDataPointcheck(TR2, iec, IED_ID, i)
+                CG.GenerateDataPointcheck(TRFile, iec, IED_ID, i)
                 CG.CheckDatapointSCL(iec)
 
                 if iec.ValAdr != None:
@@ -166,7 +165,7 @@ if __name__ == '__main__':
 #                        print("Checking:", AdrValue, "Value:", Value)
 
                         if (Value!=None):
-                            CG.GenerateCheckDAivalue(TR2, iec, AdrValue, Value)
+                            CG.GenerateCheckDAivalue(TRFile, iec, AdrValue, Value)
 
                     except Exception as inst: # No data, an exception is expected hera
 #                        print(AdrValue)
@@ -174,7 +173,7 @@ if __name__ == '__main__':
                         if (A == "<class 'AttributeError'>"):
                             break
                 i = i + 1
-            TR2.TraceClose()
+            TRFile.Close()
         T1 = time.time()
         TempsTotal = str(T1 - T0)
         print("Temps total de traitement:" + file + ':' + TempsTotal)

@@ -11,8 +11,8 @@
 #
 import xml.dom.minidom as dom
 from IEC_FileListe import FileListe as FL
-from IEC_Trace import IEC_Console  as TConsole
-from IEC_Trace import TraceLevel as TL
+from IEC_Trace import Trace
+from IEC_Trace import Level as TL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
 ##
@@ -34,10 +34,10 @@ class Parse_EnumType:
     # @param _TRX: Trace function
     #
     def __init__(self, _scl, _TRX):
-        self.TRX          = _TRX
-        self.SCL          = _scl
-        self.dictEnumType = {}      ## Dictionary of the enumeration.
-
+        ## TRX initialized tracing system
+        self.TRX = _TRX     ## TRX initialized tracing system
+        self.SCL = _scl     ## SCL pointeur  to SCL with list of DOType
+        self.dictEnumType = {}  ## dictEnumType will contain a dictionary of EnumType,  the 'id' of the EnumType is the key
     ##
     # @return the dictionary of EnumType
     def GetEnumTypDict(self):
@@ -47,7 +47,7 @@ class Parse_EnumType:
     ##
     # Return a full EnumType for a given Enum 'id'
     #
-    # @param   pEnumVal: the enumeration id to look up.
+    # @param   EnumTypeId: the enumeration id to look up.
     # @return  An instance of the EnumType Object elements, including the list of values and min / max limits.
     #
     #			<EnumVal ord="0">A</EnumVal>
@@ -138,8 +138,10 @@ class Parse_EnumType:
 ##
 # \b Test_EnumType: unitary test for Parse_EnumType
 class Test_EnumType:
+    ##
+    # Unitary test for Parse_EnumType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         TRX.Trace(("Fichier:", file), TL.GENERAL)

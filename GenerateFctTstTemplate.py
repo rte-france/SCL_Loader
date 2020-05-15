@@ -2,9 +2,8 @@ import xml.dom.minidom as dom
 import time
 from IEC_FileListe import FileListe
 
-from IEC_Trace              import IEC_Console   as TConsole
-from IEC_Trace              import IEC_TraceFile
-from IEC_Trace              import TraceLevel    as TL
+from IEC_Trace import Trace
+from IEC_Trace import Level    as TL
 from IEC_TypeSimpleCheck    import Check
 
 from IEC_ParcoursDataModel import globalDataModel
@@ -247,14 +246,12 @@ class CodeGeneration(QMainWindow):
             #
 
 
-
-
             return(tIEC_adresse)
 
 
 if __name__ == '__main__':
 
-    TX = TConsole(TL.GENERAL)
+    TX = Trace.Console(TL.GENERAL)
     tIEDfull=[]
     for file in FileListe.lstIED:
 

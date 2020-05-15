@@ -13,8 +13,10 @@
 ##
 # \b FileListe: Place holder to define the list of SCL files to be used for unit testing: lstED and lstSystem
 #
-#
 class FileListe:
+    ##  lstIED        a list of IED level file (IID, ICD, CID...)
     lstIED    = ['LD_all.scl']
+    ##  lstSystem     a list of system configuration level file (SCD, SSD...)
     lstSystem = ['SCL_20200415.scl'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
+    ##  lstFull       the concatenation of the two previous list
     lstFull   =  lstIED+lstSystem

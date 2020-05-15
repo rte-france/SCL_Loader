@@ -10,29 +10,47 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-from IEC_Trace      import IEC_Console  as TRACE
-from IEC_Trace      import TraceLevel   as TL
+from IEC_Trace      import Trace
+from IEC_Trace      import Level  as TL
 
 from IEC61850_XML_Class import DataTypeTemplates as IecType
 
+##
+# \b IEC_TypeSimpleCheck:
+#
+# @brief
+# This class performs simple 'range' test for most of the data type 'bType'.
+# It is mainly checking that is not out of range for its type, including Enumeration typr
+#
 class Check:
 # CHARACTER STRING
-
+    ##
+    # \b VisString64
+    # @param value      - value to be verified
     def VisString64(value):
         if len(value)>64:
             return False
         return value.isprintable()    # Check range of character
 
+    ##
+    # \b VisString129
+    # @param value      - value to be verified
     def VisString129(value):
         if len(value)>129:
             return False
         return value.isprintable()    # Check range of character
 
+    ##
+    # \b VisString255
+    # @param value      - value to be verified
     def VisString255(value):
         if len(value)>255:
             return False
         return value.isprintable()    # Check range of character
 
+    ##
+    # \b Unicode255
+    # @param value      - value to be verified
     def Unicode255(value):
         if len(value)>255:
             return False
@@ -40,9 +58,15 @@ class Check:
 
 # Special Data Type
 
+    ##
+    # \b Quality #TODO
+    # @param value      - value to be verified
     def Quality(self, value):  # TODO any possible test ?
         return True
 
+    ##
+    # \b checkTimestamp #TODO
+    # @param value      - value to be verified
     def checkTimestamp(self, value):# TODO any possible test ?
                                     # Les bits donnant la précision du timestamp peuvent être incorrecte
                                     # Une date dans les passé est également incorrect.
@@ -50,6 +74,9 @@ class Check:
         return True
 
 #Scalar Data Type
+    ##
+    # \b BOOLEAN
+    # @param value      - value to be verified
     def BOOLEAN(value):
         if value == 0:
             return True
@@ -57,6 +84,9 @@ class Check:
             return True
         return False
 
+    ##
+    # \b INT8U
+    # @param value      - value to be verified
     def INT8U(value):    # 8 bits unsigned, valid from 0 to 255 (0x00-0xFF)
         if value <0:
             return False
@@ -64,6 +94,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT8
+    # @param value      - value to be verified
     def INT8(value):     # 8 bits signed
         if value <-127:
             return False
@@ -71,6 +104,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT16U
+    # @param value      - value to be verified
     def INT16U(value):   # 16 bit unsigned
         if value > 65535:
             return False
@@ -78,6 +114,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT16
+    # @param value      - value to be verified
     def INT16(value):   # 16 bits unsigned
         if value > 32767:
             return False
@@ -85,6 +124,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT24U
+    # @param value      - value to be verified
     def INT24U(value):   # 24 bits unsigned (used in TimeStamp only)
         if value > 16777215:
             return False
@@ -92,6 +134,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT32
+    # @param value      - value to be verified
     def INT32(value):
         if value > (2 ** 16) - 1:
             return False
@@ -99,6 +144,9 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT32U
+    # @param value      - value to be verified
     def INT32U(value):
         if value > 2 ** 32:
             return False
@@ -106,12 +154,18 @@ class Check:
             return False
         return True
 
+    ##
+    # \b INT64
+    # @param value      - value to be verified
     def INT64(value):
         if value > 2 ** 63-1:
             return False
         if value < -2 ** 63:
             return False
 
+    ##
+    # \b FLOAT32
+    # @param value      - value to be verified
     def FLOAT32(value):
         if value > 3.402823466E38:  #MAX_FLOAT IEE754
             return False
@@ -119,28 +173,50 @@ class Check:
             return False
         return True
 
+    ##
+    # \b Check
+    # @param value      - value to be verified
     def Check(value):    # Packed List de deux Booléen valeur de 0 à 3
         if value < 0 or value > 3:
             return False
         return True
 
+    ##
+    # \b Timestamp
+    # @param value      - value to be verified
     def Timestamp(value):   # Stocké dans un INT24
         return True
 
+    ##
+    # \b Quality
+    # @param value      - value to be verified
     def Quality(value):
         return True
 
+    ##
+    # \b Quality
+    # @param value      - value to be verified
     def ObjRef(value):   # Could not find the type definition ? (CDC: ORG) Vstrin 129.
         return True
 
+    ##
+    # \b Tcmd
+    # @param value      - value to be verified
     def Tcmd(value):     # Could not find the type definition ?
         return True                 # TODO
 
+    ##
+    # \b Octet64
+    # @param value      - value to be verified
     def Octet64(value):
         if len(value)>64:
             return False
         return True
 
+    ##
+    # \b Enum
+    # @param value      - value to be verified against its definition
+    # @param iEnumType  - the enumeration type to be used for checking the value is in range of the enumeration definition
     def Enum(iEnumType, value):
         if value is None:
             return None
@@ -161,19 +237,31 @@ class Check:
 
         return True
 
-# Appel 'dynamique' ... potentiellement peu performant
+    ##
+    # \b Enum
+    #
+    # The function is based on using "eval" to call the method.     # TODO recode without 'eval'
+    # @param type       - type of the data
+    # @param value      - value to be verified against its definition
     def Type(type,value):
 
         if type in IecType.bType.String:
-            fName = 'Check.' + type + '("' + value + '")'
+             ## fName contains the name of the function and its argument
+             fName = 'Check.' + type + '("' + value + '")'
  #           print("Fname String:",fName)
         elif type in IecType.bType.Number:
+            ## fName contains the name of the function and its argument
             fName = 'Check.' + str(type) + '(' +  value + ')'
 #            print("Fname Scalar:",fName)
 
-        x= eval(fName)
-
+        ## x is the result of  "check.INT8U(34)" for example
+        x = eval(fName)
+        return x
+##
+# \b Test_TypeSimpleCheck: unitary test for all Data Type supported
+#
 class Test_TypeSimpleCheck:
+    ## TRX initialized traces
     def main(TRX):
         if Check.BOOLEAN(0) and Check.BOOLEAN(1):
             TRX.Trace(("BOOLEAN: OK"), TL.DETAIL)
@@ -241,8 +329,12 @@ class Test_TypeSimpleCheck:
             TRX.Trace(("ERROR ON FLOAT32"), TL.GENERAL)
 
         TRX.Trace(("END OF IEC SIMPLE CHECK"), TL.GENERAL)
-
+##
+# \b Test_TypeSimpleCheck:
+#
+# @brief
+# This class performs unitary of the main class above, by calling the Test_TypeSimpleCheck.
 if __name__ == '__main__':
-
-    TRX = TRACE(TL.DETAIL)
+    ## TRX initialize the traces
+    TRX = Trace.Console(TL.DETAIL)
     Test_TypeSimpleCheck.main(TRX)

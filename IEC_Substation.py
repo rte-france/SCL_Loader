@@ -11,32 +11,48 @@
 #
 import xml.dom.minidom as dom
 from IEC_FileListe      import FileListe  as FL
-from IEC_Trace          import IEC_Console  as TConsole
-from IEC_Trace          import TraceLevel  as TL
+from IEC_Trace          import Trace
+from IEC_Trace          import Level  as TL
 from IEC_PrivateSupport import DynImport
 from IEC61850_XML_Class import SubStation
 
+##
+# \b Parse_DOType: this class create the list of DoType / Data Attributes elements
+# \b Description
+#   This class is parsing the "Substation" section of the SCL/SCD.
 class ParseSubStation:
-    def __init__(self, _scl, _TR, _name, _desc):
-        self.scl            = _scl
-        self.TRX            = _TR
-        self.tVoltageLevel  = []
-        self.name           = _name
-        self.desc           = _desc
-        self.Dyn            = DynImport()
 
-    def ParseTerminal(self, pTal, poste, pCNXNode):
+    ## \b Description
+    #   Constructor is used to keep the dictionary of DOType available.
+    #
+    # @param _scl: pointer to the SCL structure created by miniDOM
+    # @param _TRX: Trace function
+    def __init__(self, _scl, _TR):
+        self.scl            = _scl                  ##  scl
+        self.TRX            = _TR                   ##  TRX instance of Trace System
+        self.Dyn            = DynImport()           ## Dyn instance of DynImport to handle private section if any/
+
+    ## \b Description
+    #   Constructor is used to keep the dictionary of DOType available.
+    #
+    # @param _pTal      - pointer to the SCL structure, 'Terminal' TAG
+    # @param pCNXNode   - Pointer to the data model at pConnectionNode level
+
+    def ParseTerminal(self, pTal, pCNXNode):
         idxTal = 0
         while (pTal is not None) and (pTal.localName is not None):
             if pTal.localName == "Terminal":
-                _name = pTal.getAttribute("name")
-                _connectivityNode = pTal.getAttribute("connectivityNode")
-                _substationName = pTal.getAttribute("substationName")
-                _voltageLevelName = pTal.getAttribute("voltageLevelName")
-                _bayName = pTal.getAttribute("bayName")
-                _cNodeName = pTal.getAttribute("cNodeName")
-                iTerminal = pCNXNode.Terminal(_name, _connectivityNode,_substationName,
-                                        _voltageLevelName,  _bayName, _cNodeName)
+                _name               = pTal.getAttributes("name")                ## _name             The optional relative name of the terminal at this Equipment. The default is the empty
+                _desc               = pTal.getAttributes("desc")                ## _desc             Descriptive text to the terminal
+                _connectivityNode   = pTal.getAttributes("connectivityNode")    ## _connectivityNode The pathname of the connectivity node to which this terminal connects.
+                _substationName     = pTal.getAttributes("substationName")      ## _substationName   The name of the substation containing the connectivityNode
+                _voltageLevelName   = pTal.getAttributes("voltageLevelName")    ## _voltageLevelName The name of the voltage level containing the connectivityNode
+                _bayName            = pTal.getAttributes("bayName")             ## _bayName           The name of the bay containing the connectivityNode
+                _cNodeName          = pTal.getAttributes("cNodeName")           ##  _cNodeName        (relative) name of the connectivityNode within its bay
+                _lineName           = pTal.getAttributes("lineName")            ## _lineName         Ed 2    ??
+                _neutralPoint       = pTal.getAttributes("neutralPoint")        ## _neutralPoint     Ed 2.1 ???
+
+                iTerminal = pCNXNode.Terminal(_name, _desc, _connectivityNode,_substationName,_voltageLevelName, _bayName,_cNodeName,_lineName, _neutralPoint)
                 pCNXNode.tTerminal.append(iTerminal)
                 idxTal = idxTal + 1
 
@@ -44,7 +60,14 @@ class ParseSubStation:
             if pTal is not None:
                 pTal = pTal.nextSibling
 
-    def ParseVoltageLevelSection(self, Substation, file):
+    ## \b Description
+    #
+    # Parse the VoltageLevel class
+    #
+    # @param Substation - the global daa model structure for subStation section of SCL
+    # @param pCNXNode   - Pointer to the data model at pConnectionNode level
+
+    def ParseVoltageLevelSection(self, Substation):
         # Analyse d'un IED
         #
         # <IED..
@@ -52,9 +75,8 @@ class ParseSubStation:
         #    < Communication >
         #       < SubNetwork
         tVoltage = []
-        _name = Substation[0].getAttribute("name")
-        _desc = Substation[0].getAttribute("desc")
-
+        _name = Substation[0].getAttribute("name")      # SubStation name
+        _desc = Substation[0].getAttribute("desc")      # Description text
         poste=SubStation(_name,_desc)
 
         pVoltageLevel = Substation[0].firstChild.nextSibling
@@ -63,11 +85,11 @@ class ParseSubStation:
             print("pVoltageLevel.nodeName"  + pVoltageLevel.nodeName)
 
             _name       = pVoltageLevel.getAttribute("name")
-            _nomFreq    = pVoltageLevel.getAttribute("nomFreq")
-            _numpPhases = pVoltageLevel.getAttribute("numPhases")
+#            _nomFreq    = pVoltageLevel.getAttribute("nomFreq")
+#            _numpPhases = pVoltageLevel.getAttribute("numPhases")
             _desc       = pVoltageLevel.getAttribute("desc")
 
-            Tension = poste.VoltageLevel(_name,_nomFreq,_numpPhases,_desc)
+            Tension = poste.VoltageLevel(_name,_desc)
             poste.tVoltage.append(Tension)
             pVolt = pVoltageLevel.firstChild
             if pVolt is not None:
@@ -96,7 +118,7 @@ class ParseSubStation:
                     _desc    = pVolt.getAttribute("desc")
                     _sx_y    = pVolt.getAttribute("sxy:y")
                     _sx_x    = pVolt.getAttribute("sxy:x")
-                    iBay     = poste.VoltageLevel.Bay(_name, _desc, _sx_x, _sx_y)
+                    iBay     = poste.Bay(_name, _desc, _sx_x, _sx_y)
                     poste.tVoltage[idxVolt].tBay.append(iBay)
                     self.TRX.Trace(('Substation/Bay.name:' + _name + ' desc:' + _desc + " sxy:y:" + _sx_y + " sxy:x:" + _sx_x), TL.DETAIL)
 
@@ -122,7 +144,7 @@ class ParseSubStation:
                             pTal  = pBay.firstChild
                             if pTal is not None:
                                 pTal=pTal.nextSibling
-                            self.ParseTerminal(pTal, poste, poste.tVoltage[idxVolt].tBay[idxBay].tConductingEquipment[idxConEqt])
+                            self.ParseTerminal(pTal, poste.tVoltage[idxVolt].tBay[idxBay].tConductingEquipment[idxConEqt])
                             idxConEqt = idxConEqt+1
 
                         elif pBay.localName == "ConnectivityNode":
@@ -138,13 +160,13 @@ class ParseSubStation:
                             pTal  = pBay.firstChild
                             if pTal is not None:
                                 pTal=pTal.nextSibling
-                            self.ParseTerminal(pTal, poste, poste.tVoltage[idxVolt].tBay[idxBay].tConnectivityNode[idxConMode])
+                            self.ParseTerminal(pTal, poste.tVoltage[idxVolt].tBay[idxBay].tConnectivityNode[idxConMode])
                             idxConMode = idxConMode + 1
 
                         elif pBay.localName == "Function":
                             _name     = pBay.getAttribute("name")
                             _desc     = pBay.getAttribute("desc")
-                            iFunction = poste.VoltageLevel.Bay.Function(_name, _desc)
+                            iFunction = poste.Function(_name, _desc)
                             poste.tVoltage[idxVolt].tBay[idxBay].tFunction.append(iFunction)
                             self.TRX.Trace(('Substation/Bay/Function.name: ' + _name + ' desc:' + _desc), TL.DETAIL)
 
@@ -177,10 +199,11 @@ class ParseSubStation:
             if pVoltageLevel is not None:
                 pVoltageLevel = pVoltageLevel.nextSibling
         return pVoltageLevel
-
+##
+# \b Test_DOType: unitary test for Substation.
 class Test_Substation:
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
@@ -188,10 +211,11 @@ class Test_Substation:
         TRX.Trace(("File:" + file), TL.GENERAL)
         sclSubstation   = scl.getElementsByTagName("Substation")
         if len(sclSubstation)!=0:
-            station  = ParseSubStation(sclSubstation, TRX, file, "toto")
-            tNetWork = station.ParseVoltageLevelSection(sclSubstation, file)  # <SubNetWork>
+            station  = ParseSubStation(sclSubstation, TRX)
+            tNetWork = station.ParseVoltageLevelSection(sclSubstation)  # <SubNetWork>
         TRX.Trace(("FIN IEC_SUBSTATION"), TL.GENERAL)
-
+##
+# \b MAIN call the unitary test 'Test_Substation'
 if __name__ == '__main__':
 
     Test_Substation.main('SCL_files/', 'LD_ALL.SCL', None)

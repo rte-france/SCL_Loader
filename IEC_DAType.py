@@ -10,8 +10,8 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 import xml.dom.minidom as dom
-from IEC_Trace import IEC_Console as TConsole
-from IEC_Trace import TraceLevel as TL
+from IEC_Trace import Trace
+from IEC_Trace import Level as TL
 from IEC_FileListe import FileListe as FL
 
 from IEC61850_XML_Class import DataTypeTemplates as IECType
@@ -65,7 +65,7 @@ class Parse_DAType:
     ##
     # \b Get_BDA_Attributes: retrieve the list of BDA for a DAType.
     #
-    # @param pDA: pointer to the SCL structure pointing a <DA structure>
+    # @param pBDA: pointer to the SCL structure pointing a <DA structure>
     #
     # XML extract:
     # 		<DAType id="_Oper_V1.0.0">
@@ -143,8 +143,10 @@ class Parse_DAType:
 ##
 # \b Test_DAType: unitary test for parsing DAType
 class Test_DAType:
+    ##
+    # Unitary test for Parse_DAType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST

@@ -14,8 +14,8 @@
 import xml.dom.minidom as dom
 
 from IEC_FileListe      import FileListe  as  FL
-from IEC_Trace          import IEC_Console as TConsole
-from IEC_Trace          import TraceLevel  as TL
+from IEC_Trace          import Trace
+from IEC_Trace          import Level  as TL
 from IEC_LN             import Parse_LN
 
 from IEC61850_XML_Class import IED
@@ -31,12 +31,11 @@ from IEC_LN             import Parse_LN
 #   The main function is Parse IED, which will invoque Parse_Server method and iterativily call IEC_LN..
 
 class Parse_Server:
+    ## \b Description
+    #   Constructor is used to keep initialize the Parse_LN class (forwarding TRACE class).
+    # @param _scl: pointer to the SCL structure created by miniDOM
+    # @param _TRX: Trace function
     def __init__(self, _scl, TR):       ## Constructor for Server
-        ## \b Description
-        #   Constructor is used to keep initialize the Parse_LN class (forwarding TRACE class).
-        # @param _scl: pointer to the SCL structure created by miniDOM
-        # @param _TRX: Trace function
-
         self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
         self.TR         = TR            ## Instance of the TRACE service.
         self.pLN        = Parse_LN(TR)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
@@ -65,9 +64,9 @@ class Parse_Server:
 
         tLDevice = []
         LDi     = pServer
-        inst    = LDi.getAttribute("inst")
-        ldName  = LDi.getAttribute("ldName")
-        desc    = LDi.getAttribute("desc")
+        inst    = LDi.getAttribute("inst")        ## Identification of the LDevice within the IED. Identification of the LDevice within the IED. Its value cannot be the empty string.
+        ldName  = LDi.getAttribute("ldName")      ## The explicitly specified name of the logical device according to IEC 61850-7-1  and 7-2 within the communication.           
+        desc    = LDi.getAttribute("desc")        ## The description text
         trLDevice = "     LDevice: " + ldName + ' inst:' + inst + ' desc:' + desc
         self.TR.Trace(trLDevice, TL.GENERAL)
         iDeviceInstance = IED.AccessPoint.Server.LDevice(inst, desc, ldName)  # LN0 et les LN sont ajoutés après
@@ -125,27 +124,26 @@ class Parse_Server:
 
     def Parse_IED(self,TR):
         LD_index  = 0
-        tIED_array   = []       # Iterative version of the Data Model: Table of LN, Table of DO....
-        tIED_struct  = []       # Named based version of the Data Model:  MEASURE.MMXU.X.X
+        tIED_array   = []       ## Iterative version of the Data Model: Table of LN, Table of DO....
+        tIED_struct  = []       ## Named based version of the Data Model:  MEASURE.MMXU.X.X
 
         IEDlst = self.scl.getElementsByTagName("IED")
         for ied in IEDlst:
-            type                = ied.getAttribute("type")
-            IEDname             = ied.getAttribute("name")
-            desc                = ied.getAttribute("desc")
-            originalSclVersion  = ied.getAttribute("originalSclVersion")  # Key to access the type details
-            originalSclRevision = ied.getAttribute("originalSclRevision")
-            configVersion       = ied.getAttribute("configVersion")
-            manufacturer        = ied.getAttribute("manufacturer")
-            engRight            = ied.getAttribute("engRight")
-            owner               = ied.getAttribute("owner")
-            self.TR.Trace(("IED:"+IEDname+' type:'+type+' desc:'+desc),TL.DETAIL)
+            IEDname             = ied.getAttribute("name")                 ## The identification of the IED, 'Template' in ICD, unique in SCD.
+            _desc                = ied.getAttribute("desc")                 ## The description text
+            _type                = ied.getAttribute("type")                 ## The (manufacturer specific) IED product type
+            _manufacturer        = ied.getAttribute("manufacturer")         ## The manufacturer's name
+            _configVersion       = ied.getAttribute("configVersion")        ## The basic configuration version of this IED configuration
+            _originalSclVersion  = ied.getAttribute("originalSclVersion")   ## The original SCL schema version of the IEDs ICD file; optional
+            _originalSclRevision = ied.getAttribute("originalSclRevision")  ## The original SCL schema revision of the IEDs ICD file; optional
+            _engRight            = ied.getAttribute("engRight")             ## The engineering right transferred by a SED file
+            _owner               = ied.getAttribute("owner")                ## The owner project of this IED,
+            self.TR.Trace(("IED:"+IEDname+' type:' + _type + ' desc:' + _desc),TL.DETAIL)
 
-            iIED_array  = IED(IEDname, type, desc, originalSclVersion, originalSclRevision \
-                                          , configVersion ,manufacturer, engRight, owner)
+            iIED_array  = IED(IEDname, _desc, _type, _manufacturer, _configVersion, _originalSclVersion, _originalSclRevision, _engRight, _owner)
 
-            iIED_struct = IED(IEDname, type, desc, originalSclVersion, originalSclRevision \
-                                          , configVersion ,manufacturer, engRight, owner)
+            iIED_struct = IED(IEDname, _desc, _type, _manufacturer, _configVersion, _originalSclVersion, _originalSclRevision, _engRight, _owner)
+
             Services = ied.firstChild.nextSibling
     # Skip any Private...
             while (Services.localName is None) or (Services.localName=="Private"):
@@ -159,10 +157,10 @@ class Parse_Server:
             if Services.localName=="AccessPoint":
                 pAcccess = Services
 
-                _name   = pAcccess.getAttribute("name")
-                _desc   = pAcccess.getAttribute("desc")
-                _router = pAcccess.getAttribute("router")
-                _clock  = pAcccess.getAttribute("clock")
+                _name   = pAcccess.getAttribute("name")         ## The description text
+                _desc   = pAcccess.getAttribute("desc")         ## Reference identifying this access point within the IED
+                _router = pAcccess.getAttribute("router")       ## The presence and setting to true defines this IED to have a router function.
+                _clock  = pAcccess.getAttribute("clock")        ## The presence and setting to true defines this IED to be a master clock at this bus.
                 _AccessPoint = IED.AccessPoint(_name,_desc,_router,_clock )
                 iIED_array.tAccessPoint.append(_AccessPoint)
                 idxAccessPoint = len(iIED_array.tAccessPoint)-1
@@ -190,8 +188,8 @@ class Parse_Server:
                 continue
             else:
                 while ServerSection.localName == "Server":
-                    _desc    = ServerSection.getAttribute("desc")
-                    _timeout = ServerSection.getAttribute("timeout")
+                    _desc    = ServerSection.getAttribute("desc")      ## A descriptive text
+                    _timeout = ServerSection.getAttribute("timeout")   ## Time out in seconds: if a started transaction isnot completed within this time, it is cancelled and reset
                     iServer = IED.AccessPoint.Server(_desc,_timeout)
                     iIED_array.tAccessPoint[idxAccessPoint].tServer.append(iServer)
 
@@ -203,12 +201,12 @@ class Parse_Server:
                             pServer = pServer.nextSibling
                             continue
 
-                        if pServer.localName == "Authentication":        # On ne traite pas section ...
-                           none        = pServer.getAttribute("none")
-                           password    = pServer.getAttribute("password")
-                           weak        = pServer.getAttribute("weak")
-                           strong      = pServer.getAttribute("strong")
-                           certificate = pServer.getAttribute("certificate")
+                        if pServer.localName == "Authentication":
+                           none        = pServer.getAttribute("none")        ## IEC  No authentication
+                           password    = pServer.getAttribute("password")    ## Defined in the stack mappings (SCSMs)
+                           weak        = pServer.getAttribute("weak")        ## Defined in the stack mappings (SCSMs)
+                           strong      = pServer.getAttribute("strong")      ## Defined in the stack mappings (SCSMs)
+                           certificate = pServer.getAttribute("certificate") ## Defined in the stack mappings (SCSMs)
 # TODO eventually AccesPoint without server
                            iAuthentication = IED.AccessPoint.Server.Authentication(none,password,weak,strong,certificate)
                            iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer].authentication = iAuthentication
@@ -244,13 +242,13 @@ class Parse_Server:
 
 class Test_IED_Server:
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
             scl = dom.parse(directory + file)
         TRX.Trace(("File:" + file), TL.GENERAL)
-        iIED = Test_IED_Server(scl, TRX)
+        iIED = Parse_Server(scl, TRX)
 
         tIEDglobal= iIED.Parse_IED(TRX)
         TRX.Trace(("END of IEC_IED_Server"), TL.GENERAL)

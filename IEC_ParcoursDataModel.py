@@ -23,9 +23,8 @@ from IEC_Services           import Test_Services
 from IEC_Communication      import ParseCommunication
 from IEC_IED_Server         import Parse_Server
 
-from IEC_Trace              import IEC_Console   as TConsole
-from IEC_Trace              import IEC_TraceFile
-from IEC_Trace              import TraceLevel    as TL
+from IEC_Trace              import Trace   as TConsole
+from IEC_Trace              import Level   as TL
 from IEC_TypeSimpleCheck    import Check
 
 from IEC61850_XML_Class     import  DataTypeTemplates as IecType
@@ -375,7 +374,7 @@ class CodeGeneration:
             self.tIED            = []
 
     def GenerateFileHead(self, ied):
-        TR2 = IEC_TraceFile(TL.GENERAL, "GeneratedScript/" + ied.name + '.py')
+        TR2 = TConsole.File(TL.GENERAL, "GeneratedScript/" + ied.name + '.py')
         TR2.Trace(('from utest.ATL import *\n'), TL.GENERAL)
         TR2.Trace(('from VsUtils import variables as vs\n'), TL.GENERAL)
         TR2.Trace(('from utest import IECToolkit\n'), TL.GENERAL)
@@ -471,7 +470,7 @@ class CodeGeneration:
 
 if __name__ == '__main__':
     global TR
-    TX = TConsole(TL.GENERAL)
+    TX = TConsole.Console(TL.GENERAL)
     tIEDfull=[]
     for file in FileListe.lstSystem:
 
@@ -524,7 +523,7 @@ if __name__ == '__main__':
                         if (A == "<class 'AttributeError'>"):
                             break
                 i = i + 1
-            TR2.TraceClose()
+            TR2.Close()
         T1 = time.time()
         TempsTotal = str(T1 - T0)
         print("Temps total de traitement:" + file + ':' + TempsTotal)

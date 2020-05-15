@@ -1,6 +1,6 @@
 import xml.dom.minidom as dom
-from IEC_Trace import IEC_Console   as TConsole
-from IEC_Trace import TraceLevel    as TL
+from IEC_Trace import Trace
+from IEC_Trace import Level    as TL
 from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
@@ -70,7 +70,7 @@ class Parse_LNodeType:
             _accessControl  = pDO.getAttribute("accessControl")
             _transient      = pDO.getAttribute("transient")
             _desc           = pDO.getAttribute("desc")
-            iDO= IECType.LNodeType.DOi(_name, _type, _accessControl, _transient, _desc)
+            iDO= IECType.LNodeType.DOI(_name, _type, _accessControl, _transient, _desc)
             self.TRX.Trace(("     DO:"+_name+" type:"+_type+" desc:"+_desc),TL.DETAIL)
             tDO.append(iDO)
             pDO = pDO.nextSibling
@@ -118,7 +118,7 @@ class Test_LNodeType:
     ##
     # Unitary for ParseDoType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST

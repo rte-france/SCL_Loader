@@ -10,8 +10,8 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 import xml.dom.minidom as dom
-from IEC_Trace import IEC_Console   as TConsole
-from IEC_Trace import TraceLevel    as TL
+from IEC_Trace import Trace
+from IEC_Trace import Level as TL
 from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
 
@@ -25,14 +25,13 @@ class Parse_DOType:
     ## \b Description
     #   Constructor is used to keep the dictionary of DOType available.
     #
-    # @image html DO.png        width=300px
     # @param _scl: pointer to the SCL structure created by miniDOM
     # @param _TRX: Trace function
     def __init__(self, _scl, _TRX):
-
-        self.TRX = _TRX     # *!< Detailed description after the member >
-        self.SCL = _scl     # *!< Detailed description after the member >
-        self.dicDoType = {}
+        ## TRX initialized tracing system
+        self.TRX = _TRX     ## TRX initialized tracing system
+        self.SCL = _scl     ## SCL pointeur  to SCL with list of DOType
+        self.dicDoType = {} ## dicDoType will contain a dictionary of DOType, the 'id' of the DOTYpe is the key.
 
     ##
     # Return a full DoType for a given doType 'id'
@@ -56,17 +55,13 @@ class Parse_DOType:
     def GetDOTypeDict(self):
         return self.dicDoType
 
-# < DA bType = "VisString255" fc = "DC" name = "hwRev" valKind = "RO" / >
-# < DA bType = "VisString255" fc = "DC" name = "swRev" valKind = "RO" / >
 
     ##
     # \b Get_DA_Attributes: retrieve the list of DA and SDO for a DoType.
     #
-    # @param pDA: pointer to the SCL structure pointing a <DA structure>
+    # @param pDA: pointer to the SCL structure pointing a xml DA structure
     #
-    # XML extract:
-    #       < DA bType = "VisString255" fc = "DC" name = "hwRev" valKind = "RO" / >
-    #       < DA bType = "VisString255" fc = "DC" name = "swRev" valKind = "RO" / >
+
     def Get_DA_Attributes(self, pDA):
 
         tDA=[]                          # Allocation of DAinst table
@@ -101,7 +96,7 @@ class Parse_DOType:
                     if (p1.firstChild is not None) and p1.localName=="Val":
                         _value = p1.firstChild.data
 
-                iDA = IECType.DOType.DAinst(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
+                iDA = IECType.DOType.DAI(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
                  , _count, _valKind, _valImp, "DA", _type, _value)
 
                 tDA.append(iDA)
@@ -118,7 +113,7 @@ class Parse_DOType:
                 _desc = pDA.getAttribute("desc")
                 _count= pDA.getAttribute("count")
 
-                iDA = IECType.DOType.DAinst(_desc, _name, '_fc', '_dchg', '_qchg', '_dupd', '_sAddr', '_bType', '_type'
+                iDA = IECType.DOType.DAI(_desc, _name, '_fc', '_dchg', '_qchg', '_dupd', '_sAddr', '_bType', '_type'
                  , _count, '_valKind', '_valImp', "SDO", _type, '_value')
 
                 tDA.append(iDA)
@@ -166,7 +161,7 @@ class Test_DOType:
     ##
     # Unitary for ParseDoType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST

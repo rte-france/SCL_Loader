@@ -10,10 +10,10 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 import xml.dom.minidom as dom
-from IEC_Trace      import IEC_Console   as TConsole
-from IEC_FileListe  import FileListe     as FL
-from IEC_Trace      import TraceLevel    as TL
-from IEC61850_XML_Class import SubNetWork
+from IEC_Trace      import Trace
+from IEC_FileListe  import FileListe as FL
+from IEC_Trace      import Level     as TL
+from IEC61850_XML_Class import SubNetwork
 
 class Communication:
     def __init__(self,_SubNetwork):
@@ -35,7 +35,7 @@ class ParseCommunication:
             type  = pAdr.getAttribute("type")        # <P type="OSI-SSEL">0001</P>
             value = pAdr.firstChild.data             # <P type="OSI-TSEL">0001</P>
             self.TRX.Trace(("         "+type+"='"+value+"'"), TL.DETAIL)  # </Address>
-            iPtype = SubNetWork.ConnectedAP.PhysConn.PType(type, value)
+            iPtype = SubNetwork.ConnectedAP.PhysConn.PType(type, value)
 
             tAdress.append(iPtype)
             pAdr = pAdr.nextSibling
@@ -69,14 +69,14 @@ class ParseCommunication:
                 CnxAP.tAddress = tAddress
             if pAP.localName == "PhysConn":
                 _type = pAP.getAttribute("type")
-                iPhysConn=SubNetWork.ConnectedAP.PhysConn(_type, None)
+                iPhysConn=SubNetwork.ConnectedAP.PhysConn(_type, None)
                 iPhysConn.tPhysAddress = self.ParseAddress(pAP.firstChild.nextSibling,"PhysConn")
                 CnxAP.PhysConn.append(iPhysConn)
             if pAP.localName == "SMV":                       # <SMV ldInst="MU01" cbName="MSVCB01" desc="bla...bla>
                 _ldInst = pAP.getAttribute("ldInst")         #   <Address> ....
                 _cbName = pAP.getAttribute("cbName")
                 _desc   = pAP.getAttribute("desc")
-                iSMV=SubNetWork.ConnectedAP.SMV(_ldInst,_cbName,_desc)
+                iSMV=SubNetwork.ConnectedAP.SMV(_ldInst,_cbName,_desc)
 #                self.TRX.Trace(("     SMV:         ldInst:"+_ldInst+" cbName:"+_cbName+" desc:"+_desc),TL.DETAIL)
 
                 iAddressSMV = pAP.firstChild.nextSibling     #	<Address>
@@ -90,7 +90,7 @@ class ParseCommunication:
                 _ldInst = pAP.getAttribute("ldInst")         #   <Address>
                 _cbName = pAP.getAttribute("cbName")         #     <P type="MAC-Address">01-01-19-01-11-01</P>
                 _desc   = pAP.getAttribute("desc")           #     <P type="VLAN-ID">00B</P>
-                iGSE=SubNetWork.ConnectedAP.GSE(_ldInst,_cbName,_desc) #     <P type="APPID">1911</P>
+                iGSE=SubNetwork.ConnectedAP.GSE(_ldInst,_cbName,_desc) #     <P type="APPID">1911</P>
 #                self.TRX.Trace(("     GSE: ldInst:" + _ldInst + " cbName:" + _cbName + " desc:" + _desc), TL.DETAIL)
 
                 pGSE = pAP.firstChild.nextSibling            #     <P type="VLAN-PRIORITY">4</P>
@@ -103,7 +103,7 @@ class ParseCommunication:
                         _unit        = pGSE.getAttribute("unit")
                         _multiplier  = pGSE.getAttribute("multiplier")
                         _MinTime     = pGSE.firstChild.nodeValue
-                        minTime=SubNetWork.ConnectedAP.GSE.MinTime(_unit,_multiplier,_MinTime)
+                        minTime=SubNetwork.ConnectedAP.GSE.MinTime(_unit,_multiplier,_MinTime)
                         iGSE.minTime = minTime
                         self.TRX.Trace(("     GSE: MinTime.unit:"+_unit+" multi:"+_multiplier+" MinTime="+_MinTime),TL.DETAIL)
                         pGSE = pGSE.nextSibling
@@ -111,7 +111,7 @@ class ParseCommunication:
                         _unit       = pGSE.getAttribute("unit")
                         _multiplier = pGSE.getAttribute("multiplier")
                         _MaxTime    = pGSE.firstChild.nodeValue
-                        maxTime    = SubNetWork.ConnectedAP.GSE.MaxTime(_unit, _multiplier, _MaxTime)
+                        maxTime    = SubNetwork.ConnectedAP.GSE.MaxTime(_unit, _multiplier, _MaxTime)
                         iGSE.maxTime= maxTime
                         self.TRX.Trace(("     GSE: MaxTime.unit:"+_unit+" multi:"+_multiplier+" MaxTime="+_MaxTime),TL.DETAIL)
                         pGSE = pGSE.nextSibling
@@ -151,7 +151,7 @@ class ParseCommunication:
             if pSubNet.localName == "BitRate":
                 Unit  = pSubNet.getAttribute("unit")
                 Value = pSubNet.firstChild.data
-                _BitRate = SubNetWork.BitRate(Unit, Value)
+                _BitRate = SubNetwork.BitRate(Unit, Value)
                 iSubNet.bitRate = _BitRate
                 self.TRX.Trace(("BitRate:     Unit:" + Unit + "Value:" + Value), TL.DETAIL)
 
@@ -162,7 +162,7 @@ class ParseCommunication:
                 _desc       = pAP.getAttribute("desc")
                 _redProt    = pAP.getAttribute("redProt")
                 self.TRX.Trace(("        ConnectedAP: iedName:" + _iedName + " apName:" + _apName + " desc: " + _desc), TL.DETAIL)
-                iCnxAP = SubNetWork.ConnectedAP(_iedName, _apName, _desc, _redProt)
+                iCnxAP = SubNetwork.ConnectedAP(_iedName, _apName, _desc, _redProt)
                 iCnxAP = self.ParseConnectedAP(pAP, iCnxAP, self.TRX)
                 tAP.append(iCnxAP)
                 continue
@@ -185,7 +185,7 @@ class ParseCommunication:
             _name = pSubNet.getAttribute("name")
             _type = pSubNet.getAttribute("type")
             _desc = pSubNet.getAttribute("desc")
-            iSubNet = SubNetWork(_name, _type, _desc, 'text', 'bitrate', None)  # None: reservé for ConnectedAP
+            iSubNet = SubNetwork(_name, _type, _desc, 'text', 'bitrate', None)  # None: reservé for ConnectedAP
             self.TRX.Trace(("SubNetWork: name:" + _name + " type:" + _type + " desc:" + _desc), TL.DETAIL)
             iSubNet = self.ParseSubNet(pSubNet,iSubNet)
             tNetWork.append(iSubNet)
@@ -207,7 +207,7 @@ class ParseCommunication:
 
 class Test_Communication:
     def main(directory, file, scl):
-        TRX = TConsole(TL.DETAIL)
+        TRX = Trace.Console(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
