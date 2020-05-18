@@ -92,9 +92,12 @@ class IECda:
 #        else:
 #            self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ',' + iecType + ', No Value, VK:'+ _Valkind ),TL.DETAIL)
 
+#
 # FOR DEBUGGING        self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
 #                           ', Value:'+ self.iecTypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
 
+##
+#
 # Class GlobalModel
 #
 # For a given SCL file this class will
@@ -103,10 +106,13 @@ class IECda:
 #   - Extract the IP Address and connection data from the communication and
 #     insert it in the Global Model
 #   - Generate the table of all Data Point
+#
+# @param    _TR     _TR instance of the trace system
+# @param    file    SCL file to use (SCD, IID, ICD, ...)
 
 class globalDataModel:
     def __init__(self, _TR,  file):
-        self.TR   = _TR
+        self.TR   = _TR                 ##_TR instance of the trace system
         self.tIED = []
 
         self.scl = self.LoadSCLModel(file)
@@ -125,11 +131,41 @@ class globalDataModel:
         self.EnumType   = Parse_EnumType(self.scl , self.TR)
         self.EnumType.Create_EnumType_Dict(DataType)
 
-    def TraceDataPoint(self,entete, DA_type, bType2, bType, DataName, fc):
-        self.TR.Trace((entete + "    DA_type:" + DA_type + ', bType:' + bType +  ', bType2:' + bType2+
+    ##
+    #
+    # \b TraceDataPoint
+    #
+    # For debugging purpose, print the details of a given data point
+    #
+    # @param    header  Text like Struct-1 , Enum-2, Simple...
+    # @param    file    SCL file to use (SCD, IID, ICD, ...)
+    # @param    DA_Type Data Attribute level, DA_name (depends on the DO complexity...)
+    # @param    bType2  Data Type or Struct field
+    # @param    bType   Data Type or Struct field
+    # @param    DataName
+    # @pamra    fc      Functional Constraint of the data point
+
+    def TraceDataPoint(self,header, DA_type, bType2, bType, DataName, fc):
+        self.TR.Trace((header + "    DA_type:" + DA_type + ', bType:' + bType +  ', bType2:' + bType2+
                            ', DataName: ' + DataName + ', FC:' + fc), TL.GENERAL)
 
-    def ParcoursTypeSimple(self,tIEC_adresse, DA_type, bType, idx, DataName, fc, DA, value, valKind):
+    ##
+    #
+    # \b BrowseTypeSimple
+    #
+    # Recursive function which browse a given DA, down the 'stVal', 'q' / 't' depth.
+    #
+    # @param    tIEC_adresse  the table of all IEC/mms adresses for one IED
+    # @param    DA_Type Data Attribute level, DA_name (depends on the DO complexity...)
+    # @param    bType2  Data Type or Struct field
+    # @param    bType   Data Type or Struct field
+    # @param    idx     Index for the table of IEC adresses
+    # @param    DataName
+    # @pamra    fc      Functional Constraint of the data point
+    # @param    DA
+    # @param    value   Actual if defined by SCL or type declaration
+    # @param    valkind What actions are possible on the data or not.
+    def BrowseTypeSimple(self,tIEC_adresse, DA_type, bType, idx, DataName, fc, DA, value, valKind):
 #        if bType=='Enum' or DA_type=='Enum':
 #             print('yyyyyyyyyyy')
 
@@ -186,7 +222,7 @@ class globalDataModel:
                 else:
                     self.TraceDataPoint("ELSE           :",DA_type, bType, bType2, DataName, fc)
                     DA = self.DAType.getIEC_DaType(bType2)
-                    self.ParcoursDA(tIEC_adresse, DataName, DA, None)
+                    self.BrowseDA(tIEC_adresse, DataName, DA, None)
             return None
         elif (bType == 'Enum'):
             bValue   = DA[idx].value
@@ -199,27 +235,32 @@ class globalDataModel:
 
             DO= self.DOType.getIEC_DoType(bType)
             if DO is not None:
-                self.ParcoursDA(tIEC_adresse, DataName, DO.tDA, 'Yes')
+                self.BrowseDA(tIEC_adresse, DataName, DO.tDA, 'Yes')
             else:
                 DA = self.DAType.getIEC_DaType(bType)
-                self.ParcoursDA(tIEC_adresse, DataName, DA, 'Yes')
-
-
-    def ParcoursDA(self, tIEC_adresse, DO_Name, DA, FC):
+                self.BrowseDA(tIEC_adresse, DataName, DA, 'Yes')
+    ##
+    #
+    # \b BrowseDA
+    #
+    # Going through all the DA of a given DO
+    #
+    # @param    tIEC_adresse  the table of all IEC/mms adresses for one IED
+    # @param    DO_Name         Name of the DO
+    # @param    DA      instance of a DA
+    # @pamra    fc      Functional Constraint of the data point
+    def BrowseDA(self, tIEC_adresse, DO_Name, DA, FC):
 
         if DA is None:
             print("Problem DA None !!!!" + DO_Name)
             return
 
-        for i in range(len(DA)):  # Parcours des DA composants le DO.
+        for i in range(len(DA)):  # Browse des DA composants le DO.
             type1    = DA[i].type
             bType1   = DA[i].bType
             value    = DA[i].value
             valKind  = DA[i].valKind
             count    = DA[i].count
-
-            if DA[i].name == "ApcFTrk":
-                print("xxxxxxxxx",DA[i].name)
 
             if FC is None:          # Cas du parcours des structures
                 fc = ''
@@ -235,11 +276,20 @@ class globalDataModel:
                 cpt = int(count)
                 for j in range(0,cpt):
                     DataName = DO_Name + '$' + DA[i].name + str(j)  # + '(' + bType1 + '-' + valKind1 + ')'
-                    bType2 = self.ParcoursTypeSimple(tIEC_adresse, type1, bType1, i, DataName, 'NO', DA, value, valKind )
+                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, 'NO', DA, value, valKind )
             else:
-                bType2 = self.ParcoursTypeSimple(tIEC_adresse, type1, bType1, i, DataName, fc, DA, value, valKind)
+                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, fc, DA, value, valKind)
 
-    def ParCoursDataModel(self, scl,IEDinstance, TR):
+    ##
+    #
+    # \b BrowseDataModel
+    #
+    # Going through all AccessPoint, Servers and logical device
+    #
+    # @param    IEDinstance  the IED concerned
+    # @return   tIEC_adresse the table of IEC/MMS adresse (empty at this stage)
+
+    def BrowseDataModel(self, IEDinstance):
 
         tIEC_adresse=[]
         IEDName   = IEDinstance.name
@@ -249,11 +299,22 @@ class globalDataModel:
                 NbLdevice = len(IEDinstance.tAccessPoint[i].tServer[j].tLDevice)
                 for k in range(NbLdevice):                              # Browsing all LDevice of one IED
                     LD = IEDinstance.tAccessPoint[i].tServer[j].tLDevice[k]
-                    tIEC_adresse= self.ParcoursDataModel_LD(tIEC_adresse, IEDName, LD)
+                    tIEC_adresse= self.BrowseDataModel_LD(tIEC_adresse, IEDName, LD)
 
         return tIEC_adresse
 
-    def ParcoursDataModel_LD(self, tIEC_adresse, IEDName, LD):
+    ##
+    #
+    # \b BrowseDataModel_LD
+    #
+    # Going through all LN and DO of an IED
+    #
+    # @param    tIEC_adresse    the table of IEC/MMS address for a given IED
+    # @param    IEDName         the name of IED concerned
+    # @param    LD              the logical device to be parsed
+    # @return   tIEC_adresse    the table of IEC/MMS filled.
+
+    def BrowseDataModel_LD(self, tIEC_adresse, IEDName, LD):
             for j in range(len(LD.LN)):                         # Browsing LN du LDEVICE
                 LN = LD.LN[j]
                 txtLN = LD.LN[j].lnPrefix + LD.LN[j].lnClass + LD.LN[j].lnInst
@@ -269,13 +330,14 @@ class globalDataModel:
                     tDA = iDO.tDA
                     DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
                     DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
-                    self.ParcoursDA(tIEC_adresse, DO_Name, tDA, 'Yes')
+                    self.BrowseDA(tIEC_adresse, DO_Name, tDA, 'Yes')
 
             return(tIEC_adresse)
 
-    #def get IP_Adr(tAddress):
+    ##
+    # \b get IP_Adr(tAddress):
     #
-    # Recherche une adresse IP dans le tableau 'tAddress' d'un ConnectedAP
+    # Look_up for an IP address in a ConnectedAP structure
     #
     def GetIPAddress(self, tAddress):
         for i in range (0,len(tAddress)):
@@ -290,7 +352,7 @@ class globalDataModel:
         t1  = time.time()
         deltaT = t1 - t0
         fileName = 'SCL_files/' + file
-        print("Temps pour charger le SCL: " + fileName + ':' + str(deltaT))
+        print("Time to load the SCL file: " + fileName + ':' + str(deltaT))
 
         self.tIED = self.getIED_withComm(scl)  # Expect a file list
 
@@ -325,8 +387,6 @@ class globalDataModel:
 
     # Supposition: un server par IED !
         for i in range (0,len(tIED)):
-    #        iedNameSrv = tIED[i].tAccessPoint[0].tServer[0].IEDName      # Nom de l'IED dans la partie IED
-    #        apNameSrv  = tIED[i].tAccessPoint[0].tServer[0].APName       # Nom de l'access point dans la partie IED
             iedNameSrv = tIED[i].name                                     # Nom de l'IED dans la partie IED
             apNameSrv  = tIED[i].tAccessPoint[0].name                     # Nom de l'access point dans la partie IED
         # Recherche de l'addresse IP dans la partie réseau
@@ -358,86 +418,6 @@ class globalDataModel:
             self.tIED = tIED
         return tIED
 
-class CodeGeneration:
-    def __init__(self, ApplicationName):
-        self.application = ApplicationName
-
-    class IEDfull:
-        def __init__(self, _IEDcomm, _IEDmmsadresse):
-            self.IEDcomm        = _IEDcomm
-            self.IEDmmsadresse  = _IEDmmsadresse
-
-    class system:
-        def __init__(self, _comm, _dataModel, ):
-            self.communication   = _comm
-            self.dataModel       = _dataModel
-            self.tIED            = []
-
-    def GenerateFileHead(self, ied):
-        TR2 = TConsole.File(TL.GENERAL, "GeneratedScript/" + ied.name + '.py')
-        TR2.Trace(('from utest.ATL import *\n'), TL.GENERAL)
-        TR2.Trace(('from VsUtils import variables as vs\n'), TL.GENERAL)
-        TR2.Trace(('from utest import IECToolkit\n'), TL.GENERAL)
-        TR2.Trace(('import time\n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-
-        TR2.Trace(('class CheckDA:\n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-        TR2.Trace(('    def initialize(self):\n'), TL.GENERAL)
-        TR2.Trace(('        pass\n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-
-        TR2.Trace(('    def finalize(self):\n'), TL.GENERAL)
-        TR2.Trace(('        pass\n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-
-        TR2.Trace(('    def execute(self):\n'), TL.GENERAL)
-        TR2.Trace(('        '+ ied.name +' = IECToolkit.Manager(' + ip + ')\n'), TL.GENERAL)
-    #            IED_AP = ied.Server[0].IEDName + ied.Server[0].APName
-        IED_ID = ied.name + ied.tAccessPoint[0].name # tServer[0].IEDName
-        TR2.Trace(('        '+ 'I_' + IED_ID + '= mgr.getACSI('+IED_ID+')\n'), TL.GENERAL)
-
-        return TR2
-
-    def GenerateDataPointcheck(self, TR2, iec, IED_ID, index):
-        Value = iec.TypeValue
-        if Value is None:
-            Value = '-'
-        TR2.Trace(('\n# ---------------------------------------------------------- \n'), TL.GENERAL)
-        if iec.EnumType is None:
-    #        TR2.Trace(('# Verification on:' + iec.mmsAdr + '  type:' + iec.BasicType + '\n'), TL.GENERAL)
-            TR2.Trace(f'# Verification on: {iec.mmsAdr:40} :type {iec.BasicType:10} value: {Value:20}\n', TL.GENERAL)
-        else:
-     #       TR2.Trace(('# Verification on:' + iec.mmsAdr + '  Enum:' + iec.EnumType + '\n'), TL.GENERAL)
-            TR2.Trace(f'# Verification on: {iec.mmsAdr:40} :type {iec.EnumType:10} value: {Value:20}\n', TL.GENERAL)
-
-    # Line 1 model: # Verification on:L1_PU_GE_D60$Master$LGOS42$InRef59$SP$setSrcRef  type:ObjRef
-        TR2.Trace(f'\t\tda=iec[{index:06d}]\n]', TL.GENERAL)
-
-    # Line 2 model:         da=iec[019032]        # # DataType:ObjRef Value: -
-    #    TR2.Trace( f'\t\t# DataType: {iec.BasicType:20} Value: {Value}\n', TL.GENERAL)
-
-    # Line 3 model:     value = I_L1_PU_GE_D60.getDataValue(da.mmsAdrFinal))   # L1_PU_GE_D60Master/LLN0.Mod.stVal[ST]
-        TR2.Trace( f'\t\tvalue = I_{IED_ID}.getDataValue(da.mmsAdrFinal)        # {iec.mmsAdrFinal} + {Value} \n', TL.GENERAL)
-
-    # Line 4 model:     time.sleep(0.100)
-        TR2.Trace(('\t\ttime.sleep(0.100)\n' ), TL.GENERAL)
-
-    # Line 5 model:    CheckDatapoint(da, value)
-        TR2.Trace(('\t\tCheckDatapoint(da, value) ' + '\n' ), TL.GENERAL)
-
-    #    TR2.Trace(('        i = i + 1 \n'), TL.GENERAL)
-        TR2.Trace(('\n'), TL.GENERAL)
-
-    def GenerateCheckDAivalue(self, TR2, iec, adresse, value):
-        TR2.Trace(f'# Expecting: "{value}" as defined by DAI or SDI) \n', TL.GENERAL)
-        TR2.Trace(f'\t\tExpectedVal = {adresse:70}\n', TL.GENERAL)
-        TR2.Trace(f'\t\tActualValue = getDataValue({iec.mmsAdrFinal})\n', TL.GENERAL)  # Actual Read
-        TR2.Trace(f'\t\ttime.sleep(0.100)' + '\n', TL.GENERAL)
-        TR2.Trace(f'\t\tif ExpectedVal != ActualValue:' + '\n', TL.GENERAL)
-        TR2.Trace(f'\t\t\tSignalErrorOn( da.mmsAdrFinal , ExpectedVal , ActualValue )\n', + TL.GENERAL)
-
     def CheckDatapointSCL(self, iec):
         bType = iec.BasicType
         if iec.TypeValue != None:
@@ -449,32 +429,12 @@ class CodeGeneration:
                 else:
                     Check.Type(bType, iec.TypeValue)
 
-                    # TODO Trace
-
-    #
-    # ON LINE VERSION
-    #       = Test la valeur lue par rapport au type et par rapport à la valeur initiale.
-    #
-    # TODO A finaliser avec les lectures réelles
-    def CheckDatapoint(self, iec, value):
-        bType = iec.BasicType
-        if iec.TypeValue != None:
-            if bType != None:
-                if bType == 'Enum':
-                    Check.Enum(iec.EnumType, iec.TypeValue, value)
-                    # TODO Trace
-                else:
-                    Check.Type(bType, iec.TypeValue, value )
-                    # TODO Trace
-
-
 if __name__ == '__main__':
     global TR
     TX = TConsole.Console(TL.GENERAL)
     tIEDfull=[]
     for file in FileListe.lstSystem:
 
-        CG = CodeGeneration("CodeGeneration")
         GM = globalDataModel(TX,file)
 
         indIED = 0
@@ -483,9 +443,7 @@ if __name__ == '__main__':
         for ied in GM.tIED:
 
             t0 = time.time()
-            tIEC_adresse = GM.ParCoursDataModel(GM.scl, ied, TX)
-            IEDcomplet   = CG.IEDfull(ied, tIEC_adresse )
-            tIEDfull.append(IEDcomplet)
+            tIEC_adresse = GM.BrowseDataModel(ied)
             nbDa = str(len(tIEC_adresse))
             if ied.IP is None:
                 ip = '0.0.0.0'
@@ -499,23 +457,31 @@ if __name__ == '__main__':
 #            directAdress = ied.Server[0]
 #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
 # Manque stVal q t
-            TR2 = CG.GenerateFileHead(ied)
-            i = 0
-            IED_ID = ied.name   # TODO ou ied.name+AP_Name
+            index = 0
+            IED_ID = ied.name + ied.tAccessPoint[0].name #  ied.name   # TODO ou ied.name+AP_Name
             for iec in tIEC_adresse:
-                CG.GenerateDataPointcheck(TR2, iec, IED_ID, i)
-                CG.CheckDatapointSCL(iec)
+
+
+                value = IED_ID.getDataValue(iec.mmsAdrFinal)
+                time.sleep(0.001)
+
+                GM.CheckDatapointSCL(iec)
 
                 if iec.ValAdr != None:
-                    A = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].Server[0]."+iec.ValAdr
-                    AdrValue = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].tServer[0]."+iec.ValAdr+".value"
+                    A = GM.tIED[indIED].tAccessPoint[0].Server[0].iec.ValAdr
+                    AdrValue = GM.tIED[indIED].tAccessPoint[0].tServer[0].iec.ValAdr.value
                     try:
                         Test  = eval(AdrValue)  # Verify existence of some initialisation data
-                        Value = eval(AdrValue)
-#                        print("Checking:", AdrValue, "Value:", Value)
+                        ExpectedValue = eval(AdrValue)
+                        print("Checking:", AdrValue, "Value:", ExpectedValue)
 
-                        if (Value!=None):
-                            CG.GenerateCheckDAivalue(TR2, iec, AdrValue, Value)
+                        if (ExpectedValue!=None):
+#                            Expecting: "{value}" as defined by DAI or SDI) \n', TL.GENERAL)
+                            ActualValue = IED_ID.getDataValue(iec.mmsAdrFinal)
+                            time.sleep(0.100)
+                            if ExpectedValue != ActualValue:
+                                SignalErrorOn( iec.mmsAdrFinal , ExpectedValue , ActualValue )
+
 
                     except Exception as inst: # No data, an exception is expected hera
 #                        print(AdrValue)

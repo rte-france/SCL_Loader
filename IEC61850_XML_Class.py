@@ -147,187 +147,193 @@ class SubStation:
             self.name    = _name
             self.type    = _type            ##  Example AXN, BAT, MOT, FAN, FIL, PMP, VLV
             self.use     = _use             ##
+
 ##
-# \b SubNetwork Define the communication architecture
-#
-# This class define the communication architecture at from the 'subNetWork' level.
-# Each SubNetwork will en composed of:
-#   - a Bit Rate description
-#   - a set of ConnectedAP
-class SubNetwork:   # <SubNetwork name="LAN"  type="8-MMS" desc="blabla...
-    """Documentation for a class.
-    More details.
-    This class xxxx analyse the communication TAG:
-    < Communication >
-        <SubNetwork name = "ELECTRE" type = "8-MMS" >
-        <Private type = "Siemens-Start-Address" > 10.3.86.1 < / Private >
-        <ConnectedAP iedName = "SIP5TERNA" apName = "E" >
-            <Address >
-                <P type = "IP" xsi:type = "tP_IP" > 10.3.86.19 < / P >
-                <P type = "IP-SUBNET" xsi:type = "tP_IP-SUBNET" > 255.255.255.0 </P>
-    """
-    ##
-    # SubNetWork Class description is extracted from IEC61850-6 document
-    # @param _name : A name identifying this bus; unique within this SCL file
-    # @param _type : The SubNetwork protocol type; protocol types are defined by the SCSMs. In the
-    # examples, 8-MMS is used for the protocol defined in IEC 61850-8-1; IP should be used
-    # for all IP based protocols except those explicitly standardized. PHYSICAL should be
-    # used, if only physical connections shall be modeled, e.g. at a hub.
-    # @param _desc : Some descriptive text to this SubNetwork
-    # @param _text : Additional text
-
-
-    def __init__(self, _name, _type, _desc, _text, _bitRate, _ConnectedAP):
-
-    ##  The constructor for SubNetwork is parsing this section of SCL:
-    # <SubNetwork name="Subnet1"
-    #    <Text>Station bus</Text>
-    #    <BitRate unit="b/s">10</BitRate>
-    #  capName="AP1" iedName="SF6P1">
-
-        self.name         = _name       ## name from SCL
-        self.type         = _type       ## type from SCL
-        self.desc         = _desc       ## desc from SCL
-        self.text         = _text       ## text from SCL
-        self.bitRate      = _bitRate    ## bitRate from SCL
-        self.tConnectedAP = _ConnectedAP ## The table of the connected AcessPoint
+# \b Communication: create of the top-level of the data model for the communication section of the SCL
+# @brief
+# @b Description
+#   The  class 'communication' is a table of subNetWork
+class Communication:
+    def __init__(self,_SubNetwork):
+        self.tSubnetwork = _SubNetwork          # 2 sub-network
 
     ##
-    # SubNetWork/bitRAte Class
-    # @param _bitRate : Precise the bit rate of the network
-    # @param _ConnectedAP   : table of connected Access Point (usually one)
-    class BitRate:
-        """The class  BitRate, IEC61850 class + the Table of ConnectedAP
-        """
-        def __init__(self, _unit, _value):                # <BitRate unit="b/s">10</BitRate>
-            """The constructor BitRate, IEC61850 class + the Table of ConnectedAP
-            """
-            self.unit = _unit
-            self.value = _value
-    ##
-    # Connected APClass The ApClass reflect the ConnectedAP section of the SCL
-    # @param   iedName(iec)   A name identifying the IED
-    # @param   apName(iec)    A name identifying this access point within the IED
-    # @param   desc(iec)      Some descriptive text for this access point at this subnetwork
-    # @param   redProt(iec)   The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
-    #                          no default value, i.e. value not known if the attribute is missing.
-    #                          The allowed values are restricted by the IED capabilities (Services/RedProt).
+    # \b SubNetwork Define the communication architecture
     #
-    # @param   tAddress(app)   Table of adresses (P Type) et val
-    # @param   tSMV(app)       Table of SMV classes
-    # @param   tGSE(app)       Table of GSE classes
-    # @param   PhysConn(app)   Table of PhysConn classes
-    class ConnectedAP:
-        def __init__(self, _iedName, _apName, _desc, _redProt):  #<ConnectedAP iedName="TEMPLATE" apName="P1" desc= "... ">
-            self.iedName   = _iedName       # A name identifying the IED
-            self.apName    = _apName        # A name identifying this access point within the IED
-            self.desc      = _desc          # Some descriptive text for this access point at this subnetwork
-            self.redProt   = _redProt       # The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
-                                            # no default value, i.e. value not known if the attribute is missing.
-                                            # The allowed values are restricted by the IED capabilities (Services/RedProt).
+    # This class define the communication architecture at from the 'subNetWork' level.
+    # Each SubNetwork will en composed of:
+    #   - a Bit Rate description
+    #   - a set of ConnectedAP
+    class SubNetwork:   # <SubNetwork name="LAN"  type="8-MMS" desc="blabla...
+        """Documentation for a class.
+        More details.
+        This class xxxx analyse the communication TAG:
+        < Communication >
+            <SubNetwork name = "ELECTRE" type = "8-MMS" >
+            <Private type = "Siemens-Start-Address" > 10.3.86.1 < / Private >
+            <ConnectedAP iedName = "SIP5TERNA" apName = "E" >
+                <Address >
+                    <P type = "IP" xsi:type = "tP_IP" > 10.3.86.19 < / P >
+                    <P type = "IP-SUBNET" xsi:type = "tP_IP-SUBNET" > 255.255.255.0 </P>
+        """
+        ##
+        # SubNetWork Class description is extracted from IEC61850-6 document
+        # @param _name : A name identifying this bus; unique within this SCL file
+        # @param _type : The SubNetwork protocol type; protocol types are defined by the SCSMs. In the
+        # examples, 8-MMS is used for the protocol defined in IEC 61850-8-1; IP should be used
+        # for all IP based protocols except those explicitly standardized. PHYSICAL should be
+        # used, if only physical connections shall be modeled, e.g. at a hub.
+        # @param _desc : Some descriptive text to this SubNetwork
+        # @param _text : Additional text
+
+
+        def __init__(self, _name, _type, _desc, _text, _bitRate, _ConnectedAP):
+
+        ##  The constructor for SubNetwork is parsing this section of SCL:
+        # <SubNetwork name="Subnet1"
+        #    <Text>Station bus</Text>
+        #    <BitRate unit="b/s">10</BitRate>
+        #  capName="AP1" iedName="SF6P1">
+
+            self.name         = _name       ## name from SCL
+            self.type         = _type       ## type from SCL
+            self.desc         = _desc       ## desc from SCL
+            self.text         = _text       ## text from SCL
+            self.bitRate      = _bitRate    ## bitRate from SCL
+            self.tConnectedAP = _ConnectedAP ## The table of the connected AcessPoint
+
+        ##
+        # SubNetWork/bitRAte Class
+        # @param _bitRate : Precise the bit rate of the network
+        # @param _ConnectedAP   : table of connected Access Point (usually one)
+        class BitRate:
+            """The class  BitRate, IEC61850 class + the Table of ConnectedAP
             """
-                Attributes
-            """
-            self.tAddress  = []             ##  Table of adresses (P Type) et val
-            self.tSMV      = []             # Table of SMV classes
-            self.tGSE      = []             # Table of GSE classes
-            self.PhysConn  = []             # Table of PhysConn classes
-
+            def __init__(self, _unit, _value):                # <BitRate unit="b/s">10</BitRate>
+                """The constructor BitRate, IEC61850 class + the Table of ConnectedAP
+                """
+                self.unit = _unit
+                self.value = _value
         ##
-        #  GSE Class:   The GSE element defines the address for a GSE control block in this IED.
+        # Connected APClass The ApClass reflect the ConnectedAP section of the SCL
+        # @param   iedName(iec)   A name identifying the IED
+        # @param   apName(iec)    A name identifying this access point within the IED
+        # @param   desc(iec)      Some descriptive text for this access point at this subnetwork
+        # @param   redProt(iec)   The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
+        #                          no default value, i.e. value not known if the attribute is missing.
+        #                          The allowed values are restricted by the IED capabilities (Services/RedProt).
         #
-        #  @param desc(iec)     Textual description
-        #  @param ldInst(iec)   The instance identification of the LD within this IED, on which the control block is located. An
-        #                       LN is not necessary, as these control blocks are only in LLN0.
-        #  @param cbName(iec)   The name of the control block within the LLN0 of the LD ldInst.
-        #
-        class GSE:
-            def __init__(self, _ldInst, _cbName, _desc):
-                self.ldInst      = _ldInst      ## ldInst from SCL
-                self.cbName      = _cbName      ## cbName from SCL
-                self.desc        = _desc        ## desc from SCL
-                self.MinTime     = None         ## Will be to a 'MinTime' class if present
-                self.MaxTime     = None         ## Will be to a 'MaxTime' class if present
-                self.tGSEAddress = []           ## Table of GSE adresses
-            ##
-            # MinTime: the sending delay on a data change between the first immediate sending
-            # of the change and the first repetition in ms.
-            # SCL: <nit="s" multiplier="m">2</MinTime>
-            class MinTime:
-                def __init__(self, _unit, _min, _mul):
-                    ## <MinTime unit="s" multiplier="m">1000</MinTime>
-                    self.unit       = _unit # unit from SCL
-                    self.min        = _min  # MinTime from SCL
-                    self.multiplier = _mul  # Multipler from QXL
-
-            ##
-            # MaxTime: the source supervision time in ms (supervision heartbeat cycle time).
-            # Within this time, a failed message from the source shall be detected by
-            # the subscriber.
-            # SCL: <MaxTime unit="s" multiplier="m">10</MaxTime>
-            class MaxTime:
-                def __init__(self, _unit, _max, _mul):
-                    ## <MaxTime unit="s" multiplier="m">1000</MaxTime>
-                    self.unit       = _unit # unit from SCL
-                    self.max        = _max  # MinTime from SCL
-                    self.multiplier = _mul  # Multipler from SCL
-
-        ##
-        # \b SMV: The SMV element defines the address for a sampled value control block, like the GSE
-        # element does for the GSE control blocks. It is also based on the tControlBlock schema type,
-        # and therefore has the same attributes as the GSE control block.
-        #
-        # @param desc(iec):   Textual description.
-        # @param ldInst(iec): The instance identification of the LD within this IED, on which the control block is located. An
-        #                LN is not necessary, as these control blocks are only in LLN0.
-        # @param cbName(iec):  The name of the control block within the LLN0 of the LD ldInst.
-        #
-        # The SCL is looking like this:
-        #  <SMV ldInst="MU01" cbName="MSVCB01">
-        #   	<Address>                                               ### Stored in tSMVAdress.
-        #   		<P type="MAC-Address">01#-0C-CD-04-00-00</P>
-        #   		<P type="VLAN-ID">000</#P>
-        #   		<P type="VLAN-PRIORITY#">4</P>
-        #           <P type="APPID">4000</#P>sociés
-
-        class SMV:
-            def __init__(self,_ldInst,_cbName, _desc):
-                                                        ##
-                self.ldInst      = _ldInst              # ldInst from SCL
-                self.cbName      = _cbName              # cbName from SCL
-                self.desc        = _desc                # desc   from SCL
-                self.tSMVAddress = []                   # tSMVAddress table following the SMV Tag.
-
-        ##
-        #  \b Physical connection parameters
-        #   The element PhysConn defines the type(s) of physical connection for this access point. The
-        #   parameter values depend on the type of physical connection, and their types (meaning) have
-        #    to be defined in the stack mapping. Additional types may be introduced for documentation
-        #    purposes
-        #
-        # @param PhysConn:  type  Connection or RedConn
-
-        class PhysConn:                                  # <PhysConn type="Connection">         # Checked
-            def __init__(self, _type, _PhysAddress):     #     <P type="Type">FOC</P> Type, Plug, Cable, Port
-                self.type        =  _type                #     <P type="Plug">LC</P>
-                self.tPhysAddress = _PhysAddress         # </PhysConn>
+        # @param   tAddress(app)   Table of adresses (P Type) et val
+        # @param   tSMV(app)       Table of SMV classes
+        # @param   tGSE(app)       Table of GSE classes
+        # @param   PhysConn(app)   Table of PhysConn classes
+        class ConnectedAP:
+            def __init__(self, _iedName, _apName, _desc, _redProt):  #<ConnectedAP iedName="TEMPLATE" apName="P1" desc= "... ">
+                self.iedName   = _iedName       # A name identifying the IED
+                self.apName    = _apName        # A name identifying this access point within the IED
+                self.desc      = _desc          # Some descriptive text for this access point at this subnetwork
+                self.redProt   = _redProt       # The redundancy protocol used at this access point: allowed values are hsr, prp. rstp, none;
+                                                # no default value, i.e. value not known if the attribute is missing.
+                                                # The allowed values are restricted by the IED capabilities (Services/RedProt).
+                """
+                    Attributes
+                """
+                self.tAddress  = []             ##  Table of adresses (P Type) et val
+                self.tSMV      = []             # Table of SMV classes
+                self.tGSE      = []             # Table of GSE classes
+                self.PhysConn  = []             # Table of PhysConn classes
 
             ##
-            # \b P \b type
-            # \b Type 10BaseT, 100BaseT etc. for electrical connection FOC for optical connection Radio for radio connection, for example WLAN
+            #  GSE Class:   The GSE element defines the address for a GSE control block in this IED.
             #
-            # \b Plug RJ45 for electrical plug ST for bajonet plug (optical glass)
+            #  @param desc(iec)     Textual description
+            #  @param ldInst(iec)   The instance identification of the LD within this IED, on which the control block is located. An
+            #                       LN is not necessary, as these control blocks are only in LLN0.
+            #  @param cbName(iec)   The name of the control block within the LLN0 of the LD ldInst.
             #
-            # \b Cable The identification of a physical cable for this connection, which connects this connection point to another connection point
+            class GSE:
+                def __init__(self, _ldInst, _cbName, _desc):
+                    self.ldInst      = _ldInst      ## ldInst from SCL
+                    self.cbName      = _cbName      ## cbName from SCL
+                    self.desc        = _desc        ## desc from SCL
+                    self.MinTime     = None         ## Will be to a 'MinTime' class if present
+                    self.MaxTime     = None         ## Will be to a 'MaxTime' class if present
+                    self.tGSEAddress = []           ## Table of GSE adresses
+                ##
+                # MinTime: the sending delay on a data change between the first immediate sending
+                # of the change and the first repetition in ms.
+                # SCL: <nit="s" multiplier="m">2</MinTime>
+                class MinTime:
+                    def __init__(self, _unit, _min, _mul):
+                        ## <MinTime unit="s" multiplier="m">1000</MinTime>
+                        self.unit       = _unit # unit from SCL
+                        self.min        = _min  # MinTime from SCL
+                        self.multiplier = _mul  # Multipler from QXL
+
+                ##
+                # MaxTime: the source supervision time in ms (supervision heartbeat cycle time).
+                # Within this time, a failed message from the source shall be detected by
+                # the subscriber.
+                # SCL: <MaxTime unit="s" multiplier="m">10</MaxTime>
+                class MaxTime:
+                    def __init__(self, _unit, _max, _mul):
+                        ## <MaxTime unit="s" multiplier="m">1000</MaxTime>
+                        self.unit       = _unit # unit from SCL
+                        self.max        = _max  # MinTime from SCL
+                        self.multiplier = _mul  # Multipler from SCL
+
+            ##
+            # \b SMV: The SMV element defines the address for a sampled value control block, like the GSE
+            # element does for the GSE control blocks. It is also based on the tControlBlock schema type,
+            # and therefore has the same attributes as the GSE control block.
             #
-            # \b Port The identification of a port or terminal at this access point to which a cable is connected (see connection
-            class PType:                                               # <Address>
-                def __init__(self, _type, _value):                     # 	<P type="MAC-Address">01-0C-CD-04-00-00</P>
-                    self.type  = _type                                 # 	<P type="VLAN-ID">000</P>
-                    self.value = _value                                # </Address>
+            # @param desc(iec):   Textual description.
+            # @param ldInst(iec): The instance identification of the LD within this IED, on which the control block is located. An
+            #                LN is not necessary, as these control blocks are only in LLN0.
+            # @param cbName(iec):  The name of the control block within the LLN0 of the LD ldInst.
+            #
+            # The SCL is looking like this:
+            #  <SMV ldInst="MU01" cbName="MSVCB01">
+            #   	<Address>                                               ### Stored in tSMVAdress.
+            #   		<P type="MAC-Address">01#-0C-CD-04-00-00</P>
+            #   		<P type="VLAN-ID">000</#P>
+            #   		<P type="VLAN-PRIORITY#">4</P>
+            #           <P type="APPID">4000</#P>sociés
 
+            class SMV:
+                def __init__(self,_ldInst,_cbName, _desc):
+                                                            ##
+                    self.ldInst      = _ldInst              # ldInst from SCL
+                    self.cbName      = _cbName              # cbName from SCL
+                    self.desc        = _desc                # desc   from SCL
+                    self.tSMVAddress = []                   # tSMVAddress table following the SMV Tag.
 
+            ##
+            #  \b PhysConn connection parameters
+            #   The element PhysConn defines the type(s) of physical connection for this access point. The
+            #   parameter values depend on the type of physical connection, and their types (meaning) have
+            #    to be defined in the stack mapping. Additional types may be introduced for documentation
+            #    purposes
+            #
+            # @param PhysConn:  type  Connection or RedConn
 
+            class PhysConn:                                  # <PhysConn type="Connection">         # Checked
+                def __init__(self, _type, _PhysAddress):     #     <P type="Type">FOC</P> Type, Plug, Cable, Port
+                    self.type        =  _type                #     <P type="Plug">LC</P>
+                    self.tPhysAddress = _PhysAddress         # </PhysConn>
+
+                ##
+                # \b PType 10BaseT, 100BaseT etc. for electrical connection FOC for optical connection Radio for radio connection, for example WLAN
+                #
+                # \b Plug \b RJ45 for electrical plug ST for bajonet plug (optical glass)
+                #
+                # \b Cable The identification of a physical cable for this connection, which connects this connection point to another connection point
+                #
+                # \b Port The identification of a port or terminal at this access point to which a cable is connected (see connection
+                class PType:                                               # <Address>
+                    def __init__(self, _type, _value):                     # 	<P type="MAC-Address">01-0C-CD-04-00-00</P>
+                        self.type  = _type                                 # 	<P type="VLAN-ID">000</P>
+                        self.value = _value                                # </Address>
 
 ##
 # \b IED The description of a IED, actual device.
