@@ -44,7 +44,6 @@ class IECda:
         if _Value == '__None__':
             self.TypeValue = None
 
-#
         FC='xx'
         mmsAdrSplit = _mmsAdr.split('$')
         posFC = -1                          # Position of functional Constraint
@@ -86,16 +85,15 @@ class IECda:
                 iecType = "Enum: "+_EnumType
             else:
                 print("#######################")
-#        if self.TypeValue != None:
-#            self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
-#                       ', Value:'+ self.TypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
-#        else:
-#            self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ',' + iecType + ', No Value, VK:'+ _Valkind ),TL.DETAIL)
-
-#
-# FOR DEBUGGING        self.TR.Trace(( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType+
-#                           ', Value:'+ self.iecTypeValue+ ', VK:'+ _Valkind ),TL.DETAIL)
-
+"""
+        txtValKind =  self.ValKind
+        if txtValKind is None:
+            txtValKind = ''
+        txtValue = self.TypeValue
+        if txtValue is None:
+            txtValue = ''
+        print( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType + ', Value:'+ txtValue+ ', VK:'+ txtValKind)
+"""
 ##
 #
 # Class GlobalModel
