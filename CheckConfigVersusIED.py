@@ -195,14 +195,14 @@ class CheckDataInitialValue:
         for file in FileListe.lstIED :
 
             CG = CheckDataInitialValue("CodeGeneration")
-            GM = globalDataModel(TX,file)
+            GM = globalDataModel(TX,'SCL_files/'+ file, None)
 
             indIED = 0
-            T0 = time.time()
+            T0_Total = time.time()
 
             for ied in GM.tIED:
 
-                t0 = time.time()
+                T0_IED = time.time()
                 tIEC_adresse = GM.BrowseDataModel(ied)
                 IEDcomplet   = CG.IEDfull(ied, tIEC_adresse )
                 tIEDfull.append(IEDcomplet)
@@ -211,14 +211,13 @@ class CheckDataInitialValue:
                     ip = '0.0.0.0'
                 else:
                     ip = ied.IP
-                t1 = time.time()
-                deltaT = t1 - t0
-                Resultat = str(deltaT)
+                Resultat = str(time.time()- T0_IED)
                 print("Temps pour l'IED:" + ied.name + '(' + ip + ") Nombre de DA:" + nbDa + "Temps" + Resultat)
 
-                Check1 = CheckDataInitialValue.CodeGen(ied,file)
-
-#                Check2 = CheckDataInitialValue.OnLine(ied,'')
+                if mode == 'CodeGeneration':
+                    Check = CheckDataInitialValue.CodeGen(ied,file)
+                if mode == 'Connected':
+                    Check = CheckDataInitialValue.Connected(ied,file)
 
     #            directAdress = ied.Server[0]
     #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
@@ -226,8 +225,7 @@ class CheckDataInitialValue:
                 i = 0
                 IED_ID = ied.name   # TODO ou ied.name+AP_Name
                 for iec in tIEC_adresse:
-                    Check1.DataPointcheck(iec, i)
-#                    Check2.CheckDatapointSCL(iec.IP, i)
+                    Check.DataPointcheck(iec, i)
 
                     if iec.ValAdr != None:
                         A = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].Server[0]."+iec.ValAdr
@@ -235,7 +233,6 @@ class CheckDataInitialValue:
                         try:
                             Test  = eval(AdrValue)  # Verify existence of some initialisation data
                             Value = eval(AdrValue)
-    #                        print("Checking:", AdrValue, "Value:", Value)
 
                             if (Value!=None):
                                 CG.DataPointcheck(iec, AdrValue, Value)
@@ -246,10 +243,10 @@ class CheckDataInitialValue:
                             if (A == "<class 'AttributeError'>"):
                                 break
                     i = i + 1
-                Check1.TX.Close()
-            T1 = time.time()
-            TempsTotal = str(T1 - T0)
-            print("Temps total de traitement:" + file + ':' + TempsTotal)
+                Check.TX.Close()
+
+            TempsTotal = str(time.time() - T0_Total)
+            print("Total Time:" + file + ':' + TempsTotal)
         print("fin")
 
 
@@ -258,5 +255,5 @@ if __name__ == '__main__':
     TX = Trace.Console(TL.GENERAL)
     tIEDfull=[]
 
-    CheckDataInitialValue.CheckAllValue('Connected')
+#    CheckDataInitialValue.CheckAllValue('Connected')
     CheckDataInitialValue.CheckAllValue('CodeGeneration')

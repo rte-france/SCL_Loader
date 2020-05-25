@@ -189,7 +189,7 @@ class CodeGeneration(QMainWindow):
                             _ln.appendRow(_do)
 
                             DO_Name2 = (IEDName, LD.inst, LN.lnPrefix + LN.lnClass + LN.lnInst, LD.LN[j].tDO[k].name)
-                            GM.ParcoursDA(tIEC_adresse, DO_Name, tDA, 'Yes')
+                            GM.BrowseDA(tIEC_adresse, DO_Name, tDA, 'Yes')
 
                             for x in range(len(tIEC_adresse)):
                                 iIECAdr = tIEC_adresse[x]
@@ -269,7 +269,7 @@ if __name__ == '__main__':
 
         app = QApplication(sys.argv)
         CG = CodeGeneration("CodeGeneration", TX)
-        GM = globalDataModel(TX,file)
+        GM = globalDataModel(TX,'SCL_files/' + file, None)
 
 #        GM.treeModel.show()
 

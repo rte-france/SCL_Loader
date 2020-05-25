@@ -18,7 +18,8 @@ import sys
 
 
 ##
-# \b RTE_Private:
+# \b RTE_Private Handling RTE private par of the SCL
+#
 # @brief
 #   This class handles the XML private extensions for RTE
 #
@@ -40,13 +41,14 @@ class RTE_Private:
         self.pDataModel  = _pDataModel
         ## TR - the initialized trace service.
         self.TR          = Trace.Console(TL.GENERAL)
-
-    class IDRC:  # RTE Specific, SCADA communication
+    ##
+    # \b IDRC: # RTE Specific, SCADA communication
+    class IDRC:
         ##
         # \b IDRC:
         #
-        #
         #  RTE Specific class to handle SCADA communication
+        #
         #  @param _value     value of the data point
         #  @param _sLabel    short label for the data point
         #  @param _Appear    short text for 'appearing' event, for example 'DEB'   (BEGinning)
@@ -63,6 +65,8 @@ class RTE_Private:
             self.Transient  = _Transient   ## Transient True or false
             self.IndLocal   = _IndLocal    ## IndLocal  Signal is dependant from Local/remote or not
 
+    ##
+    # \b FIP: Function Input Profile
     class FIP:
         ##
         # \b FIP: Function Input Profile
@@ -76,6 +80,9 @@ class RTE_Private:
             self.defaultValue   = _defaultValue
             ##  dataStreamKey  : unique key to the data flux concerned
             self.dataStreamKey  = _dataStreamKey
+
+    ##
+    # \b BAP: Basic Application Profile
     class BAP:
         ##
         # \b BAP: Basic Application Profile

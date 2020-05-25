@@ -27,8 +27,9 @@ from IEC_Services       import Test_Services
 from IEC_LN             import Test_LN
 from IEC_IED_Server     import Test_IED_Server
 from IEC_TypeSimpleCheck    import Test_TypeSimpleCheck
+from IEC_ParcoursDataModel  import Test_ParcoursDataModel  # TODO
+
 #from IEC_Rte_private        import Test_Rte_private        # TODO
-#from IEC_ParcoursDataModel  import Test_ParcoursDataModel  # TODO
 
 ##
 # \b Test_Project: this class invoke the main test method of each class.
@@ -59,6 +60,7 @@ class Test_Project:
         Test_Services.main(directory, file, scl)        ## Checking the Services section(Partial implementation)
         Test_LN.main(directory, file, scl)              ## Checking the IED Data Model part
         Test_IED_Server.main(directory, file, scl)      ## Checking the IED / AccessPoint /Server part
+        Test_ParcoursDataModel.main(directory, file, scl)  ## Checking the browsing of data model
 
     ## \b
     #   Tests all the modules of the application with System and IED configuration files

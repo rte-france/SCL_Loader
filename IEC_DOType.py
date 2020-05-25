@@ -112,9 +112,10 @@ class Parse_DOType:
                 _type = pDA.getAttribute("type")
                 _desc = pDA.getAttribute("desc")
                 _count= pDA.getAttribute("count")
-
-                iDA = IECType.DOType.DAI(_desc, _name, '_fc', '_dchg', '_qchg', '_dupd', '_sAddr', '_bType', '_type'
-                 , _count, '_valKind', '_valImp', "SDO", _type, '_value')
+                if _count is None:
+                    _count = "0"
+                iDA = IECType.DOType.DAI(_desc, _name, '', '_dchg', '_qchg', '_dupd', '_sAddr', _type , _type
+                 , _count, '_valKind', '_valImp', _type, _type, '_value')
 
                 tDA.append(iDA)
                 self.TRX.Trace(("     SDO- name:" + _name + ", sdo-type:"+ _type),TL.DETAIL)
