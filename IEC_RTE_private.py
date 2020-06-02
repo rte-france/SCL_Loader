@@ -100,6 +100,39 @@ class RTE_Private:
             ## dataStreamKey  : unique key to the data flux concerned
             self.dataStreamKey  = _dataStreamKey
 
+    class PhysicalTVTCbinding:
+        def __init__(self, _NumOut, _BoardNum, _BrdPos, _ConnName, _ConnRef ):
+          self.NumOut    = _NumOut
+          self.BoardNum  = _BoardNum
+          self.BrdPos    = _BrdPos
+          self.ConnName  = _ConnName
+          self.ConnRef   = _ConnRef
+
+    class RteParam:
+        def __init__(self, _shortLabel, _longLabel, _conf):
+            self.shortLabel = _shortLabel
+            self.longLabel  = _longLabel
+            self.conf       = _conf
+
+    class RtePhysicalTVTCbinding:
+        def __init__(self, _NumOut, _BoardNum, _BrdPos, _ConnName, _ConnRef):
+            self.NumOut  = _NumOut
+            self.BoardNum= _BoardNum
+            self.BrdPos  = _BrdPos
+            self.ConnName= _ConnName
+            self.ConnRef = _ConnRef
+
+    class RTE_ICD_Header:
+        def __init__(self, _rteIEDType, _nomFournisseur, _modeleIED, _hwRev, _swRev,  _headerId, _headerVersion, _headerRevision):
+            self.rteIEDType     = _rteIEDType
+            self.nomFournisseur = _nomFournisseur
+            self.modeleIED      = _modeleIED
+            self.hwRev          = _hwRev
+            self.swRev          = _swRev
+            self.headerId       = _headerId
+            self.headerVersion  = _headerVersion
+            self.headerRevision = _headerRevision
+
     ##
     # \b RTE_Generic
     #
@@ -205,6 +238,136 @@ class RTE_Private:
                 pRTE = pRTE.nextSibling
         return
 
-#   RtePrivate = DynImp(_type, pType, LN_LN0.DOI.DAI)
+    ##
+    # \b RTE_DAI_VAL: Basic Application Profile
+    #
+    #  RTE Specific way to define function behavior in case of data are qualified invalid quality bit(s).
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-BAP_VAL">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
 
+    def RTE_DAI_VAL(self, type, _pSCL, _pDataModel):
 
+        if _pSCL is None or _pDataModel is None:
+            return
+
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            _value = pRTE.nodeValue
+            print("                         ... Value RTE-DAI_val", _value)
+
+   ##
+    # \b RTE_LD_ChangeLog
+    #
+    #  RTE Specific way to define LD_ChangeLog
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-Change-Log">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
+
+    def RTE_LD_ChangeLog(self, type, _pSCL, _pDataModel):
+
+        if _pSCL is None or _pDataModel is None:
+            return
+
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            _value = pRTE.nodeValue
+            setattr(_pDataModel, "LD_ChangeLog", _value)
+            _pDataModel.value = _value
+            print("                         ... Value RTE-DAI_val", _value)
+
+    ##
+    # \b RTE_LD_Model_ChangeLog
+    #
+    #  RTE Specific
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-LD-Model-ChangeLog">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
+
+    def RTE_LD_Model_ChangeLog(self, type, _pSCL, _pDataModel):
+
+        if _pSCL is None or _pDataModel is None:
+            return
+
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            _value = pRTE.nodeValue
+            setattr(_pDataModel, "LD_Model_ChangeLog", _value)
+            _pDataModel.value = _value
+            print("                         ... Value RTE-DAI_val", _value)
+
+    ##
+    # \b RTE_PARAM
+    #
+    #  RTE Specific way to define parameter
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-PARAM">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
+    def RTE_PARAM(self, type, _pSCL, _pDataModel):
+
+        if _pSCL is None or _pDataModel is None:
+            return
+
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            pRTE = pRTE.nextSibling
+
+            _shortLabel = pRTE.getAttribute("shortLabel")
+            _longLabel  = pRTE.getAttribute("longLabel")
+            _conf       = pRTE.getAttribute("conf")
+            iRteParam = RTE_Private.RteParam(_shortLabel,_longLabel,_conf)
+            setattr(_pDataModel, "RteParam", iRteParam)
+
+    ##
+    # \b RTE_PhysicalTVTCbinding
+    #
+    #  RTE Specific way to define the binding of CT and VT (physical analog inputs for voltage and current)
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-PARAM">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
+
+    def RTE_PhysicalTVTCbinding(self, type, _pSCL, _pDataModel):
+        if _pSCL is None or _pDataModel is None:
+            return
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            pRTE = pRTE.nextSibling
+            _NumOut   = pRTE.getAttribute("NumOut")
+            _BoardNum = pRTE.getAttribute("BoardNum")
+            _BrdPos   = pRTE.getAttribute("BrdPos")
+            _ConnName = pRTE.getAttribute("ConnName")
+            _ConnRef  = pRTE.getAttribute("ConnRef")
+            iRtePhysicalTVTCbinding = RTE_Private.PhysicalTVTCbinding(_NumOut, _BoardNum, _BrdPos, _ConnName, _ConnRef)
+            setattr(_pDataModel, "RtePhysicalTVTCbinding", iRtePhysicalTVTCbinding)
+
+   ##
+    # \b RTE_ICD_HEADER
+    #
+    #  RTE Specific way to identify an ICD file and its IED.
+    #
+    #  @param   type          - the type of the private: '<Private type="RTE-ICD_HEADER">'
+    #  @param   _pSCL        - the pointer to the SCL, where the tag was found
+    #  @param   _pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
+
+    def RTE_ICD_HEADER(self, type, _pSCL, _pDataModel):
+        if _pSCL is None or _pDataModel is None:
+            return
+        pRTE = _pSCL.firstChild
+        if pRTE is not None:
+            pRTE = pRTE.nextSibling
+
+            _rteIEDType       = pRTE.getAttribute("rteIEDType")
+            _nomFournisseur   = pRTE.getAttribute("nomFournisseur")
+            _modeleIED        = pRTE.getAttribute("modeleIED")
+            _hwRev            = pRTE.getAttribute("hwRev")
+            _swRev            = pRTE.getAttribute("swRev")
+            _headerId         = pRTE.getAttribute("headerId")
+            _headerVersion    = pRTE.getAttribute("headerVersion")
+            _headerRevision   = pRTE.getAttribute("headerRevision")
+            iRTE_ICDHeader =  RTE_Private.RTE_ICD_Header(_rteIEDType, _nomFournisseur, _modeleIED, _hwRev, _swRev,  _headerId, _headerVersion, _headerRevision)
+            setattr(_pDataModel, "RteICDHeader", iRTE_ICDHeader)

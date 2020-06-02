@@ -17,6 +17,6 @@ class FileListe:
     ##  lstIED        a list of IED level file (IID, ICD, CID...)
     lstIED    = ['LD_all.scl']
     ##  lstSystem     a list of system configuration level file (SCD, SSD...)
-    lstSystem = ['SCL_20200415.scl'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
+    lstSystem = ['SCD_SITE_20200514.scd'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
     ##  lstFull       the concatenation of the two previous list
     lstFull   =  lstIED+lstSystem

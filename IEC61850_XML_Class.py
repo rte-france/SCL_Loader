@@ -446,9 +446,7 @@ class IED:
             # @param _lnClass(iec)      The LN class according to IEC 61850-7-x
             # @param _desc(iec)         The description text for the logical node
             class LN:
-                def __init__(self, _localName, _prefix, _lnType, _inst, _lnClass, _desc):   # Checked
-            # Partie générique commune à LN0 et LNODE (LN)
-                    self.localName  = _localName## (APP) LN or LN0
+                def __init__(self, _prefix, _lnType, _inst, _lnClass, _desc):   # Checked
                     self.lnPrefix   = _prefix   ## The LN prefix part
                     self.lnType     = _lnType   ## The instantiable type definition of this logical node, reference to a LNodeType definition
                     self.lnInst     = _inst     ## The LN instance number identifying this LN – an unsigned integer

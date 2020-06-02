@@ -20,7 +20,7 @@ from IEC_LN             import Parse_LN
 
 from IEC61850_XML_Class import IED
 from IEC_LN             import Parse_LN
-
+from IEC_PrivateSupport import DynImport
 
 ##
 # \b Parse_Server: this class create the list of DoType / Data Attributes elements
@@ -39,7 +39,7 @@ class Parse_Server:
         self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
         self.TR         = TR            ## Instance of the TRACE service.
         self.pLN        = Parse_LN(TR)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
-
+        self.Dyn        = DynImport()
     ##
     # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
     #
@@ -146,11 +146,19 @@ class Parse_Server:
 
             Services = ied.firstChild.nextSibling
     # Skip any Private...
-            while (Services.localName is None) or (Services.localName=="Private"):
+            while (Services.localName is None):
                 Services = Services.nextSibling
                 continue
     # Skip Service section (Parsed in a different section)
-            if Services.localName=="Services":
+
+            while Services.localName == "Private":
+                type = Services.getAttribute("type")
+                self.Dyn.PrivateDynImport(type, Services, iIED_array)
+                self.Dyn.PrivateDynImport(type, Services, iIED_struct)
+                Services = Services.nextSibling
+                Services = Services.nextSibling
+
+            if Services.localName == "Services":
                 Services = Services.nextSibling
                 Services = Services.nextSibling
             ## AccessPoint.localName: is the key to the ConnectedAP related to this access point
@@ -172,59 +180,59 @@ class Parse_Server:
                 else:
                     ServerSection = Services.firstChild.nextSibling
 
-            if (ServerSection is None):  #Pas de Server, application client pure
-                self.TR.Trace(('Application client:', IEDname, desc ),TL.DETAIL)
-                continue
-            if (ServerSection.firstChild is None):  # Pas de Server, application client pure
-                TR.Trace(('Application client:', IEDname, desc),TL.DETAIL)
-                if (len(iIED_struct.tAccessPoint))> 0:
-                    iIED_struct.tAccessPoint[idxAccessPoint].tServer = None
-                else:
-                    iIED_struct.tAccessPoint = None
-                    iIED_array.Server   = None
-                    iIED_struct.Server  = None
-                iIED_array.tLDevice  = None
-                iIED_struct.tLDevice = None
-                continue
-            else:
-                while ServerSection.localName == "Server":
-                    _desc    = ServerSection.getAttribute("desc")      ## A descriptive text
-                    _timeout = ServerSection.getAttribute("timeout")   ## Time out in seconds: if a started transaction isnot completed within this time, it is cancelled and reset
-                    iServer = IED.AccessPoint.Server(_desc,_timeout)
-                    iIED_array.tAccessPoint[idxAccessPoint].tServer.append(iServer)
+                    if (ServerSection is None):  #Pas de Server, application client pure
+                        self.TR.Trace(('Application client:', IEDname, desc ),TL.DETAIL)
+                        continue
+                    if (ServerSection.firstChild is None):  # Pas de Server, application client pure
+                        TR.Trace(('Application client:', IEDname, desc),TL.DETAIL)
+                        if (len(iIED_struct.tAccessPoint))> 0:
+                            iIED_struct.tAccessPoint[idxAccessPoint].tServer = None
+                        else:
+                            iIED_struct.tAccessPoint = None
+                            iIED_array.Server   = None
+                            iIED_struct.Server  = None
+                        iIED_array.tLDevice  = None
+                        iIED_struct.tLDevice = None
+                        continue
+                    else:
+                        while ServerSection.localName == "Server":
+                            _desc    = ServerSection.getAttribute("desc")      ## A descriptive text
+                            _timeout = ServerSection.getAttribute("timeout")   ## Time out in seconds: if a started transaction isnot completed within this time, it is cancelled and reset
+                            iServer = IED.AccessPoint.Server(_desc,_timeout)
+                            iIED_array.tAccessPoint[idxAccessPoint].tServer.append(iServer)
 
-                    idxServer =0
+                            idxServer =0
 
-                    pServer   = ServerSection.firstChild.nextSibling
-                    while pServer.nextSibling:
-                        if pServer.localName is None:
-                            pServer = pServer.nextSibling
-                            continue
+                            pServer   = ServerSection.firstChild.nextSibling
+                            while pServer.nextSibling:
+                                if pServer.localName is None:
+                                    pServer = pServer.nextSibling
+                                    continue
 
-                        if pServer.localName == "Authentication":
-                           none        = pServer.getAttribute("none")        ## IEC  No authentication
-                           password    = pServer.getAttribute("password")    ## Defined in the stack mappings (SCSMs)
-                           weak        = pServer.getAttribute("weak")        ## Defined in the stack mappings (SCSMs)
-                           strong      = pServer.getAttribute("strong")      ## Defined in the stack mappings (SCSMs)
-                           certificate = pServer.getAttribute("certificate") ## Defined in the stack mappings (SCSMs)
-# TODO eventually AccesPoint without server
-                           iAuthentication = IED.AccessPoint.Server.Authentication(none,password,weak,strong,certificate)
-                           iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer].authentication = iAuthentication
+                                if pServer.localName == "Authentication":
+                                   none        = pServer.getAttribute("none")        ## IEC  No authentication
+                                   password    = pServer.getAttribute("password")    ## Defined in the stack mappings (SCSMs)
+                                   weak        = pServer.getAttribute("weak")        ## Defined in the stack mappings (SCSMs)
+                                   strong      = pServer.getAttribute("strong")      ## Defined in the stack mappings (SCSMs)
+                                   certificate = pServer.getAttribute("certificate") ## Defined in the stack mappings (SCSMs)
+        # TODO eventually AccesPoint without server
+                                   iAuthentication = IED.AccessPoint.Server.Authentication(none,password,weak,strong,certificate)
+                                   iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer].authentication = iAuthentication
 
-                           pServer = pServer.nextSibling
-                           continue
-                        if pServer.localName == "Private":         # TODO est-ce qu'il y a des balises privées RTE ?
-                            pServer = pServer.nextSibling
-                            continue
+                                   pServer = pServer.nextSibling
+                                   continue
+                                if pServer.localName == "Private":         # TODO est-ce qu'il y a des balises privées RTE ?
+                                    pServer = pServer.nextSibling
+                                    continue
 
-                        if pServer.localName == "LDevice":
-                            self.Parse_LD_LN(iIED_array, pServer, idxAccessPoint, idxServer)
-                            pServer = pServer.nextSibling
-                            break
+                                if pServer.localName == "LDevice":
+                                    self.Parse_LD_LN(iIED_array, pServer, idxAccessPoint, idxServer)
+                                    pServer = pServer.nextSibling
+                                    break
 
-                    ServerSection = ServerSection.nextSibling
-                    if ServerSection is None:
-                        break
+                            ServerSection = ServerSection.nextSibling
+                            if ServerSection is None:
+                                break
 # Version itérative
             tIED_array.append(iIED_array)
 

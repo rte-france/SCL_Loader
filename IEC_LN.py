@@ -80,10 +80,7 @@ class Parse_LN:
         _lnType   = pLN.getAttribute("lnType")      ## The instantiable type definition of this logical node, reference to a LNodeType definition
         _desc     = pLN.getAttribute("desc")        ## The description text for the logical node
 
-        if pLN.localName == "LN0":
-            iLN = IED.AccessPoint.Server.LN("LN0:", _lnPrefix, _lnType, _inst, _lnClass, _desc)
-        else:
-            iLN = IED.AccessPoint.Server.LN("LN:", _lnPrefix, _lnType, _inst, _lnClass, _desc)
+        iLN = IED.AccessPoint.Server.LN(_lnPrefix, _lnType, _inst, _lnClass, _desc)
 
         if pLN.firstChild is not None:  # pLN is used to browse the XML tree
             pLN = pLN.firstChild.nextSibling  #
@@ -99,8 +96,9 @@ class Parse_LN:
 
         while pLN:
             if pLN.localName is None:
-                pLN = pLN.nextSibling
-                continue
+               pLN = pLN.nextSibling
+               continue
+
             if pLN.localName == "Private":
                 type = pLN.getAttribute("type")
                 self.Dyn.PrivateDynImport(type, pLN, iLN)      # Dynamic import for private
@@ -334,7 +332,7 @@ class Parse_LN:
                             _desc       = pClientLN.getAttribute("desc")      ## optional descriptive text, e.g. about purpose of the client
                             _apRef      = pClientLN.getAttribute("apRef")     ## Application reference
 
-                            iClientLN = IED.AccessPoint.Server.LN.ReportControl.RptEnable.ClientLN(_iedName,_ldInst, _prefix, _lnClass, _lnInst, _desc, _apRef)
+                            iClientLN = IED.AccessPoint.Server.LN.ReportControl.RptEnabled.ClientLN(_iedName,_ldInst, _prefix, _lnClass, _lnInst, _desc, _apRef)
                             iRCB.RptEnable.tClientLN.append(iClientLN)
                         pClientLN = pClientLN.nextSibling
                         continue
@@ -472,10 +470,10 @@ class Parse_LN:
         _ix   = pDOI.getAttribute("ix")                     ## The name of the data set to be sent by the GSE control block.
         _accessControl = pDOI.getAttribute("accessControl") ## The configuration revision number of this control block.
         self.TRX.Trace(("DOI: name:" + _name + " desc:" + _desc), TL.DETAIL)
-        iDOI = IED.AccessPoint.Server.LN.DOI(_name, _desc,_ix,_accessControl) #, None, None, None)  # None for RTE private Type
+        iDOI = IED.AccessPoint.Server.LN.DOI(_desc, _name, _ix, _accessControl) #, None, None, None)  # None for RTE private Type
         setattr( iLN ,iDOI.name,iDOI)
         pDAI = pDOI.firstChild  # Pointeur DAI ou SDI
-    
+
         while pDAI:  # USE CASE:
             if pDAI.localName is None:                  # <DOI name="LEDRs" desc="RstOper">
                 pDAI = pDAI.nextSibling                         # <SDI name="Oper">
@@ -508,7 +506,7 @@ class Parse_LN:
                             _inverted   = p104.getAttribute("inverted")
                             iDOI.IEC104 = IED.AccessPoint.Server.LN.DOI.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
                 else:
-                    self.Dyn.PrivateDynImport(type, pDAI, IED.AccessPoint.Server.LN.DOI.DAI)
+                    self.Dyn.PrivateDynImport(type, pDAI, iDOI)
 
                 pDAI = pDAI.nextSibling                             # </SDI>
                 continue                                            # <DAI name="ctlVal" sAddr="96.1.3.10.3" />
@@ -563,7 +561,7 @@ class Parse_LN:
                     if p1 is not None and p1.localName == "Private":
                         pType = pDAI.firstChild.nextSibling
                         _type = pType.getAttribute("type")
-                        self.Dyn.PrivateDynImport(_type, pType, iDOI)
+                        self.Dyn.PrivateDynImport(_type, pType, iDAI)
 
                     setattr(iDOI, _name, iDAI)  # I add the iDAI named '_name' to iDOI
                 else:
@@ -623,6 +621,9 @@ class Parse_LN:
                 while pDAI2 is not None:
                     if pDAI2.localName == "SDI":  # SDI imbriqué
                         iSDI2, sdi_name = self.Parse_SDI_Val(pDAI2, iSDI1, BaseName, 1, t_IX, sdi_name)
+                        if pDAI2.firstChild is None:
+                            pDAI2 = pDAI2.nextSibling
+                            continue
                         pDAI3 = pDAI2.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
 
                         if pDAI3.localName == "SDI":  # SDI imbriqué

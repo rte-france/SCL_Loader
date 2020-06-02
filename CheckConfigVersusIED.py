@@ -252,7 +252,7 @@ class CheckDataInitialValue:
 
 if __name__ == '__main__':
 
-    TX = Trace.Console(TL.GENERAL)
+    TX = Trace.Console(TL.DETAIL)
     tIEDfull=[]
 
 #    CheckDataInitialValue.CheckAllValue('Connected')

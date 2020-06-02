@@ -85,15 +85,39 @@ class DynImport:
         self.DicoPrivate = {}       ## For full tag name like 'RTE-FIP'
         self.TagList     = []       ## For generic tag starting a simple name like 'RTE-', 'GE_', 'Siemens-'...
 
-#       dicDoType[id] = {"import": cdc, "commentaire": desc, "tDA": tDA
-#                  start with TAG         class name
+        #       dicDoType[id] = {"import": cdc, "commentaire": desc, "tDA": tDA
+        #                  start with TAG         class name
         ## Dictionary based:
-        self.DicoPrivate['RTE-FIP']     = {"FileName":    'IEC_RTE_private' ,
-                                           "ClassName":   'RTE_Private'     ,
-                                           "MethodName": 'RTE_FIP' }
-        self.DicoPrivate['RTE-BAP']     = {"FileName":    'IEC_RTE_private' ,
-                                           "ClassName":   'RTE_Private'     ,
-                                           "MethodName":  'RTE_BAP' }
+        self.DicoPrivate['RTE-FIP']         =       { "FileName":     'IEC_RTE_private' ,
+                                                      "ClassName":    'RTE_Private'     ,
+                                                      "MethodName":   'RTE_FIP' }
+        self.DicoPrivate['RTE-BAP']         =       { "FileName":     'IEC_RTE_private' ,
+                                                      "ClassName":    'RTE_Private'     ,
+                                                      "MethodName":   'RTE_BAP' }
+        self.DicoPrivate['RTE-DAI_VAL']     =       { "FileName":     'IEC_RTE_private' ,
+                                                      "ClassName":    'RTE_Private'     ,
+                                                      "MethodName":   'RTE_DAI_VAL' }
+        self.DicoPrivate['RTE-ICD_HEADER']  =       { "FileName":     'IEC_RTE_private' ,
+                                                      "ClassName":    'RTE_Private'     ,
+                                                      "MethodName":   'RTE_ICD_HEADER' }
+        self.DicoPrivate['RTE-LD-ChangeLog']=       { "FileName":     'IEC_RTE_private' ,   # At DAI Level (Namplt/configRev]
+                                                      "ClassName":    'RTE_Private'     ,
+                                                      "MethodName":   'RTE_LD_ChangeLog' }
+        self.DicoPrivate['RTE-LD-Model-ChangeLog']= { "FileName":     'IEC_RTE_private' ,   # At DAI Level (Namplt/swRev]
+                                                      "ClassName":    'RTE_Private',
+                                                      "MethodName":   'RTE_LD_Model_ChangeLog'}
+        self.DicoPrivate['RTE-PARAM']=              { "FileName":     'IEC_RTE_private' ,
+                                                      "ClassName":    'RTE_Private',
+                                                      "MethodName":   'RTE_PARAM'}
+        self.DicoPrivate['RTE-FunctionUUID']=      { "FileName":     'IEC_RTE_private' ,
+                                                     "ClassName":    'RTE_Private',
+                                                     "MethodName":   'RTE_FunctionUUID'}
+        self.DicoPrivate['RTE-FunctionIndice']=    { "FileName":     'IEC_RTE_private' ,
+                                                     "ClassName":    'RTE_Private',
+                                                     "MethodName":   'RTE_FunctionIndice'}
+        self.DicoPrivate['RTE-PhysicalTVTCbinding']={"FileName":     'IEC_RTE_private' ,
+                                                     "ClassName":    'RTE_Private',
+                                                     "MethodName":   'RTE_PhysicalTVTCbinding'}
 
         ## List based, the matching string is the begining of the private tag
         #                                             KEY/TAG    FileName               ClassName
@@ -102,7 +126,6 @@ class DynImport:
         self.TagList.append(DynImport.privateTag('ABB_'     , 'IEC_ABB_private'     , 'Private_ABB'    , 'ABB_Generic'))
         self.TagList.append(DynImport.privateTag('GE_'      , 'IEC_GE_private'      , 'Private_GE'     , 'GE_Generic'))
         self.TagList.append(DynImport.privateTag('MiCOM-'   , 'IEC_MiCOM'           , 'Private_MiCOM'  , 'MiCOM_Generic'))
-
 
     ##
     # \b getClassMethod

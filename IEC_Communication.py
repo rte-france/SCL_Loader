@@ -55,7 +55,7 @@ class ParseCommunication:
         tNetWork = []
         pSubNet = pNetWork[0].firstChild.nextSibling
 
-        if pSubNet.localName is not "SubNetwork":
+        if pSubNet.localName != "SubNetwork":
             self.TRX.Trace(("Error: Tag SubNetwork not found"), TL.ERROR)
 
         while pSubNet:

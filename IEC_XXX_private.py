@@ -1,5 +1,5 @@
 #
-# Code Sample for GE private tag
+# Code Sample for 'XXX' private tag
 #
 # This is not an open source file
 #
