@@ -77,7 +77,7 @@ class IECda:
             if (i <= 1):  # Pösition de placement de la FC
                 _newMmsAdr = _newMmsAdr  + mmsAdrSplit[i]
                 if i == 1:
-                    self.ValAdr = self.ValAdr + '_' + mmsAdrSplit[i] + '_'
+                    self.ValAdr = self.ValAdr + mmsAdrSplit[i]
                 continue
             if (i == 2):  # Pösition de placement de la FC
                 _newMmsAdr = _newMmsAdr  + '/' + mmsAdrSplit[i]
@@ -268,17 +268,20 @@ class globalDataModel:
                 txtLN = LD.LN[j].lnPrefix + LD.LN[j].lnClass + LD.LN[j].lnInst
                 self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN ) , TL.GENERAL)
                 LNodeType    = self.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
-                LD.LN[j].tDO = LNodeType.tDO
-    #TODO traiter le cas ou on le trouve pas !!!
-                for k in range(len(LNodeType.tDO)):          # Browsing DO
-                    DO  = LN.tDO[k]
-                    if DO.name == 'ApcFTrk':
-                        print("STOP")
-                    iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
-                    tDA = iDO.tDA
-                    DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
-                    DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
-                    self.BrowseDA(tIEC_adresse, DO_Name, tDA, 'Yes')
+                if (LNodeType) is None:
+                   print("missing LN Type" + LN.lnType)
+                else:
+                    LD.LN[j].tDO = LNodeType.tDO
+        #TODO traiter le cas ou on le trouve pas !!!
+                    for k in range(len(LNodeType.tDO)):          # Browsing DO
+                        DO  = LN.tDO[k]
+                        if DO.name == 'ApcFTrk':
+                            print("STOP")
+                        iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
+                        tDA = iDO.tDA
+                        DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
+                        DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
+                        self.BrowseDA(tIEC_adresse, DO_Name, tDA, 'Yes')
 
             return(tIEC_adresse)
 

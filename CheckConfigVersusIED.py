@@ -47,7 +47,7 @@ class CheckDataInitialValue:
         def __init__(self, _ied, File):
             self.ied    = _ied
             self.IP     = _ied.IP
-            self.TX     =  Trace.File(TL.GENERAL,File)
+            self.TX     =  Trace.File(TL.GENERAL, "GeneratedScript\\" + File)
 
             self.TX.Trace(('from utest.ATL import *\n'), TL.GENERAL)
             self.TX.Trace(('from VsUtils import variables as vs\n'), TL.GENERAL)
@@ -85,7 +85,7 @@ class CheckDataInitialValue:
                 self.TX.Trace(f'# Verification on: {iec.mmsAdr:40} :type {iec.EnumType:10} value: {Value:20}\n', TL.GENERAL)
 
         # Line 1 model: # Verification on:L1_PU_GE_D60$Master$LGOS42$InRef59$SP$setSrcRef  type:ObjRef
-            self.TX.Trace(f'\t\tda=iec[{index:06d}]\n]', TL.GENERAL)
+            self.TX.Trace(f'\t\tda=iec[{index:06d}]\n', TL.GENERAL)
 
         # Line 2 model:         da=iec[019032]        # # DataType:ObjRef Value: -
         #    TR2.Trace( f'\t\t# DataType: {iec.BasicType:20} Value: {Value}\n', TL.GENERAL)
@@ -192,7 +192,7 @@ class CheckDataInitialValue:
 
         TX = Trace.Console(TL.GENERAL)
         tIEDfull=[]
-        for file in FileListe.lstIED :
+        for file in FileListe.lstSystem :
 
             CG = CheckDataInitialValue("CodeGeneration")
             GM = globalDataModel(TX,'SCL_files/'+ file, None)
@@ -215,14 +215,14 @@ class CheckDataInitialValue:
                 print("Temps pour l'IED:" + ied.name + '(' + ip + ") Nombre de DA:" + nbDa + "Temps" + Resultat)
 
                 if mode == 'CodeGeneration':
-                    Check = CheckDataInitialValue.CodeGen(ied,file)
+                    Check = CheckDataInitialValue.CodeGen(ied,  ied.name+'.py')
                 if mode == 'Connected':
-                    Check = CheckDataInitialValue.Connected(ied,file)
+                    Check = CheckDataInitialValue.Connected(ied,ied.name+'.py')
 
     #            directAdress = ied.Server[0]
     #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
     # Manque stVal q t
-                i = 0
+                i = 0               # Index to DataPoint
                 IED_ID = ied.name   # TODO ou ied.name+AP_Name
                 for iec in tIEC_adresse:
                     Check.DataPointcheck(iec, i)
@@ -235,15 +235,18 @@ class CheckDataInitialValue:
                             Value = eval(AdrValue)
 
                             if (Value!=None):
-                                CG.DataPointcheck(iec, AdrValue, Value)
+                                Check.CheckDAivalue(iec, AdrValue, Value)
 
                         except Exception as inst: # No data, an exception is expected hera
-    #                        print(AdrValue)
+                            print(AdrValue)
                             A = type(inst)
                             if (A == "<class 'AttributeError'>"):
                                 break
                     i = i + 1
+
+                print("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i))
                 Check.TX.Close()
+                indIED = indIED + 1
 
             TempsTotal = str(time.time() - T0_Total)
             print("Total Time:" + file + ':' + TempsTotal)

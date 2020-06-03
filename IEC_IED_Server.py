@@ -105,8 +105,8 @@ class Parse_Server:
 
         LDi = LDi.nextSibling
         iDeviceInstance.LN = tLN
-        Name = '_' + iDeviceInstance.inst + '_'
-        setattr(iIED_array.tAccessPoint[idxAP].tServer[idxServer], Name, iDeviceInstance )  # = LDeviceInstance
+#        Name = iDeviceInstance.inst
+        return iDeviceInstance, iDeviceInstance.inst
 
     ##
     # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
@@ -221,14 +221,16 @@ class Parse_Server:
 
                                    pServer = pServer.nextSibling
                                    continue
+
                                 if pServer.localName == "Private":         # TODO est-ce qu'il y a des balises privées RTE ?
                                     pServer = pServer.nextSibling
                                     continue
 
                                 if pServer.localName == "LDevice":
-                                    self.Parse_LD_LN(iIED_array, pServer, idxAccessPoint, idxServer)
+                                    iDeviceInstance,Name = self.Parse_LD_LN(iIED_array, pServer, idxAccessPoint, idxServer)
+                                    setattr(iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer], Name, iDeviceInstance)  # = LDeviceInstance
                                     pServer = pServer.nextSibling
-                                    break
+                                    continue
 
                             ServerSection = ServerSection.nextSibling
                             if ServerSection is None:

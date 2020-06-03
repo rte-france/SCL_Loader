@@ -80,6 +80,9 @@ class Parse_LN:
         _lnType   = pLN.getAttribute("lnType")      ## The instantiable type definition of this logical node, reference to a LNodeType definition
         _desc     = pLN.getAttribute("desc")        ## The description text for the logical node
 
+        if _lnClass == "PTRC":
+            print("STOP")
+
         iLN = IED.AccessPoint.Server.LN(_lnPrefix, _lnType, _inst, _lnClass, _desc)
 
         if pLN.firstChild is not None:  # pLN is used to browse the XML tree
@@ -515,9 +518,12 @@ class Parse_LN:
     #            tDAI.append(iDOI)
                 pDAI = pDAI.nextSibling
                 continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
+
             if pDAI.localName == "SDI":                             # <DAI name="Check" sAddr="96.1.3.10.9" />
                 self.Parse_SDI(pDAI, iDOI, DoName)
-                break
+                pDAI = pDAI.nextSibling
+                continue
+
             pDAI = pDAI.nextSibling
     
         return iDOI,iLN
