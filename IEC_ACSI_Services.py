@@ -115,7 +115,7 @@ class Injection:
         #
         #
         #
-        def WaitEvent(self, _IOInput, _iState):
+        def WaitEvent(self, _IOInput, _iState, _callBack):
             return
 
 
@@ -203,8 +203,7 @@ class ACSI:
             self.VS  = getattr(VSUTIL,"variables")
 
 
-
-            self.mgr = IEC.Manager(self._ipAdrTools)       # Connect to system test.
+            self.mgr = IECToolkit.Manager(self._ipAdrTools)       # Connect to system test.
 
         def Associate(self, IedName, ApName, IPAdr):
 
@@ -214,21 +213,18 @@ class ACSI:
 
             return clientID
 
-        def ReadDataPoint(self, clientID, ApName, IedName, MmsAdrPath,value):
+        def ReadDataPoint(self, serverID, ApName, IedName, MmsAdrPath):
 
             VsName = ApName+IedName+'/' + MmsAdrPath
+            serverID.getDataValues(VsName)   ## ==> Update 'VS'
+        # TODO manage time-out
+            Value = self.VS[VsName]                                 ## ==> Read 'VS'
+            return (Value)
 
-            Value = Vs[VsName]
-
-            print("")
-
-        def WriteDataPoint(self, clientID, ApName, IedName, FC, MmsAdrPath,):
-            print("")
-
-            VsName = ApName+IedName+'/' + MmsAdrPath + '['+FC+']'
-
-            VS[VsName] =
-            ## Appel du service ACSI WriteDataValue
+        def WriteDataPoint(self, serverID, ApName, IedName, MmsAdrPath, value):
+            VsName = ApName+IedName+'/' + MmsAdrPath
+            Error= serverID.getDataValues(VsName, value)
+            return (Error)
 
         def WaitGoose(self, DataSetId, GooseID, Do, Da,  Delays, timeOut):
 
@@ -253,7 +249,10 @@ class ACSI:
             self.ipAdrTools     = _ipAdrTools
             self.TimeOut        = _ServerTimeOut
             self.IEC_Connection = _IEC_Connection
-
+            
+			self.CG = CheckDataInitialValue("CodeGeneration")
+            self.GM = globalDataModel(TX,'SCL_files/'+ file, None)
+			
             print(">> ipAdrTools:" + _ipAdrTools + " IEC_Connection" + " ServerTimeOut:" + _ServerTimeOut)
 
         def Associate(self, IedName, ApName, IPAdr):

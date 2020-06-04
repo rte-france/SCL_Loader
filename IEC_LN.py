@@ -80,9 +80,6 @@ class Parse_LN:
         _lnType   = pLN.getAttribute("lnType")      ## The instantiable type definition of this logical node, reference to a LNodeType definition
         _desc     = pLN.getAttribute("desc")        ## The description text for the logical node
 
-        if _lnClass == "PTRC":
-            print("STOP")
-
         iLN = IED.AccessPoint.Server.LN(_lnPrefix, _lnType, _inst, _lnClass, _desc)
 
         if pLN.firstChild is not None:  # pLN is used to browse the XML tree

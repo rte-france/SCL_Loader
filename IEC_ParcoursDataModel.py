@@ -49,52 +49,29 @@ from IEC61850_XML_Class     import  DataTypeTemplates as IecType
 #
 class IECda:
     def __init__(self, Texte, _mmsAdr, _fc, _BasicType, _EnumType, _Value, _Valkind):
-        self.mmsAdr       = _mmsAdr         ## Adress down to the IEC bType or Struct.
         self.fc           = _fc             ## Functional Constrain
         self.BasicType    = _BasicType      ## 'bType' see IEC61850_XML_Class (enum and struct are not treated as bType)
         self.EnumType     = _EnumType       ## EnumType
         self.TypeValue    = _Value          ## Value    from  DATA TYPE DEFINITION
         self.ValKind      = _Valkind        ## ValKlind from  DATA TYPE DEFINITION
-        self.mmsAdrFinal  = 'xx'
-        self.acsiAdr      = 'zz'            ## Adress ready for ACSI services
-        self.ValAdr       =  ''             ## Path the ValAdr (when DAI/SDI aws used)
-
+        self.IntAdr       =  ''             ## Internal addresse (without the FC), to get a direct access to the local data model.
+        self.mmsAdr       =  _mmsAdr        ## mms adress with the FC.
         if _Value == '__None__':
             self.TypeValue = None
 
-        FC='xx'
-        mmsAdrSplit = _mmsAdr.split('$')
-        posFC = -1                          # Position of functional Constraint
-        # La FC (Functional Constraint, n'est pas à la bonne place :
-        for i in range(2, len(mmsAdrSplit)):  # La FC est au moins en position
-            if mmsAdrSplit[i] in IecType.FC.lstFC:
-                FC = mmsAdrSplit[i]
-                posFC = i                     # Position de la FC
-                break
-
-        _newMmsAdr = ''
-        for i in range(0, len(mmsAdrSplit)):
-            if (i <= 1):  # Pösition de placement de la FC
-                _newMmsAdr = _newMmsAdr  + mmsAdrSplit[i]
-                if i == 1:
-                    self.ValAdr = self.ValAdr + mmsAdrSplit[i]
-                continue
-            if (i == 2):  # Pösition de placement de la FC
-                _newMmsAdr = _newMmsAdr  + '/' + mmsAdrSplit[i]
-                self.ValAdr = self.ValAdr + '.' + mmsAdrSplit[i]
-                continue
-            if (i != posFC):
-                _newMmsAdr = _newMmsAdr + '.' + mmsAdrSplit[i]
-                self.ValAdr = self.ValAdr + '.' + mmsAdrSplit[i]
+        mmsAdrSplit = _mmsAdr.split('$')            # TODO create mmsAdr directly with '.'
 
         if _BasicType == "Quality" or _BasicType == "Timestamp":
-            self.ValAdr = None
-#        else:
-#            self.ValAdr = self.ValAdr+'['+FC+']'
-#            print("Adresse à vérifier:", self.ValAdr) # Reading the internal data tree, FC is not needed
+            self.IntAdr = None
+        else:
+            self.IntAdr = mmsAdrSplit[1]        # SKIP IED NAME, start at Logical Device Name
+            for i in range(2, len(mmsAdrSplit)):
+                field = mmsAdrSplit[i]
+                posFC = field.find('[')
+                if posFC != -1:
+                    field = field[0:posFC]
+                self.IntAdr=self.IntAdr + '.' + field # mmsAdrSplit[i]
 
-        _newMmsAdr = _newMmsAdr +'['+FC+']'
-        self.mmsAdrFinal = _newMmsAdr
 
         if _BasicType in IecType.bType.Simple:
             iecType = _BasicType
@@ -103,20 +80,12 @@ class IECda:
                 iecType = "Enum: "+_EnumType
             else:
                 print("#######################")        # TODO replace by a TRACE with TL.ERROR level.
-"""
-        txtValKind =  self.ValKind
-        if txtValKind is None:
-            txtValKind = ''
-        txtValue = self.TypeValue
-        if txtValue is None:
-            txtValue = ''
-        print( Texte + 'MMS:' + self.mmsAdrFinal + ','+  iecType + ', Value:'+ txtValue+ ', VK:'+ txtValKind)
-"""
+
 ##
 #
 # \b globalDataModel Collect all Data Type Templates (LnodeType, DoType, Datype, EnumType)
 #
-# Function Hierachy
+# Function Hierarchy
 #   - LoadSCLModel              - Invoke all class/Method to build the full DataModel
 #       - getIED_withComm       - Browse IED and AccessPoint, get the IP from communication part and store it in the AccessPoint Class
 #   - BrowseDataModel           - for a IED instance, browse all AccessPoint and Logical Device
@@ -281,7 +250,7 @@ class globalDataModel:
                         tDA = iDO.tDA
                         DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
                         DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
-                        self.BrowseDA(tIEC_adresse, DO_Name, tDA, 'Yes')
+                        self.BrowseDA(tIEC_adresse, DO_Name, tDA)
 
             return(tIEC_adresse)
 
@@ -295,7 +264,7 @@ class globalDataModel:
     # @param    DO_Name         Name of the DO
     # @param    DA      instance of a DA
     # @param    fc      Functional Constraint of the data point
-    def BrowseDA(self, tIEC_adresse, DO_Name, DA, FC):
+    def BrowseDA(self, tIEC_adresse, DO_Name, DA):
 
         if DA is None:
             print("Problem DA None !!!!" + DO_Name)
@@ -306,29 +275,21 @@ class globalDataModel:
             bType1   = DA[i].bType
             value    = DA[i].value
             valKind  = DA[i].valKind
+            FC       = DA[i].fc
             try:
                 count    = DA[i].count
             except:
                 count = ''
                 print("zzzzzzzzzzzzzzzzzzz")
 
-            if FC is None:          # Cas du parcours des structures
-                fc = ''
-                DataName = DO_Name + '$' + DA[i].name  # + '(' + bType1 + '-' + valKind1 + ')'
-            else:
-                fc = DA[i].fc       # Cas 'normal'.
-                if fc == '':
-                    DataName = DO_Name + '$' + DA[i].name  # + '(' + bType1 + '-' + valKind1 + ')'
-                else:
-                    DataName = DO_Name + '$' + fc + '$'+ DA[i].name  # + '(' + bType1 + '-' + valKind1 + '
-
+            DataName = DO_Name + '$' + DA[i].name + '['+ FC + ']'  # + '(' + bType1 + '-' + valKind1 + '
             if count is not None and count !='':
                 cpt = int(count)
                 for j in range(0,cpt):
                     DataName = DO_Name + '$' + DA[i].name + str(j)  # + '(' + bType1 + '-' + valKind1 + ')'
-                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, 'NO', DA, value, valKind )
+                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, FC, DA, value, valKind )
             else:
-                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, fc, DA, value, valKind)
+                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, FC, DA, value, valKind)
 
     ##
     #
@@ -362,7 +323,8 @@ class globalDataModel:
             for m in range(len(SDA.tBDA)):
                 bType2 = SDA.tBDA[m].type
                 if bType2 in IecType.bType.Simple:
-                    _iecAdr = IECda("Struct-1   : ", DataName, fc, bType2, None, value, valKind)
+                    BaseName = DataName + '$' + SDA.tBDA[m].name
+                    _iecAdr = IECda("Simple-xx-1   : ", BaseName, fc, bType2, None, value, valKind)
                     tIEC_adresse.append(_iecAdr)
                     continue
 
@@ -405,7 +367,7 @@ class globalDataModel:
                 else:
                     self.TraceDataPoint("ELSE           :", DA_type, bType, bType2, DataName, fc)
                     DA = self.DAType.getIEC_DaType(bType2)
-                    self.BrowseDA(tIEC_adresse, DataName, DA, None)
+                    self.BrowseDA(tIEC_adresse, DataName, DA)
             return None
         elif (bType == 'Enum'):
             bValue = DA[idx].value
@@ -418,10 +380,10 @@ class globalDataModel:
 
             DO = self.DOType.getIEC_DoType(bType)
             if DO is not None:
-                self.BrowseDA(tIEC_adresse, DataName, DO.tDA, 'Yes')
+                self.BrowseDA(tIEC_adresse, DataName, DO.tDA)
             else:
                 DA = self.DAType.getIEC_DaType(bType)
-                self.BrowseDA(tIEC_adresse, DataName, DA, 'Yes')
+                self.BrowseDA(tIEC_adresse, DataName, DA)
 
     ##
     #

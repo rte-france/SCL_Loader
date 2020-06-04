@@ -70,7 +70,7 @@ class CheckDataInitialValue:
             self.TX.Trace(('        '+ self.ied.name +' = IECToolkit.Manager(' + self.ied.IP + ')\n'), TL.GENERAL)
         #            IED_AP = ied.Server[0].IEDName + ied.Server[0].APName
             self.IED_ID = self.ied.name + self.ied.tAccessPoint[0].name # tServer[0].IEDName
-            self.TX.Trace(('        '+ 'I_' + self.IED_ID + '= mgr.getACSI('+self.IED_ID+')\n'), TL.GENERAL)
+            self.TX.Trace(('        '+ 'I_' + self.IED_ID + '= '+ self.ied.name+ '.getACSI('+self.IED_ID+')\n'), TL.GENERAL)
 
         def DataPointcheck(self, iec, index):
             Value = iec.TypeValue
@@ -90,8 +90,8 @@ class CheckDataInitialValue:
         # Line 2 model:         da=iec[019032]        # # DataType:ObjRef Value: -
         #    TR2.Trace( f'\t\t# DataType: {iec.BasicType:20} Value: {Value}\n', TL.GENERAL)
 
-        # Line 3 model:     value = I_L1_PU_GE_D60.getDataValue(da.mmsAdrFinal))   # L1_PU_GE_D60Master/LLN0.Mod.stVal[ST]
-            self.TX.Trace( f'\t\tvalue = I_{self.IED_ID}.getDataValue(da.mmsAdrFinal)        # {iec.mmsAdrFinal} + {Value} \n', TL.GENERAL)
+        # Line 3 model:     value = I_L1_PU_GE_D60.getDataValue(da.mmsAdr))   # L1_PU_GE_D60Master/LLN0.Mod.stVal[ST]
+            self.TX.Trace( f'\t\tvalue = I_{self.IED_ID}.getDataValue(da.mmsAdr)        # {iec.mmsAdr} + {Value} \n', TL.GENERAL)
 
         # Line 4 model:     time.sleep(0.100)
             self.TX.Trace(('\t\ttime.sleep(0.100)\n' ), TL.GENERAL)
@@ -105,10 +105,10 @@ class CheckDataInitialValue:
         def CheckDAivalue(self, iec, adresse, value):
             self.TX.Trace(f'# Expecting: "{value}" as defined by DAI or SDI) \n', TL.GENERAL)
             self.TX.Trace(f'\t\tExpectedVal = {adresse:70}\n', TL.GENERAL)
-            self.TX.Trace(f'\t\tActualValue = getDataValue({iec.mmsAdrFinal})\n', TL.GENERAL)  # Actual Read
+            self.TX.Trace(f'\t\tActualValue = getDataValue({iec.mmsAdr})\n', TL.GENERAL)  # Actual Read
             self.TX.Trace(f'\t\ttime.sleep(0.100)' + '\n', TL.GENERAL)
             self.TX.Trace(f'\t\tif ExpectedVal != ActualValue:' + '\n', TL.GENERAL)
-            self.TX.Trace(f'\t\t\tSignalErrorOn( da.mmsAdrFinal , ExpectedVal , ActualValue )\n', + TL.GENERAL)
+            self.TX.Trace(f'\t\t\tSignalErrorOn( da.mmsAdr, ExpectedVal , ActualValue )\n', + TL.GENERAL)
 
         def CheckDatapointSCL(self, iec):
             bType = iec.BasicType
@@ -146,17 +146,17 @@ class CheckDataInitialValue:
                 self.TX.Trace(f'# Verification on: {iec.mmsAdr:40} :type {iec.EnumType:10} value: {Value:20}\n', TL.GENERAL)
 
             da=iec[index]
-            value = self.IED_ID.getDataValue(da.mmsAdrFinal)        # {iec.mmsAdrFinal} + {Value} \n', TL.GENERAL)
+            value = self.IED_ID.getDataValue(da.mmsAdr)        # {iec.mmsAdr} + {Value} \n', TL.GENERAL)
             time.sleep(0.100)
             self.CheckDatapoint(da, value)
 
 
         def CheckDAivalue(self, TR2, iec, adresse, value):
             ExpectedVal = iec.Value
-            ActualValue = self.IED_ID.getDataValue(iec.mmsAdrFinal)
+            ActualValue = self.IED_ID.getDataValue(iec.mmsAdr)
             time.sleep(0.100)
             if ExpectedVal != ActualValue:
-                SignalErrorOn( iec.mmsAdrFinal , ExpectedVal , ActualValue )
+                SignalErrorOn( iec.mmsAdr , ExpectedVal , ActualValue )
 
         def CheckDatapointSCL(self, iec, value):
             bType = iec.BasicType
@@ -225,23 +225,23 @@ class CheckDataInitialValue:
                 i = 0               # Index to DataPoint
                 IED_ID = ied.name   # TODO ou ied.name+AP_Name
                 for iec in tIEC_adresse:
+                    if iec.IntAdr is None:      ## 'q' and 't' are excluded
+                        continue
                     Check.DataPointcheck(iec, i)
 
-                    if iec.ValAdr != None:
-                        A = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].Server[0]."+iec.ValAdr
-                        AdrValue = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].tServer[0]."+iec.ValAdr+".value"
-                        try:
-                            Test  = eval(AdrValue)  # Verify existence of some initialisation data
-                            Value = eval(AdrValue)
+                    A = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].Server[0]."+iec.IntAdr         ## 'q' and 't' are excluded
+                    AdrValue = "GM.tIED[" + str(indIED) +"].tAccessPoint[0].tServer[0]."+iec.IntAdr+".value"
+                    try:
+                        Test  = eval(AdrValue)  # Verify existence of some initialisation data
+                        Value = eval(AdrValue)
 
-                            if (Value!=None):
-                                Check.CheckDAivalue(iec, AdrValue, Value)
+                        if (Value!=None):
+                            Check.CheckDAivalue(iec, AdrValue, Value)
 
-                        except Exception as inst: # No data, an exception is expected hera
-                            print(AdrValue)
-                            A = type(inst)
-                            if (A == "<class 'AttributeError'>"):
-                                break
+                    except Exception as inst: # No data, an exception is expected hera
+                        A = type(inst)
+                        if (A == "<class 'AttributeError'>"):
+                            break
                     i = i + 1
 
                 print("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i))

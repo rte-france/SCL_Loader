@@ -42,17 +42,17 @@ class ParseSubStation:
         idxTal = 0
         while (pTal is not None) and (pTal.localName is not None):
             if pTal.localName == "Terminal":
-                _name               = pTal.getAttributes("name")                ## _name             The optional relative name of the terminal at this Equipment. The default is the empty
-                _desc               = pTal.getAttributes("desc")                ## _desc             Descriptive text to the terminal
-                _connectivityNode   = pTal.getAttributes("connectivityNode")    ## _connectivityNode The pathname of the connectivity node to which this terminal connects.
-                _substationName     = pTal.getAttributes("substationName")      ## _substationName   The name of the substation containing the connectivityNode
-                _voltageLevelName   = pTal.getAttributes("voltageLevelName")    ## _voltageLevelName The name of the voltage level containing the connectivityNode
-                _bayName            = pTal.getAttributes("bayName")             ## _bayName           The name of the bay containing the connectivityNode
-                _cNodeName          = pTal.getAttributes("cNodeName")           ##  _cNodeName        (relative) name of the connectivityNode within its bay
-                _lineName           = pTal.getAttributes("lineName")            ## _lineName         Ed 2    ??
-                _neutralPoint       = pTal.getAttributes("neutralPoint")        ## _neutralPoint     Ed 2.1 ???
+                _name               = pTal.getAttribute("name")                ## _name             The optional relative name of the terminal at this Equipment. The default is the empty
+                _desc               = pTal.getAttribute("desc")                ## _desc             Descriptive text to the terminal
+                _connectivityNode   = pTal.getAttribute("connectivityNode")    ## _connectivityNode The pathname of the connectivity node to which this terminal connects.
+                _substationName     = pTal.getAttribute("substationName")      ## _substationName   The name of the substation containing the connectivityNode
+                _voltageLevelName   = pTal.getAttribute("voltageLevelName")    ## _voltageLevelName The name of the voltage level containing the connectivityNode
+                _bayName            = pTal.getAttribute("bayName")             ## _bayName           The name of the bay containing the connectivityNode
+                _cNodeName          = pTal.getAttribute("cNodeName")           ##  _cNodeName        (relative) name of the connectivityNode within its bay
+                _lineName           = pTal.getAttribute("lineName")            ## _lineName         Ed 2    ??
+                _neutralPoint       = pTal.getAttribute("neutralPoint")        ## _neutralPoint     Ed 2.1 ???
 
-                iTerminal = pCNXNode.Terminal(_name, _desc, _connectivityNode,_substationName,_voltageLevelName, _bayName,_cNodeName,_lineName, _neutralPoint)
+                iTerminal = SubStation.SubEquipement.Terminal(_name, _desc, _connectivityNode,_substationName,_voltageLevelName, _bayName,_cNodeName,_lineName, _neutralPoint)
                 pCNXNode.tTerminal.append(iTerminal)
                 idxTal = idxTal + 1
 
@@ -136,7 +136,7 @@ class ParseSubStation:
                             _sx_y    = pBay.getAttribute("sxy:y")
                             _sx_x    = pBay.getAttribute("sxy:x")
                             _sx_dir  = pBay.getAttribute("sxy:dir")
-                            iCondEqt = poste.VoltageLevel.Bay.ConductingEquipment(_name, _desc, _virtual, _sx_y, _sx_x, _sx_dir )
+                            iCondEqt = SubStation.ConductingEquipment(_name, _desc, _virtual, _sx_y, _sx_x, _sx_dir )
                             poste.tVoltage[idxVolt].tBay[idxBay].tConductingEquipment.append(iCondEqt)
                             self.TRX.Trace(('Substation/Bay/ConductEqt.name:' + _name + ' desc:' + _desc + ' virtual:' + _virtual +\
                                                                 " sxy:y:" + _sx_y + " sxy:x:" + _sx_x), TL.DETAIL)
@@ -153,7 +153,7 @@ class ParseSubStation:
                             _pathName = pBay.getAttribute("pathName")
                             _sx_y     = pBay.getAttribute("sxy:y")
                             _sx_x     = pBay.getAttribute("sxy:x")
-                            iConnNode = poste.VoltageLevel.Bay.ConnectivityNode(_name, _desc, _pathName, _sx_y, _sx_x)
+                            iConnNode = SubStation.SubEquipement.Terminal.ConnectivityNode(_name, _desc, _pathName, _sx_y, _sx_x)
                             poste.tVoltage[idxVolt].tBay[idxBay].tConnectivityNode.append(iConnNode)
                             self.TRX.Trace(('Substation/Bay/ConnnectNode.name:' + _name + ' desc:' + _desc + ' pathName:' + _pathName +\
                                                                 " sxy:y:" + _sx_y + " sxy:x:" + _sx_x), TL.DETAIL)
@@ -184,7 +184,7 @@ class ParseSubStation:
                             _lnClass  = pBay.getAttribute("lnClass")
                             _lnType   = pBay.getAttribute("lnType")
                             _lnInst   = pBay.getAttribute("lnInst")
-                            iLNode    = poste.VoltageLevel.Bay.LNode(_iedName,_lnClass, _lnType, _lnInst)
+                            iLNode    = poste.Bay.LNode(_iedName,_lnClass, _lnType, _lnInst)
                             poste.tVoltage[idxVolt].tBay[idxBay].tLNode.append(iLNode)
                             self.TRX.Trace(('Substation/Bay/Lnode.iedName: '+ _iedName + " lnClass:" + _lnClass + \
                                        " lnType:" + _lnType + " lnInst:" + _lnInst), TL.DETAIL)

@@ -38,6 +38,7 @@ class SubStation:
         self.tVoltage           = []    ## Defined in sub class Equipment container.
         self.tPowerTransformer  = []    ## Defined in sub class Equipment container.
         self.tFunction          = []    ## Defined in sub class Equipment container.
+        self.tBay               = []
 
 #    class EquipmentContainer:
 #        def __init__(self, _xx):
@@ -84,6 +85,16 @@ class SubStation:
         def __init__(self, _name, _desc):
             self.name = _name
             self.desc = _desc
+
+    class ConductingEquipment:
+        def __init__(self, _name, _desc, _virtual, _sx_y, _sx_x, _sx_dir):
+            self.name    = _name
+            self.desc    = _desc
+            self.virtual = _virtual
+            self.sx_y    = _sx_y
+            self.sx_x    = _sx_x
+            self.sx_dir  = _sx_dir
+            self.tTerminal = []
 
     class LNode:
         def __init__(self,_lnInst,_lnClass,_iedName,_ldInst,_prefix,_lnType ):
