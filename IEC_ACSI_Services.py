@@ -7,19 +7,18 @@
 # you can obtain one at http://www.apache.org/licenses/LICENSE-2.0.
 # SPDX-License-Identifier: Apache-2.0
 #
-# This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
+# This file is part of [R#SPACE], [IEC61850 Digital Control System testing.
 #
 
 from importlib import import_module
-
 from IEC61850_XML_Class import Communication
+from IEC_Trace import Trace as TR
+from IEC_Trace import Level as TL
 
-##
-# \b ACSI services  Generic instance of ACSI services, intended libIEC61850
-#
-# @para  _ipAdr          the ip adresse of the IED.
-# @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
-
+##  Those 4 time stamsp shall allow to evaluate:
+#   - the network transit delay tArrivalEth-tGoose
+#   - the transit delay between kernel drive to the application container: tArrivalApp - tArrivalEth
+# Beware GooseTimeStamp has a specific time reference.
 class GooseTiming:
 #    from libiec61850 import ACSI
 
@@ -29,214 +28,229 @@ class GooseTiming:
         self.tArrivalEth = 0    # Driver Ethernet receiver at Ethernet driver side
         self.tArrivalApp = 0    # Actual time when reaching the application
 
-##  Those 4 time stamsp shall allow to evaluate:
-#   - the network transit delay tArrivalEth-tGoose
-#   - the transit delay between kernel drive to the application container: tArrivalApp - tArrivalEth
-# Beware GooseTimeStamp has a specific time reference.
 
-##
-# \b Injection_UI:
+## \b ACSI:  key parameters to establish a client server ACSI Association.
 #
-# This class defines:
-#       - a method to define a well balanced  simple 3 Currents/Voltages 50Hz signals.
-#       - a method to define any unbalanced 3 Currents/Voltages 45-51Hz signal.
+# This class is holding all data needed to establish a ACSI association.
 #
-# Once the signal is defined, it can be used for injection, several signals signal can be defined.
-# For this class the voltage is between 0-100V and current between 0-1A or 0-5A for nomimal voltage / current.
-# Non nominal Voltage/Current are limited to XXXX for U and YYY for 5A as per the specification of injection box.
-
-class Injection:
-    class Simple:
-        def __init__ (self, _Voltage, _Current):
-            self.Voltage = _Voltage
-            self.Current = _Current
-
-    class Complex:
-        def __init__(self, _Ua, _Ub, _Uc, _U0, _Ia, _Ib, _Ic, _I0,_Phases):
-            self.Ua = _Ua
-            self.Ub = _Ub
-            self.Uc = _Uc
-            self.U0 = _U0
-            self.Ia = _Ia
-            self.Ib = _Ib
-            self.Ic = _Ic
-            self.I0 = _I0
-    class State:
-        On  = 1     # For event trigger, call back if state changes to ON
-        Off = 0     # For event trigger, call back if state changes to OFF
-        Any = 2     # For event trigger, call back if state changes
-
-    class Injection_CTVT:
-
-        def __init__(self,_BoxName, _ipAdr):
-            self.BoxName = _BoxName
-            self.ipAdr   = _ipAdr
-
-        def MuxSelection(self, numSelection):
-            if numSelection <1 or numSelection > 4:
-                return False
-            return
-
-        ##
-        # \b InjectionNominal
-        #
-        #   Frequency default is 50Hz, current phasing 60° and voltag 60% (nominal)
-        #   U0 / V0 are nul
-        #
-        # @param    _Simple  an instance of the Signal.Simple Class.
-        #
-        def InjectionNominal(self, _Simple):
-
-            signalID = None
-
-            return signalID
-
-        ##
-        # \b InjectionDetailed all
-        #
-        # Each voltage and current is described (Amplitube, Phase, Frequency)
-        #
-        # @param    Simple  an instance of the Signal.Complex Class.
-        #
-        def InjectionDetailed(self, _Complex):
-            signalID = None
-            return signalID
-
-        def StartInjection(self, _signalID):
-
-            return
-
-        def StopInjection(self, _signalID):
-
-            return
-
-        ##
-        # \b WaitEvent
-        #
-        #
-        #
-        def WaitEvent(self, _IOInput, _iState, _callBack):
-            return
-
-
-        def RegisterEvent(self, _IOInput, _iState, _Method):
-
-            return
-
-        def SetOutput(self, IOInput, state):
-            return
-
-    class Injection_SV:
-        ##
-        # \b InjectionNominal
-        #
-        #   Frequency default is 50Hz, current phasing 120° and voltage 120% (nominal)
-        #   U0 / V0 are nul
-        #
-        # @param    _Simple  an instance of the Signal.Simple Class.
-        #
-        def InjectionNominal(self, _Simple):
-
-            return
-
-        ##
-        # \b InjectionDetailed all
-        #
-        # Each voltage and current is described (Amplitube, Phase, Frequency)
-        #
-        # @param    Simple  an instance of the Signal.Complex Class.
-        #
-        def InjectionDetailed(self, _Complex):
-
-            return
-
+# @param _IedName
+# @param _IedIP         The IP Adress to used for this IED/AccessPoint
+# @param _APName        The AccessPoint Name, linkg to ConnectedAP in communication.
+# @param _SrvTo         The Server Time Out
+# @param _SrvDexc       The Server description
+#
 class ACSI:
+    def __init__(self, _IedName, _IedIP, _APName, _SrvTo, _SrvDesc, _iedAdrMMS):
+        self.IedName  = _IedName
+        self.IedIP    = _IedIP
+        self.APName   = _APName
+        self.SrvTo    = _SrvTo
+        self.SrvDesc  = _SrvDesc
+        self.mmsBase  = _IedName + '/' + _APName
+        self.iedAdrMMS= _iedAdrMMS
+
+## \b TEST:  a set of abstraction interface to handle IEC61850 rtesting at system level, IED level an ddummy / lop-back testing
+#
+# This class is holding 3 classes, which instanciate the same set of method:
+#
+#   __init__
+#   Associate           : Create the MMS association between the client and the server
+#   ReadDataPoint       : Read a MMS data point, actually a call to the ACSI service GatDataValue
+#   WriteDataPoint      : Read a MMS data point, actually a call to the ACSI service GatDataValue
+
+# Service fonctions (see below) the set of the next functions will allow to create 'loop-back' testing when writing the test
+# code in a non connected mode:
+#
+#   CheckValueEqual     : Check that a MMS data point  is equal to a certain value. Work only for final data point (t, q, stVal...)
+#   CheckValueInf       : Check that a MMS data point  is Inferior to to a certain value.
+#   CheckValueSup       : Check that a MMS data point  is Inferior to to a certain value.
+class TEST:
+
+    def CreateDictionary(tMMS, IedName, APName, Mode):
+
+        Variable={}
+        for i in range(0, len(tMMS)):
+            IecDA = tMMS[i]
+
+            fc          = IecDA.fc
+            BasicType   = IecDA.BasicType
+            EnumType    = IecDA.EnumType
+            TypeValue   = IecDA.TypeValue
+            ValKind     = IecDA.ValKind
+            IntAdr      = IecDA.IntAdr
+            mmsAdr      = IecDA.mmsAdr
+            u_mmsAdr    = IecDA.u_mmsAdr
+
+            if Mode=="MMS":
+                VAR_ID = IedName + '/' + APName + '/' +  IecDA.mmsAdr
+            else:
+                VAR_ID = IedName + '/' + APName + '/' + IecDA.u_mmsAdr
+
+            Variable[VAR_ID] = {"mmsAdr": mmsAdr, "IntAdr:": IntAdr, "ValKind": ValKind,
+                              "fc": fc, "BasicType": BasicType, "EnumType": EnumType,
+                              "TypeValue": TypeValue, "u_mmsAdr": u_mmsAdr}
+        return Variable
+
+    ## \b IEDTesting:
+    #
+    # This class is place holder for the usage of libiec61850
+    #
+    #
     class IEDTesting:
-#        from utest import IECToolkit
-        ##
-        # ACSI
-        #
-        # @para  _ipAdrTools     the ip adress of the testing tools
-        # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
-        def __init__(self, _ipAdrTools, _IEC_Connection, _ServerTimeOut):
-            self.ipAdrTools     = _ipAdrTools
-            self.TimeOut        = _ServerTimeOut
-            self.IEC_Connection = _IEC_Connection
+        # @constructor:
+        # @param _ACSI         An instance of the key ACSI parameters to create a connection from the testing tools (client) to a server.
+        # @param _ipAdrTools   The IP Address to an external tools
+        # @param _desc         A description
+        def __init__(self, _ACSI, _ipAdrTools, _desc):
+            self.ACSI       = _ACSI
+            self.ipAdrTools = _ipAdrTools
+            self.desc       = _desc
+            self.TR         = TR.Trace.Console()
 
-        def Associate( self, IedName, ApName):
+        def Associate( self, _ACSI_Associate):
+            self.IedName    = _ACSI_Associate.IedName
 
-            ACSI.Associate(IedName, ApName , self.ipAdr)
-            client = self.ACSI.getACSI(IedName + '/' + ApName)
+            client = self.ACSI.getACSI(self.ACSI.IedName + '/' + self.ACSIApName)
             if client is not None:
                 return (client.associate(self.ipAdr))
             return client
 
-        def ReadDataPoint(self, clientID, ApName, IedName, FC, MmsAdrPath):
-
-            ## Appel du service ACSI ReadDataValue
-
-            print("")
-
-        def WriteDataPoint(self, clientID, ApName, IedName, FC, MmsAdrPath):
-            print("")
-            ## Appel du service ACSI WriteDataValue
+        def ReadDataPoint(self, MmsAdrPath):
+            # Calling ACSI ReadDataValue from OpenSource Lib
 
 
-    ##
-    # \b System services  specific instance for system testing
-    #
-    # @para  _ipAdrTools     the ip adress of the testing tools
-    # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
+        def WriteDataPoint(self, MmsAdrPath, value):
+            # Appel du service ACSI WriteDataValue
 
+        def CheckValueEqual(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) == TestValue)
 
-    class SystemTesting:
+        def CheckValueInf(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) < TestValue)
 
-        def __init__(self, _ipAdrTools, _IEC_Connection, _ServerTimeOut):
-            self.ipAdrTools     = _ipAdrTools
-            self.TimeOut        = _ServerTimeOut
-            self.IEC_Connection = _IEC_Connection
-
-            UTEST     = import_module("utest")
-            self.IEC  = getattr(UTEST,"IECToolKit")
-
-            VSUTIL   = import_module("VsUtils")
-            self.VS  = getattr(VSUTIL,"variables")
-
-
-            self.mgr = IECToolkit.Manager(self._ipAdrTools)       # Connect to system test.
-
-        def Associate(self, IedName, ApName, IPAdr):
-
-            clientID = self.mgr.getACSI(IedName+'/'+ApName)
-            if clientID is not None:
-                return (clientID.associate(IPAdr))                ## TODO ça semble incorrect.
-
-            return clientID
-
-        def ReadDataPoint(self, serverID, ApName, IedName, MmsAdrPath):
-
-            VsName = ApName+IedName+'/' + MmsAdrPath
-            serverID.getDataValues(VsName)   ## ==> Update 'VS'
-        # TODO manage time-out
-            Value = self.VS[VsName]                                 ## ==> Read 'VS'
-            return (Value)
-
-        def WriteDataPoint(self, serverID, ApName, IedName, MmsAdrPath, value):
-            VsName = ApName+IedName+'/' + MmsAdrPath
-            Error= serverID.getDataValues(VsName, value)
-            return (Error)
+        def CheckValueSup(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) > TestValue)
 
         def WaitGoose(self, DataSetId, GooseID, Do, Da,  Delays, timeOut):
-
-            ## Lecture VS avec delay 1ms
-
-            ## Returns Delays
             return
 
         def WaitReport(self, DataSetId, GooseID, timeOut):
             return
 
-            ## Lecture VS avec delay 1ms
+
+    ##
+    # \b System services  specific instance for system testing
+    #
+    # @para  ACSI   an instance of the ACSI class
+    # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
+    class SystemTestingActual:
+        def __init__(self, _ACSI, _ipAdrTools, _desc):
+            self.ACSI       = _ACSI
+            self.ipAdrTools = _ipAdrTools
+            self.desc       = _desc
+            self.TR         = TR.Trace.Console()
+
+            UTEST     = import_module("utest")
+            self.IEC  = getattr(UTEST,"IECToolKit")
+
+            VSUTIL   = import_module("VsUtils")
+#            self.VS  = getattr(VSUTIL,"variables")
+
+            self.VS      = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName,"")
+            self.VS_MMS  = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName,"MMS")
+
+
+        def Associate(self):
+            # TODO
+
+            return True
+
+# The address
+        # ReadDataPoint for a U-TEST adress: '/' based, FC at DA level
+        def ReadDataPoint(self, U_MmsAdr):
+
+            # Get the MMS Adress at U-TEST format:
+
+            X = self.VS[U_MmsAdr]
+            MmsAdr = self.ACSI.mmsBase + '/' + X.get('mmsAdr')     # Todo conver MmsAdrPath
+
+            Value = self.VS_MMS[MmsAdr]                                 ## ==> Read 'VS'
+            Val = Value.get("TypeValue")
+            if Val is None:
+                Val="_None_"
+            return (Value)
+
+        def WriteDataPoint(self, MmsAdrPath, value):
+
+            VsName = self.ACSI.mmsBase + MmsAdrPath
+
+            Error  = self.mgr.writeDataValues(VsName, value)
+            return (Error)
+
+        def CheckValueEqual(self, MmsAdrPath, TestValue ):
+            return(self.ReadDataPoint(MmsAdrPath) == TestValue)
+
+        def CheckValueInf(self, MmsAdrPath, TestValue):
+            return(self.ReadDataPoint(MmsAdrPath) < TestValue)
+
+        def CheckValueSup(self, MmsAdrPath, TestValue):
+            return(self.ReadDataPoint(MmsAdrPath) > TestValue)
+
+        def WaitGoose(self, DataSetId, GooseID, Do, Da,  Delays, timeOut):
+
+            return
+
+        def WaitReport(self, DataSetId, GooseID, timeOut):
+            return
+
+
+            ##
+            # \b System services  specific instance for system testing
+            #
+            # @para  _ipAdrTools     the ip adress of the testing tools
+            # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
+    class Dummy:
+        def __init__(self, _ACSI, _ipAdrTools, _desc):
+            self.ACSI       = _ACSI
+            self.ipAdrTools = _ipAdrTools
+            self.desc       = _desc
+            self.TR         = TR.Trace.Console()
+
+            ## Create a 'VS' like dictionary based on u_mmsAdr
+            self.VS = {}
+
+        def Associate(self):
+            clientID = self.ACSI.IedName + '/' + self.ACSI.APName
+            self.TR(("Assocation with: " + clientID),TL.DETAIL)
+            return clientID
+
+        def ReadDataPoint(self, MmsAdrPath):
+            VsName = self.ACSI.mmsBase + MmsAdrPath  # Todo conver MmsAdrPath
+
+            #            self.mgr.getDataValues(VsName)   ## ==> Update 'VS'
+            #        # TODO manage time-out
+            Value = self.VS[VsName]  ## ==> Read 'VS'
+            return (Value)
+
+        def WriteDataPoint(self, MmsAdrPath, value):
+            VsName = self.ACSI.mmsBase + MmsAdrPath
+            Error = self.mgr.writeDataValues(VsName, value)
+            return (Error)
+
+        def CheckValueEqual(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) == TestValue)
+
+        def CheckValueInf(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) < TestValue)
+
+        def CheckValueSup(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) > TestValue)
+
+        def WaitGoose(self, DataSetId, GooseID, Do, Da, Delays, timeOut):
+            return
+
+        def WaitReport(self, DataSetId, GooseID, timeOut):
+            return
 
         ##
     # \b Dummy Services  'a loop back' instance of ACSI services /
@@ -244,30 +258,50 @@ class ACSI:
     # @para  _ipAdrTools    Unused (dummy service)
     # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
 
-    class Dummy:
-        def __init__(self, _ipAdrTools, _IEC_Connection, _ServerTimeOut):
-            self.ipAdrTools     = _ipAdrTools
-            self.TimeOut        = _ServerTimeOut
-            self.IEC_Connection = _IEC_Connection
-            
-			self.CG = CheckDataInitialValue("CodeGeneration")
-            self.GM = globalDataModel(TX,'SCL_files/'+ file, None)
-			
-            print(">> ipAdrTools:" + _ipAdrTools + " IEC_Connection" + " ServerTimeOut:" + _ServerTimeOut)
+    class Dummy2:
+        def __init__(self, _ACSI, _ipAdrTools, _desc):
+            self.ACSI       = _ACSI
+            self.ipAdrTools = _ipAdrTools
+            self.desc       = _desc
+            self.TR         = TR.Trace.Console()
 
-        def Associate(self, IedName, ApName, IPAdr):
+
+        def Associate(self):
             # TODO ?
-            print("associate)")
+            self.TR(("Association with:", self.ACSI.IedName+'/'+self.ACSI.APName),TL.GENERAL)
             return ("dummy")
 
-        def ReadDataPoint(self, clientID, ApName, IedName, FC, MmsAdrPath):
-            ## Lecture du data model LOCAL
+        def ReadDataPoint(self, MmsAdrPath):
+            ## Lecture du data model LOCAL (loop-back mode)
 
-            print("")
+            Adresse  =  'self.DM.' + MmsAdrPath.IntAdr
+            self.TR.Trace(("xxx:"+Adresse + ':' + Adresse), TL.DETAIL)
 
-        def WriteDataPoint(self, clientID, ApName, IedName, FC, MmsAdrPath):
-            print("")
-             ## Ecriture du Data Model Local
+            try:
+                Test  = eval(Adresse)  # Verify existence of some initialisation data
+                Value = eval(AdrValue)
+
+                return Value
+
+            except Exception as inst:  # No data, an exception is expected hera
+                A = type(inst)
+                return None
+
+
+        def WriteDataPoint(self, MmsAdrPath , value):
+            AdrValue =  'self.DM.' + MmsAdrPath.IntAdr + ".value"
+            eval(AdrValue=value)
+
+        def CheckValueEqual(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) == TestValue)
+
+        def CheckValueInf(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) < TestValue)
+
+        def CheckValueSup(self, MmsAdrPath, TestValue):
+            return (self.ReadDataPoint(MmsAdrPath) > TestValue)
+
+            ## Ecriture du Data Model Local
 
 class API_Test:
     def __init__(self, _desc):
@@ -275,11 +309,11 @@ class API_Test:
 
     def getAPI_TXT(self,mode):
         if mode=="IED":
-            return (ACSI.IEDTesting)
+            return (TEST.IEDTesting)
         if mode=="SYSTEM":
-            return (ACSI.SystemTesting)
+            return (TEST.SystemTestingActual)
         if mode=="DUMMY":
-            return (ACSI.Dummy)
+            return (TEST.Dummy)
 
 ##
 # \b MAIN call the unitary test 'Test_ParcoursDataModel'

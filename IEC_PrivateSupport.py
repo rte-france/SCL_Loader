@@ -32,6 +32,9 @@ import sys
 import os
 import importlib
 
+from IEC_Trace import Trace
+from IEC_Trace import Level as TL
+
 import IEC_RTE_private
 
 ##
@@ -84,6 +87,7 @@ class DynImport:
     def __init__(self):
         self.DicoPrivate = {}       ## For full tag name like 'RTE-FIP'
         self.TagList     = []       ## For generic tag starting a simple name like 'RTE-', 'GE_', 'Siemens-'...
+        self.TR          = Trace.Console(TL.DETAIL)
 
         #       dicDoType[id] = {"import": cdc, "commentaire": desc, "tDA": tDA
         #                  start with TAG         class name
@@ -150,12 +154,13 @@ class DynImport:
                 pClass = importlib.import_module(iFileName)
 
             except ImportError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
-                print("FAILED TO IMPORT, File:" + iFileName )
+                self.TR(("FAILED TO IMPORT, File:" + iFileName ),TL.ERROR)
+                exit(-2)
             else:
                 __exception = sys.exc_info()[0]
                 if __exception is not None:
-                    print(
-                        'e' + __exception.__name__)  # Print the exception, usually bad FileName, ClassName or FunctionName
+                    self.TR(('Exception: ' + __exception.__name__),TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
+                    exit(-2)
 
             return iFileName,iClass,iMethod,
 
@@ -166,12 +171,13 @@ class DynImport:
                     pClass = importlib.import_module(iTag.FileName)
 
                 except ImportError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
-                    print("FAILED TO IMPORT, File:" + iTag.FileName)
+                    self.TR(("FAILED TO IMPORT, File:" + iTag.FileName),TL.ERROR)
+                    exit(-2)
                 else:
                     __exception = sys.exc_info()[0]
                     if __exception is not None:
-                        print(
-                            'e' + __exception.__name__)  # Print the exception, usually bad FileName, ClassName or FunctionName
+                        self.TR(('Exception:' + __exception.__name__),TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
+                        exit(-2)
 
                 return iTag.FileName, iTag.ClassName, iTag.MethodName
 
@@ -197,7 +203,7 @@ class DynImport:
 
         FileName, ClassName, FunctionName =self.getClassMethod(TypePrivate)
         if (FileName is None) or (ClassName is None) or (FunctionName is None):
-            print("UNREGISTERED PRIVATE, type" + TypePrivate)
+            self.TR.Trace(("UNREGISTERED PRIVATE, type" + TypePrivate),TL.ERROR)
             return
 
         try:
@@ -210,18 +216,18 @@ class DynImport:
             iFunction(TypePrivate, pSCL, pDataModel)            # Call the actual method
 
         except ImportError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
-            print("FAILED TO IMPORT, File:" + FileName + " Class: " + ClassName + " Fonction" + FunctionName)
+            self.TR.Trace(("FAILED TO IMPORT, File:" + FileName + " Class: " + ClassName + " Fonction" + FunctionName),TL.ERROR)
         else:
             __exception = sys.exc_info()[0]
             if __exception is not None:
-                print('e' + __exception.__name__)               # Print the exception, usually bad FileName, ClassName or FunctionName
+                self.TR.Trace(('e' + __exception.__name__),TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
 
 ##
 # \b Test DynImport: unitary tests for IEC_PrivateSupport
 if __name__ == '__main__':
 
 #    IEC_RTE_private.RTE_Private.RTE_BAP(None,None,None,None)
-
+    TR = Trace.Console(TL.DETAIL)
     Dyn = DynImport()
 #     x = Dyn.PrivateDynImport("RTE-",None, None)       # Shall raised an exception !
 
@@ -229,16 +235,16 @@ if __name__ == '__main__':
     x2 = Dyn.PrivateDynImport("RTE-FIP",None, None)
 
     file, _class, method = Dyn.getClassMethod('RTE-XXX')
-    print("RTE-XXX File:", file," Class:", _class, " Method:", method)
+    TR(("RTE-XXX File:", file," Class:", _class, " Method:", method),TL.ERROR)
 
     file, _class, method  = Dyn.getClassMethod("RTE-BAP")
-    print("RTE-BAP File:", file," Class:", _class, " Method:", method)
+    TR(("RTE-BAP File:", file," Class:", _class, " Method:", method),TL.ERROR)
 
     file, _class, method  = Dyn.getClassMethod("RTE-FIP")
-    print("RTE-FIP File:", file," Class:", _class, " Method:", method)
+    TR(("RTE-FIP File:", file," Class:", _class, " Method:", method),TL.ERROR)
 
     file, _class, method  = Dyn.getClassMethod('GE_xxx')
-    print("GE_xxx File:", file," Class:", _class, " Method:", method)
+    TR(("GE_xxx File:", file," Class:", _class, " Method:", method),TL.ERROR)
 
 
 

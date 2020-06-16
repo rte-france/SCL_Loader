@@ -85,8 +85,7 @@ class Parse_DAType:
                 _id      = pDBA.getAttribute("name")
                 _type    = pDBA.getAttribute("type")
                 _bType   = pDBA.getAttribute("bType")
-                if _bType=="Enum":
-                    print("xxxx")
+
                 _valKind = pDBA.getAttribute("valKind")
                 self.TRX.Trace(("     BDA: ID=" + _id + " type:" + _type +  ", bType:" + _bType + ", valKind:" +_valKind ),TL.DETAIL)
 

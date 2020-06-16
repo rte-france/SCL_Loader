@@ -19,10 +19,8 @@ from IEC_Trace              import Level   as TL
 from IEC_TypeSimpleCheck    import Check
 
 from IEC_ParcoursDataModel import globalDataModel
-
-class IECToolkit:
-    def Manager(ip):
-        print("initiate for ip:" + ip)
+from IEC_ACSI_Services     import API_Test
+from IEC_ACSI_Services     import ACSI
 
 class CheckDataInitialValue:
     def __init__(self, ApplicationName):
@@ -126,13 +124,26 @@ class CheckDataInitialValue:
         def Terminate(self, ied):
             self.TX.Close()
 
-    class OnLine:
-        def __init__(self, _ied, File):
-            self.ied    = _ied
-            self.IED_AP = IECToolkit.Manager(_ied.IP)
+    class Connected:
+        def __init__(self, _ACSI, _ied, _File):
+            self.ied    = _ied                          #
             self.TX     =  Trace.Console(TL.GENERAL)
-            self.CnxIED = self.IED_AP.Associate()
-            self.IED_ID  = self.ied.name + self.ied.tAccessPoint[0].name
+
+            testAPI     =  API_Test("Verification conformité valeur")
+
+            ACSI_API1   =  testAPI.getAPI_TXT("DUMMY")
+            dummy       =  ACSI_API1(_ACSI, '0.0.0.0', 'test loopback')
+            self.IED_ID =  dummy.Associate()
+
+            ACSI_API2   =  testAPI.getAPI_TXT("SYSTEM")
+            System      =  ACSI_API2(_ACSI, '0.0.0.0', 'test System')
+
+            if System.Associate() is not None:
+                System.ReadDataPoint('LD_All/HVDC_LD_All_1/LD_all/LLN0/OpTmh/stVal[ST]') ## 'LD_all/LLN0/OpTmh/stVal[ST]'
+
+            ACSI_API3   =  testAPI.getAPI_TXT("IED")
+            IED         =  ACSI_API2(_ACSI, '0.0.0.0', 'test IED')
+            self.IED_ID =  IED.Associate()
 
         def DataPointcheck(self, iec,  index):
             Value = iec.TypeValue
@@ -145,10 +156,12 @@ class CheckDataInitialValue:
             else:
                 self.TX.Trace(f'# Verification on: {iec.mmsAdr:40} :type {iec.EnumType:10} value: {Value:20}\n', TL.GENERAL)
 
-            da=iec[index]
-            value = self.IED_ID.getDataValue(da.mmsAdr)        # {iec.mmsAdr} + {Value} \n', TL.GENERAL)
-            time.sleep(0.100)
-            self.CheckDatapoint(da, value)
+            iedName = self.ied.IEDcomm.name
+            apName  = self.ied.IEDcomm.tAccessPoint[0].name
+            mmsAdr  = self.ied.IEDmmsadresse[index]
+
+            value   = self.ACSI.ReadDataPoint(mmsAdr.u_mmsAdr)
+            self.CheckDatapoint(iec, value)
 
 
         def CheckDAivalue(self, TR2, iec, adresse, value):
@@ -192,7 +205,7 @@ class CheckDataInitialValue:
 
         TX = Trace.Console(TL.GENERAL)
         tIEDfull=[]
-        for file in FileListe.lstSystem :
+        for file in FileListe.lstIED:
 
             CG = CheckDataInitialValue("CodeGeneration")
             GM = globalDataModel(TX,'SCL_files/'+ file, None)
@@ -202,6 +215,7 @@ class CheckDataInitialValue:
 
             for ied in GM.tIED:
 
+                IedAP_Model = GM.tIED[indIED].tAccessPoint[0].tServer[0]
                 T0_IED = time.time()
                 tIEC_adresse = GM.BrowseDataModel(ied)
                 IEDcomplet   = CG.IEDfull(ied, tIEC_adresse )
@@ -212,12 +226,14 @@ class CheckDataInitialValue:
                 else:
                     ip = ied.IP
                 Resultat = str(time.time()- T0_IED)
-                print("Temps pour l'IED:" + ied.name + '(' + ip + ") Nombre de DA:" + nbDa + "Temps" + Resultat)
+                TX.Trace(("Time for IED:" + ied.name + '(' + ip + ") Number of DA:" + nbDa + "Time:" + Resultat),TL.GENERAL)
+
+                ACSIparam = ACSI(ied.name,ied.IP,ied.tAccessPoint[0].name,IedAP_Model.timeout, IedAP_Model.desc, tIEC_adresse)
 
                 if mode == 'CodeGeneration':
-                    Check = CheckDataInitialValue.CodeGen(ied,  ied.name+'.py')
+                    Check = CheckDataInitialValue.CodeGen(ACSIparam,   IEDcomplet, ied.name+'.py' )
                 if mode == 'Connected':
-                    Check = CheckDataInitialValue.Connected(ied,ied.name+'.py')
+                    Check = CheckDataInitialValue.Connected(ACSIparam, IEDcomplet, ied.name+'.py' )
 
     #            directAdress = ied.Server[0]
     #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
@@ -244,13 +260,13 @@ class CheckDataInitialValue:
                             break
                     i = i + 1
 
-                print("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i))
+                TX.Trace(("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i)),TL.GENERAL)
                 Check.TX.Close()
                 indIED = indIED + 1
 
             TempsTotal = str(time.time() - T0_Total)
-            print("Total Time:" + file + ':' + TempsTotal)
-        print("fin")
+            TX.Trace(("Total Time:" + file + ':' + TempsTotal),TL.GENERAL)
+        TX.Trace(("*** finished *** "),TL.GENERAL)
 
 
 if __name__ == '__main__':
@@ -258,5 +274,5 @@ if __name__ == '__main__':
     TX = Trace.Console(TL.DETAIL)
     tIEDfull=[]
 
-#    CheckDataInitialValue.CheckAllValue('Connected')
-    CheckDataInitialValue.CheckAllValue('CodeGeneration')
+    CheckDataInitialValue.CheckAllValue('Connected')
+#    CheckDataInitialValue.CheckAllValue('CodeGeneration')

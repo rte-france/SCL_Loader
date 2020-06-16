@@ -82,7 +82,6 @@ class ParseSubStation:
         pVoltageLevel = Substation[0].firstChild.nextSibling
 
         while pVoltageLevel:
-            print("pVoltageLevel.nodeName"  + pVoltageLevel.nodeName)
 
             _name       = pVoltageLevel.getAttribute("name")
 #            _nomFreq    = pVoltageLevel.getAttribute("nomFreq")

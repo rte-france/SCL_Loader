@@ -928,7 +928,7 @@ class DataTypeTemplates:
                   "Currency",
                   "PhyComAddr", "TrgOps", "OptFlds", "SvOptFlds","LogOptFlds",
                   "EntryID",
-                  "AnalogueValueCtlF",
+#                  "AnalogueValueCtlF",
                   "Octet6", "Octet16"          # Edition 2.1
                   ]
 
@@ -965,7 +965,6 @@ class DataTypeTemplates:
             self.NotSync        = _NotSync       # Boolean
             self.Precision      = _Precision     # INT 5 bits Number of significant bits
                                                  # in the FractionOfSecond:
-
     ##
     #   Timestamp   : The time stamp structure
     class Timestamp:

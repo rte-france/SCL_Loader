@@ -675,7 +675,7 @@ class Parse_LN:
             setattr(iDOI, _name, iSDI)
 
         if pDAI_v.firstChild is None:
-            #        print("DAI without value:" + name + "sAddr:" + sAddr)
+            self.TRX.Trace(("DAI without value:" + _name+ "sAddr:" + _sAddr),TL.DETAIL)
             return iSDI, sdi_name
 
         # Reading the Value

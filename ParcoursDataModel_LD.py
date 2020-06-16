@@ -6,16 +6,16 @@
                 LNodeType    = GM.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
                 if (LNodeType.lnClass=='LLN0'):
                     self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN), TL.GENERAL)
-                    print("Fonction:" + LD.inst)
+                    self.TR.Trace(("Fonction:" + LD.inst), TL.GENERAL)
                     inputs1 = LN.tInputs
                     try:
                         X = inputs1.tExtRef
                     except AttributeError:
-                        print('No ExtRef table')
+                        self.TR.Trace(('No ExtRef table'), TL.GENERAL)
                         continue
                     else:
                         for extRef in inputs1.tExtRef:
-                            print('INPUT, pLN: '  + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+                            self.TR.Trace(('INPUT, pLN: '  + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc), TL.GENERAL)
 
                     NbRCB = len(LN.tRptCtrl)
                     for i in range(0,NbRCB):

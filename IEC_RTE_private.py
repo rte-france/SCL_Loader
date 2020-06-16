@@ -194,8 +194,8 @@ class RTE_Private:
             else:
                 __exception = sys.exc_info()[0]
                 if __exception is not None:
-                    print('e' + __exception.__name__)
-
+                    self.TR.Trace(('Exception in RTE_private FIP' + __exception.__name__),TL.GENERAL)
+                    exit(-1)
             pRTE = pRTE.nextSibling
             if pRTE is not None:
                 pRTE = pRTE.nextSibling
@@ -231,7 +231,8 @@ class RTE_Private:
             else:
                 __exception = sys.exc_info()[0]
                 if __exception is not None:
-                    print('e' + __exception.__name__)
+                    self.TR.Trace(('Exception in RTE_private BAP' + __exception.__name__),TL.GENERAL)
+                    exit(-1)
 
             pRTE = pRTE.nextSibling
             if pRTE is not None:
@@ -255,7 +256,6 @@ class RTE_Private:
         pRTE = _pSCL.firstChild
         if pRTE is not None:
             _value = pRTE.nodeValue
-            print("                         ... Value RTE-DAI_val", _value)
 
    ##
     # \b RTE_LD_ChangeLog
@@ -276,7 +276,6 @@ class RTE_Private:
             _value = pRTE.nodeValue
             setattr(_pDataModel, "LD_ChangeLog", _value)
             _pDataModel.value = _value
-            print("                         ... Value RTE-DAI_val", _value)
 
     ##
     # \b RTE_LD_Model_ChangeLog
@@ -297,7 +296,6 @@ class RTE_Private:
             _value = pRTE.nodeValue
             setattr(_pDataModel, "LD_Model_ChangeLog", _value)
             _pDataModel.value = _value
-            print("                         ... Value RTE-DAI_val", _value)
 
     ##
     # \b RTE_PARAM

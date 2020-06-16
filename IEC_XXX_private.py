@@ -43,7 +43,7 @@ class Private_XXX:
     #  @param   pSCL        - the pointer to the SCL, where the tag was found
     #  @param   pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
     def XXX_Generic(self, type, pSCL, pDataModel):
-        print("XXX Generic", type)
+        self.TR(("XXX Generic", type),TL.GENERAL)
 
     ##
     # \b XXX_Generic
@@ -54,4 +54,4 @@ class Private_XXX:
     #  @param   pSCL        - the pointer to the SCL, where the tag was found
     #  @param   pDataModel  - the pointer to the global model, where the data related to the private tag can be stored typically by dynamically creating data in it.
     def myTag_Specific(self, type, pSCL, pDataModel):
-        print("myTag_Specific", type)
+        self.TR(("myTag_Specific", type),TL.GENERAL)

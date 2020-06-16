@@ -43,16 +43,16 @@ class CodeGeneration():
 
     def Parse_LN0(self,BaseName, LD, LN, txtLN):
         self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN), TL.GENERAL)
-#        print("Fonction:" + LD.inst)
+#        self.TR.TRACE("Fonction:" + LD.inst), TL.GENERAL)
 #        inputs1 = LN.tInputs
 #        try:
 #            X = inputs1.tExtRef
 #        except AttributeError:
-#            print('No ExtRef table')
+#            self.TR.TRACE('No ExtRef table'), TL.GENERAL)
 #            return
 #        else:
 #            for extRef in inputs1.tExtRef:
-#                print('INPUT, pLN: ' + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc)
+#                self.TR.TRACE('INPUT, pLN: ' + extRef.pLN + ' pServT:' + extRef.pServT + " pDO:" + extRef.pDO + " Srv: " + extRef.desc), TL.GENERAL)
 
         NbRCB = len(LN.tRptCtrl)
         for i in range(0, NbRCB):
@@ -66,7 +66,7 @@ class CodeGeneration():
 
         LNType =  self.LNodeType.getIEC_LNodeType(LN.lnType)
         if LNType is None:
-            print("Missing LNOTYPE: ",LNType)
+            self.TR.Trace(("Missing LNOTYPE: ",LNType),TL.ERROR)
         else:
             for do in LNType.tDO:
                 if do.name.startswith("InRef"):
@@ -138,7 +138,7 @@ if __name__ == '__main__':
 
             t0 = time.time()
             myCpt = CG.ParcoursDataModel(GM, ied)
-            print("################################### Compteur:"+str(myCpt))
+            TX.Trace(("Counter:"+str(myCpt)),TL.DETAIL)
 
 #            directAdress = ied.Server[0]
 #            'PwrQual$PQi$LLN0$Mod$ST$stVal'
@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
         T1 = time.time()
         TempsTotal = str(T1 - T0)
-        print("Temps total de traitement:" + file + ':' + TempsTotal)
+        TX.Trace(("Total execution time:" + file + ':' + TempsTotal),TL.GENERAL)
 
         TX.Close()
-    print("fin")
+    TX.Trace(("*** FINISHED "),TL.GENERAL)

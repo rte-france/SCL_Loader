@@ -30,6 +30,12 @@ from IEC_TypeSimpleCheck    import Check
 from IEC61850_XML_Class     import  DataTypeTemplates as IecType
 
 
+global SEP1
+global SEP2
+
+SEP1 = '$'          # Standard MMS separator.
+SEP2 = '/'          # MMS Separator for system testing
+
 ##
 # \b IECda: handle a single final data attribute
 #
@@ -48,38 +54,35 @@ from IEC61850_XML_Class     import  DataTypeTemplates as IecType
 #   @param  _Valkind    The 'valKind' associated to the DA.
 #
 class IECda:
-    def __init__(self, Texte, _mmsAdr, _fc, _BasicType, _EnumType, _Value, _Valkind):
+    def __init__(self, Texte, _mmsAdr, _u_mmsAdr , _fc, _BasicType, _EnumType, _Value, _Valkind):
         self.fc           = _fc             ## Functional Constrain
         self.BasicType    = _BasicType      ## 'bType' see IEC61850_XML_Class (enum and struct are not treated as bType)
         self.EnumType     = _EnumType       ## EnumType
         self.TypeValue    = _Value          ## Value    from  DATA TYPE DEFINITION
         self.ValKind      = _Valkind        ## ValKlind from  DATA TYPE DEFINITION
         self.IntAdr       =  ''             ## Internal addresse (without the FC), to get a direct access to the local data model.
-        self.mmsAdr       =  _mmsAdr        ## mms adress with the FC.
+        self.mmsAdr       =  _mmsAdr        ## mms adress with the FC, using SEP1, the FC is before the LN_ID (LN_Prefix_LN_Class_
+        self.u_mmsAdr     =  _u_mmsAdr      ## mms adress for U_TEST with with the FC, using SEP1, the FC is before the LN_ID (LN_Prefix_LN_Class_
         if _Value == '__None__':
             self.TypeValue = None
 
-        mmsAdrSplit = _mmsAdr.split('$')            # TODO create mmsAdr directly with '.'
-
         if _BasicType == "Quality" or _BasicType == "Timestamp":
             self.IntAdr = None
-        else:
-            self.IntAdr = mmsAdrSplit[1]        # SKIP IED NAME, start at Logical Device Name
-            for i in range(2, len(mmsAdrSplit)):
-                field = mmsAdrSplit[i]
-                posFC = field.find('[')
-                if posFC != -1:
-                    field = field[0:posFC]
-                self.IntAdr=self.IntAdr + '.' + field # mmsAdrSplit[i]
 
+        mmsAdrSplit = _mmsAdr.split(SEP1)  # TODO create mmsAdr directly with '.'
+        self.mmsAdr = mmsAdrSplit[1]+SEP1+ mmsAdrSplit[2]+SEP1 + mmsAdrSplit[0] # LDName$LN$FC.
+        self.IntAdr = mmsAdrSplit[1]+'.'+ mmsAdrSplit[2]                      # Exclude FC.
+
+        for i in range(3, len(mmsAdrSplit)):
+            field = mmsAdrSplit[i]
+            self.mmsAdr=self.mmsAdr + SEP1 + field # mmsAdrSplit[i]
+            self.IntAdr=self.IntAdr + '.' + field # mmsAdrSplit[i]
 
         if _BasicType in IecType.bType.Simple:
             iecType = _BasicType
         else:
             if _EnumType is not None:
                 iecType = "Enum: "+_EnumType
-            else:
-                print("#######################")        # TODO replace by a TRACE with TL.ERROR level.
 
 ##
 #
@@ -92,7 +95,7 @@ class IECda:
 #       - BrowseDataModel_LD    - for a Logical Device instance, browse all LN and their DO
 #           - BrowseDA          - for a given DO, SDO, BDA, browse the DA
 #           - BrowseTypeSimple  - for a given DA if a type is 'final' build the MMS adresses, otherwise recusively call BrowseDA
-#   - TraceDataPoint            - For debugging purpose, print the details of a given data point
+#   - TraceDataPoint            - For debugging purpose, trace to the console the details of a given data point
 #   - GetIPAddress              - Search the IP adresse of a given IED/AccessPoint
 #
 # @param    _TR     _TR instance of the trace system
@@ -133,7 +136,7 @@ class globalDataModel:
             _SCL = dom.parse(fileName)
         t1 = time.time()
         deltaT = t1 - t0
-        print("Time to load the SCL file: " + fileName + ':' + str(deltaT))  # TODO use Trace !
+        self.TR.Trace("Time to load the SCL file: " + fileName + ':' + str(deltaT),TL.GENERAL)
 
         self.tIED = self.getIED_withComm(_SCL)  # Expect a file list
 
@@ -238,19 +241,19 @@ class globalDataModel:
                 self.TR.Trace(("Browsing LD:" + LD.inst + " LN:" + txtLN ) , TL.GENERAL)
                 LNodeType    = self.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
                 if (LNodeType) is None:
-                   print("missing LN Type" + LN.lnType)
+                   self.TR.Trace(("Missing LNodeType, IED Name" + IEDName + " LN Type " + LN.lnType),TL.ERROR)
+                   exit(-1)
                 else:
                     LD.LN[j].tDO = LNodeType.tDO
         #TODO traiter le cas ou on le trouve pas !!!
                     for k in range(len(LNodeType.tDO)):          # Browsing DO
                         DO  = LN.tDO[k]
-                        if DO.name == 'ApcFTrk':
-                            print("STOP")
                         iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
                         tDA = iDO.tDA
-                        DO_Name  =  IEDName + '$' + LD.inst + '$' + LN.lnPrefix + LN.lnClass + LN.lnInst + '$' + LN.tDO[k].name
-                        DO_Name2 = ( IEDName , LD.inst , LN.lnPrefix + LN.lnClass + LN.lnInst, LN.tDO[k].name)
-                        self.BrowseDA(tIEC_adresse, DO_Name, tDA)
+## No need for IEDName    DO_Name  =  IEDName + SEP1 + LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].name
+                        DO_Name1  =  LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].name
+                        DO_Name2  =  LD.inst + SEP2 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP2 + LN.tDO[k].name
+                        self.BrowseDA(tIEC_adresse, DO_Name1, DO_Name2, tDA)
 
             return(tIEC_adresse)
 
@@ -264,10 +267,10 @@ class globalDataModel:
     # @param    DO_Name         Name of the DO
     # @param    DA      instance of a DA
     # @param    fc      Functional Constraint of the data point
-    def BrowseDA(self, tIEC_adresse, DO_Name, DA):
+    def BrowseDA(self, tIEC_adresse, DO_Name1 , DO_Name2, DA):
 
         if DA is None:
-            print("Problem DA None !!!!" + DO_Name)
+            self.TR.Trace(("DA is NONE in BrowseDA DO_Name"+DO_Name1),TL.ERROR)
             return
 
         for i in range(len(DA)):  # Browse des DA composants le DO.
@@ -280,16 +283,17 @@ class globalDataModel:
                 count    = DA[i].count
             except:
                 count = ''
-                print("zzzzzzzzzzzzzzzzzzz")
 
-            DataName = DO_Name + '$' + DA[i].name + '['+ FC + ']'  # + '(' + bType1 + '-' + valKind1 + '
             if count is not None and count !='':
                 cpt = int(count)
                 for j in range(0,cpt):
-                    DataName = DO_Name + '$' + DA[i].name + str(j)  # + '(' + bType1 + '-' + valKind1 + ')'
-                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, FC, DA, value, valKind )
+                    DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA[i].name + str(j)
+                    DataName2 = DO_Name2 + SEP2 + DA[i].name + str(j) + '['+ FC + ']'
+                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName1, DataName2, FC, DA, value, valKind )
             else:
-                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName, FC, DA, value, valKind)
+                DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA[i].name
+                DataName2  = DO_Name2 + SEP2 + DA[i].name + '['+ FC + ']'
+                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName1, DataName2, FC, DA, value, valKind)
 
     ##
     #
@@ -307,12 +311,10 @@ class globalDataModel:
     # @param    DA
     # @param    value   Actual if defined by SCL or type declaration
     # @param    valkind What actions are possible on the data or not.
-    def BrowseTypeSimple(self, tIEC_adresse, DA_type, bType, idx, DataName, fc, DA, value, valKind):
-        #        if bType=='Enum' or DA_type=='Enum':
-        #             print('yyyyyyyyyyy')
+    def BrowseTypeSimple(self, tIEC_adresse, DA_type, bType, idx, DataName1, DataName2, fc, DA, value, valKind):
 
         if bType in IecType.bType.Simple:  # Type de base ?
-            _iecAdr = IECda("Simple-0   : ", DataName, fc, bType, None, value, valKind)
+            _iecAdr = IECda("Simple-0   : ", DataName1, DataName2, fc, bType, None, value, valKind)
             tIEC_adresse.append(_iecAdr)
             return None
 
@@ -323,8 +325,9 @@ class globalDataModel:
             for m in range(len(SDA.tBDA)):
                 bType2 = SDA.tBDA[m].type
                 if bType2 in IecType.bType.Simple:
-                    BaseName = DataName + '$' + SDA.tBDA[m].name
-                    _iecAdr = IECda("Simple-xx-1   : ", BaseName, fc, bType2, None, value, valKind)
+                    BaseName1 = DataName1 + SEP1 + SDA.tBDA[m].name
+                    BaseName2 = DataName2 + SEP2 + SDA.tBDA[m].name
+                    _iecAdr = IECda("Simple-xx-1   : ", BaseName1, BaseName2, fc, bType2, None, value, valKind)
                     tIEC_adresse.append(_iecAdr)
                     continue
 
@@ -338,41 +341,46 @@ class globalDataModel:
                         bName    = DA1.name
                         bValue   = DA1.value
                         bValKind = DA1.valKind
-                        BaseName = DataName + '$' + DA1.name
+                        BaseName1 = DataName1 + SEP1 + DA1.name
+                        BaseName2 = DataName2 + SEP2 + DA1.name
+
                         if (DA1.type in IecType.bType.Simple):
-                            DataName2 = BaseName
-                            _iecAdr = IECda("Simple-3   : ", BaseName, fc, DA1.type, None, bValue, bValKind)
+#                            BaseName1 =
+#                            BaseName2
+                            _iecAdr = IECda("Simple-3   : ", BaseName1, BaseName2, fc, DA1.type, None, bValue, bValKind)
                             tIEC_adresse.append(_iecAdr)
                         elif (DA1.type == 'Enum'):
-                            _iecAdr = IECda("Enum-2     : ", BaseName, fc, DA1.bType, type1, bValue, bValKind)
+                            _iecAdr = IECda("Enum-2     : ", BaseName1, BaseName2, fc, DA1.bType, type1, bValue, bValKind)
                             tIEC_adresse.append(_iecAdr)
                         elif (DA1.type == 'Struct'):
                             DA2 = self.DAType.getIEC_DaType(DA1.bType)
                             for k in range(len(DA2.tBDA)):
-                                DataName2 = BaseName + '$' + DA2.tBDA[k].name
+                                DataName3 = BaseName1 + SEP1 + DA2.tBDA[k].name
+                                DataName4 = BaseName2 + SEP2 + DA2.tBDA[k].name
                                 bValue = DA2.tBDA[k].value
                                 bValKind = DA2.tBDA[k].valKind
-                                _iecAdr = IECda("Struct-3   : ", DataName2, fc, DA2.tBDA[k].type, DA2.tBDA[k].bType,
+                                _iecAdr = IECda("Struct-3   : ", DataName3, DataName4, fc, DA2.tBDA[k].type, DA2.tBDA[k].bType,
                                                 bValue, bValKind)
                                 tIEC_adresse.append(_iecAdr)
                     continue
                 elif (bType2 == 'Enum'):
-                    DataName2 = DataName + '$' + SDA.tBDA[m].name
+                    DataName1 = DataName1 + SEP1 + SDA.tBDA[m].name
+                    DataName2 = DataName2 + SEP2 + SDA.tBDA[m].name
                     bValue = SDA.tBDA[m].value
                     bValKind = SDA.tBDA[m].valKind
-                    _iecAdr = IECda("Enum-1     : ", DataName2, fc, SDA.tBDA[m].type, SDA.tBDA[m].bType, bValue,
+                    _iecAdr = IECda("Enum-1     : ", DataName1, DataName2, fc, SDA.tBDA[m].type, SDA.tBDA[m].bType, bValue,
                                     bValKind)
                     tIEC_adresse.append(_iecAdr)
                     continue
                 else:
                     self.TraceDataPoint("ELSE           :", DA_type, bType, bType2, DataName, fc)
                     DA = self.DAType.getIEC_DaType(bType2)
-                    self.BrowseDA(tIEC_adresse, DataName, DA)
+                    self.BrowseDA(tIEC_adresse, DataName1, DataName2, DA)
             return None
         elif (bType == 'Enum'):
             bValue = DA[idx].value
             bValKind = DA[idx].valKind
-            _iecAdr = IECda("Enum-0     : ", DataName, fc, bType, DA[idx].type, bValue, bValKind)
+            _iecAdr = IECda("Enum-0     : ", DataName1, DataName2, fc, bType, DA[idx].type, bValue, bValKind)
             tIEC_adresse.append(_iecAdr)
             return None
 
@@ -380,16 +388,16 @@ class globalDataModel:
 
             DO = self.DOType.getIEC_DoType(bType)
             if DO is not None:
-                self.BrowseDA(tIEC_adresse, DataName, DO.tDA)
+                self.BrowseDA(tIEC_adresse, DataName1, DataName2, DO.tDA)
             else:
                 DA = self.DAType.getIEC_DaType(bType)
-                self.BrowseDA(tIEC_adresse, DataName, DA)
+                self.BrowseDA(tIEC_adresse, DataName1, DataName2, DA)
 
     ##
     #
     # \b TraceDataPoint
     #
-    # For debugging purpose, print the details of a given data point
+    # For debugging purpose, trace the details of a given data point
     #
     # @param    header  Text like Struct-1 , Enum-2, Simple...
     # @param    file    SCL file to use (SCD, IID, ICD, ...)
@@ -436,6 +444,7 @@ class Test_ParcoursDataModel:
     def main(directory, file, scl):
 
         TX = TConsole.File(TL.GENERAL, "dump data.txt")
+        TR = TConsole.Console(TL.GENERAL)
         GM = globalDataModel(TX, directory + file, scl)
         iec_BasicType = ''
         iec_TypeValue = ''
@@ -470,17 +479,17 @@ class Test_ParcoursDataModel:
         T1 = time.time()
         TempsTotal = str(time.time() - T0_Global)
         TX.Close()
-        print("Temps total de traitement:" + file + ':' + TempsTotal)
-        print("fin")
+        TR.Trace(("Total execution time" + file + ':' + TempsTotal) ,TL.GENERAL)
+        TR.Trace(("*** finished ***"),TL.GENERAL)
 
 ##
 # \b MAIN call the unitary test 'Test_ParcoursDataModel'
 if __name__ == '__main__':
     fileliste = FL.lstFull  # System level file list
     for file in fileliste:
-        Test_ParcoursDataModel.main('SCL_files/', file)
+        Test_ParcoursDataModel.main('SCL_files/', file, None)
 
     fileliste = FL.lstIED   # IED level file list
     for file in fileliste:
-        Test_ParcoursDataModel.main('SCL_files/', file)
+        Test_ParcoursDataModel.main('SCL_files/', file, None)
 

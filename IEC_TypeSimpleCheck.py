@@ -222,7 +222,6 @@ class Check:
             return None
 #recherche par la chaine
         if value.isprintable() is True:
-            print("LA valeur est exprimée par son ID:",value)
             for iEnum in iEnumType.tEnumval:
                 if iEnum.strValue == value:
                     return True
@@ -248,11 +247,11 @@ class Check:
         if type in IecType.bType.String:
              ## fName contains the name of the function and its argument
              fName = 'Check.' + type + '("' + value + '")'
- #           print("Fname String:",fName)
+ #           trace("Fname String:",fName)
         elif type in IecType.bType.Number:
             ## fName contains the name of the function and its argument
             fName = 'Check.' + str(type) + '(' +  value + ')'
-#            print("Fname Scalar:",fName)
+#            trace("Fname Scalar:",fName)
 
         ## x is the result of  "check.INT8U(34)" for example
         x = eval(fName)
