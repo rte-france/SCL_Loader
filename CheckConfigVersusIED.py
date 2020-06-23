@@ -42,9 +42,9 @@ class CheckDataInitialValue:
         return x == value
 
     class CodeGen:
-        def __init__(self, _ied, File):
+        def __init__(self, _ACSI, _ied, File):
             self.ied    = _ied
-            self.IP     = _ied.IP
+            self.ACSI   = _ACSI
             self.TX     =  Trace.File(TL.GENERAL, "GeneratedScript\\" + File)
 
             self.TX.Trace(('from utest.ATL import *\n'), TL.GENERAL)
@@ -64,11 +64,12 @@ class CheckDataInitialValue:
             self.TX.Trace(('        pass\n'), TL.GENERAL)
             self.TX.Trace(('\n'), TL.GENERAL)
 
+            self.IED_ID = self.ACSI.IedName + self.ACSI.APName # tServer[0].IEDName
+
             self.TX.Trace(('    def execute(self):\n'), TL.GENERAL)
-            self.TX.Trace(('        '+ self.ied.name +' = IECToolkit.Manager(' + self.ied.IP + ')\n'), TL.GENERAL)
+            self.TX.Trace(('        '+ self.IED_ID +' = IECToolkit.Manager(' + self.ACSI.IedIP + ')\n'), TL.GENERAL)
         #            IED_AP = ied.Server[0].IEDName + ied.Server[0].APName
-            self.IED_ID = self.ied.name + self.ied.tAccessPoint[0].name # tServer[0].IEDName
-            self.TX.Trace(('        '+ 'I_' + self.IED_ID + '= '+ self.ied.name+ '.getACSI('+self.IED_ID+')\n'), TL.GENERAL)
+            self.TX.Trace(('        '+ 'I_' + self.IED_ID + '= '+ self.ACSI.IedName+ '.getACSI('+self.IED_ID+')\n'), TL.GENERAL)
 
         def DataPointcheck(self, iec, index):
             Value = iec.TypeValue
@@ -139,7 +140,7 @@ class CheckDataInitialValue:
             System      =  ACSI_API2(_ACSI, '0.0.0.0', 'test System')
 
             if System.Associate() is not None:
-                System.ReadDataPoint('LD_All/HVDC_LD_All_1/LD_all/LLN0/OpTmh/stVal[ST]') ## 'LD_all/LLN0/OpTmh/stVal[ST]'
+                System.ReadDataPoint('LD_all/LLN0/OpTmh/stVal[ST]') ## 'LD_all/LLN0/OpTmh/stVal[ST]'
 
             ACSI_API3   =  testAPI.getAPI_TXT("IED")
             IED         =  ACSI_API2(_ACSI, '0.0.0.0', 'test IED')
@@ -205,7 +206,7 @@ class CheckDataInitialValue:
 
         TX = Trace.Console(TL.GENERAL)
         tIEDfull=[]
-        for file in FileListe.lstIED:
+        for file in FileListe.lstSystem:
 
             CG = CheckDataInitialValue("CodeGeneration")
             GM = globalDataModel(TX,'SCL_files/'+ file, None)
@@ -274,5 +275,5 @@ if __name__ == '__main__':
     TX = Trace.Console(TL.DETAIL)
     tIEDfull=[]
 
-    CheckDataInitialValue.CheckAllValue('Connected')
-#    CheckDataInitialValue.CheckAllValue('CodeGeneration')
+#    CheckDataInitialValue.CheckAllValue('Connected')
+    CheckDataInitialValue.CheckAllValue('CodeGeneration')

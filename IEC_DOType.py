@@ -88,7 +88,7 @@ class Parse_DOType:
 
                 _valKind = pDA.getAttribute("valKind")
                 _valImp  = pDA.getAttribute("valImport")
-                _value = '__None__'     # to avoid any crash dur to 'None'
+                _value = '_x_'     # to avoid any crash dur to 'None'
 
                 tVAL = pDA.firstChild
                 if pDA.firstChild is not None:

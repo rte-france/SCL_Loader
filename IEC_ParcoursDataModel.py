@@ -63,13 +63,13 @@ class IECda:
         self.IntAdr       =  ''             ## Internal addresse (without the FC), to get a direct access to the local data model.
         self.mmsAdr       =  _mmsAdr        ## mms adress with the FC, using SEP1, the FC is before the LN_ID (LN_Prefix_LN_Class_
         self.u_mmsAdr     =  _u_mmsAdr      ## mms adress for U_TEST with with the FC, using SEP1, the FC is before the LN_ID (LN_Prefix_LN_Class_
-        if _Value == '__None__':
-            self.TypeValue = None
+#        if _Value == '__None__':
+#            self.TypeValue = None
 
         if _BasicType == "Quality" or _BasicType == "Timestamp":
             self.IntAdr = None
 
-        mmsAdrSplit = _mmsAdr.split(SEP1)  # TODO create mmsAdr directly with '.'
+        mmsAdrSplit = _mmsAdr.split(SEP1)
         self.mmsAdr = mmsAdrSplit[1]+SEP1+ mmsAdrSplit[2]+SEP1 + mmsAdrSplit[0] # LDName$LN$FC.
         self.IntAdr = mmsAdrSplit[1]+'.'+ mmsAdrSplit[2]                      # Exclude FC.
 
@@ -242,7 +242,7 @@ class globalDataModel:
                 LNodeType    = self.LNode.getIEC_LNodeType(LN.lnType)   # Look-up for LNType
                 if (LNodeType) is None:
                    self.TR.Trace(("Missing LNodeType, IED Name" + IEDName + " LN Type " + LN.lnType),TL.ERROR)
-                   exit(-1)
+#                   exit(-1)
                 else:
                     LD.LN[j].tDO = LNodeType.tDO
         #TODO traiter le cas ou on le trouve pas !!!

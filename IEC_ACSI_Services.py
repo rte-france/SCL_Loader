@@ -11,9 +11,24 @@
 #
 
 from importlib import import_module
-from IEC61850_XML_Class import Communication
+import time
+
+
 from IEC_Trace import Trace as TR
 from IEC_Trace import Level as TL
+from IEC_FileListe import FileListe
+from IEC_ParcoursDataModel import globalDataModel
+
+#import ACSI_Services as IED_ACSI
+
+#dummy implementation...
+class ACSI_Services:
+    def __init__(self, _desc):
+        self.desc = _desc
+
+    def Associate(self, iedName, apName):
+        print("Associaton with"+iedName+apName)
+
 
 ##  Those 4 time stamsp shall allow to evaluate:
 #   - the network transit delay tArrivalEth-tGoose
@@ -33,21 +48,22 @@ class GooseTiming:
 #
 # This class is holding all data needed to establish a ACSI association.
 #
-# @param _IedName
-# @param _IedIP         The IP Adress to used for this IED/AccessPoint
+# @param _IedName       The IED name..
+# @param _IedIP         The IP Adress to used for this IED/AccessPoint/Server
 # @param _APName        The AccessPoint Name, linkg to ConnectedAP in communication.
 # @param _SrvTo         The Server Time Out
-# @param _SrvDexc       The Server description
+# @param _DataModel     The hiearchical data model from the SCL / including DOI / DAI / SDI value
+# @param _iedAdrMMS     The table of MMS address for the IED.
 #
 class ACSI:
-    def __init__(self, _IedName, _IedIP, _APName, _SrvTo, _SrvDesc, _iedAdrMMS):
-        self.IedName  = _IedName
-        self.IedIP    = _IedIP
-        self.APName   = _APName
-        self.SrvTo    = _SrvTo
-        self.SrvDesc  = _SrvDesc
-        self.mmsBase  = _IedName + '/' + _APName
-        self.iedAdrMMS= _iedAdrMMS
+    def __init__(self, _IedName, _IedIP, _APName, _SrvTo, _DataModel, _iedAdrMMS):
+        self.IedName    = _IedName
+        self.IedIP      = _IedIP
+        self.APName     = _APName
+        self.SrvTo      = _SrvTo
+        self.DataModel  = _DataModel
+        self.mmsBase    = _IedName + '/' + _APName
+        self.iedAdrMMS  = _iedAdrMMS
 
 ## \b TEST:  a set of abstraction interface to handle IEC61850 rtesting at system level, IED level an ddummy / lop-back testing
 #
@@ -66,8 +82,9 @@ class ACSI:
 #   CheckValueSup       : Check that a MMS data point  is Inferior to to a certain value.
 class TEST:
 
-    def CreateDictionary(tMMS, IedName, APName, Mode):
+    def CreateDictionary(tMMS, IedName, APName):
 
+        t0 = time.time()
         Variable={}
         for i in range(0, len(tMMS)):
             IecDA = tMMS[i]
@@ -81,14 +98,17 @@ class TEST:
             mmsAdr      = IecDA.mmsAdr
             u_mmsAdr    = IecDA.u_mmsAdr
 
-            if Mode=="MMS":
-                VAR_ID = IedName + '/' + APName + '/' +  IecDA.mmsAdr
-            else:
-                VAR_ID = IedName + '/' + APName + '/' + IecDA.u_mmsAdr
+            Variable[IecDA.mmsAdr] = {"mmsAdr": mmsAdr, "IntAdr": IntAdr, "ValKind": ValKind,
+                                      "fc": fc, "BasicType": BasicType, "EnumType": EnumType,
+                                     "TypeValue": TypeValue, "u_mmsAdr": u_mmsAdr}
 
-            Variable[VAR_ID] = {"mmsAdr": mmsAdr, "IntAdr:": IntAdr, "ValKind": ValKind,
-                              "fc": fc, "BasicType": BasicType, "EnumType": EnumType,
-                              "TypeValue": TypeValue, "u_mmsAdr": u_mmsAdr}
+            Variable[IecDA.u_mmsAdr] = {"mmsAdr": mmsAdr, "IntAdr": IntAdr, "ValKind": ValKind,
+                                        "fc": fc, "BasicType": BasicType, "EnumType": EnumType,
+                                       "TypeValue": TypeValue, "u_mmsAdr": u_mmsAdr}
+        t1 = time.time()
+        deltaT = t1 - t0
+        print("Time to create dictionaries" + str(deltaT) + " for: "  + str(len(tMMS))+ " datapoints.\n")
+
         return Variable
 
     ## \b IEDTesting:
@@ -96,7 +116,7 @@ class TEST:
     # This class is place holder for the usage of libiec61850
     #
     #
-    class IEDTesting:
+    class IED:
         # @constructor:
         # @param _ACSI         An instance of the key ACSI parameters to create a connection from the testing tools (client) to a server.
         # @param _ipAdrTools   The IP Address to an external tools
@@ -105,22 +125,27 @@ class TEST:
             self.ACSI       = _ACSI
             self.ipAdrTools = _ipAdrTools
             self.desc       = _desc
-            self.TR         = TR.Trace.Console()
+            self.VS         = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName)
+            self.srvACSI    = ACSI_Services(_desc)
 
-        def Associate( self, _ACSI_Associate):
-            self.IedName    = _ACSI_Associate.IedName
-
-            client = self.ACSI.getACSI(self.ACSI.IedName + '/' + self.ACSIApName)
-            if client is not None:
-                return (client.associate(self.ipAdr))
+        def Associate( self):
+            print("ACSI Assocation")
+            client = self.srvACSI.Associate(self.ACSI.IedName,self.ACSI.APName)
+#            if client is not None:
+#                return (client.associate(self.ipAdr))
             return client
 
         def ReadDataPoint(self, MmsAdrPath):
-            # Calling ACSI ReadDataValue from OpenSource Lib
+##          Need to actually call the IED level library
 
+            DataPoint = self.VS[MmsAdrPath]
+            IntrAdr = DataPoint.get("IntAdr")
+
+            print("Value"+Value)
 
         def WriteDataPoint(self, MmsAdrPath, value):
-            # Appel du service ACSI WriteDataValue
+##          Need to actually call the IED level library
+            return value
 
         def CheckValueEqual(self, MmsAdrPath, TestValue):
             return (self.ReadDataPoint(MmsAdrPath) == TestValue)
@@ -137,47 +162,46 @@ class TEST:
         def WaitReport(self, DataSetId, GooseID, timeOut):
             return
 
-
     ##
     # \b System services  specific instance for system testing
     #
     # @para  ACSI   an instance of the ACSI class
     # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
-    class SystemTestingActual:
-        def __init__(self, _ACSI, _ipAdrTools, _desc):
+    class System:
+        def __init__(self, _ACSI, _ipAdrTools, _desc):  # _ACSI will be None in System Case.
             self.ACSI       = _ACSI
             self.ipAdrTools = _ipAdrTools
             self.desc       = _desc
-            self.TR         = TR.Trace.Console()
+            self.T          = TR.Console(TL.GENERAL)
 
             UTEST     = import_module("utest")
             self.IEC  = getattr(UTEST,"IECToolKit")
 
-            VSUTIL   = import_module("VsUtils")
-#            self.VS  = getattr(VSUTIL,"variables")
+            self.uTest  = self.IEC("Test dummy sytem)")
+            self.mgr    = self.uTest.Manager(_ipAdrTools)
 
-            self.VS      = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName,"")
-            self.VS_MMS  = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName,"MMS")
+## ACTUAL CODE REQUIRED:
+##            VSUTIL   = import_module("VsUtils")
+##            self.VS  = getattr(VSUTIL,"variables")
 
+        def Associate(self, ACSI):
+# Testing   self.ACSI = ACSI
+            self.VS   = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName)
 
-        def Associate(self):
-            # TODO
 
             return True
 
-# The address
-        # ReadDataPoint for a U-TEST adress: '/' based, FC at DA level
-        def ReadDataPoint(self, U_MmsAdr):
+        def ReadDataPoint(self, MmsAdr):
 
-            # Get the MMS Adress at U-TEST format:
 
-            X = self.VS[U_MmsAdr]
-            MmsAdr = self.ACSI.mmsBase + '/' + X.get('mmsAdr')     # Todo conver MmsAdrPath
+            DataPoint = self.VS[MmsAdr]
 
-            Value = self.VS_MMS[MmsAdr]                                 ## ==> Read 'VS'
-            Val = Value.get("TypeValue")
-            if Val is None:
-                Val="_None_"
+## To access to dictionary data:
+#          IntrAdr = DataPoint.get("IndAddr")
+
+            Value = DataPoint.get("TypeValue")
+            if Value is None:
+                Value="_None_"
             return (Value)
 
         def WriteDataPoint(self, MmsAdrPath, value):
@@ -188,13 +212,13 @@ class TEST:
             return (Error)
 
         def CheckValueEqual(self, MmsAdrPath, TestValue ):
-            return(self.ReadDataPoint(MmsAdrPath) == TestValue)
+            return(self.ReadDataPoint(MmsAdrPath,None) == TestValue)
 
         def CheckValueInf(self, MmsAdrPath, TestValue):
-            return(self.ReadDataPoint(MmsAdrPath) < TestValue)
+            return(self.ReadDataPoint(MmsAdrPath,None) < TestValue)
 
         def CheckValueSup(self, MmsAdrPath, TestValue):
-            return(self.ReadDataPoint(MmsAdrPath) > TestValue)
+            return(self.ReadDataPoint(MmsAdrPath,None) > TestValue)
 
         def WaitGoose(self, DataSetId, GooseID, Do, Da,  Delays, timeOut):
 
@@ -209,48 +233,6 @@ class TEST:
             #
             # @para  _ipAdrTools     the ip adress of the testing tools
             # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
-    class Dummy:
-        def __init__(self, _ACSI, _ipAdrTools, _desc):
-            self.ACSI       = _ACSI
-            self.ipAdrTools = _ipAdrTools
-            self.desc       = _desc
-            self.TR         = TR.Trace.Console()
-
-            ## Create a 'VS' like dictionary based on u_mmsAdr
-            self.VS = {}
-
-        def Associate(self):
-            clientID = self.ACSI.IedName + '/' + self.ACSI.APName
-            self.TR(("Assocation with: " + clientID),TL.DETAIL)
-            return clientID
-
-        def ReadDataPoint(self, MmsAdrPath):
-            VsName = self.ACSI.mmsBase + MmsAdrPath  # Todo conver MmsAdrPath
-
-            #            self.mgr.getDataValues(VsName)   ## ==> Update 'VS'
-            #        # TODO manage time-out
-            Value = self.VS[VsName]  ## ==> Read 'VS'
-            return (Value)
-
-        def WriteDataPoint(self, MmsAdrPath, value):
-            VsName = self.ACSI.mmsBase + MmsAdrPath
-            Error = self.mgr.writeDataValues(VsName, value)
-            return (Error)
-
-        def CheckValueEqual(self, MmsAdrPath, TestValue):
-            return (self.ReadDataPoint(MmsAdrPath) == TestValue)
-
-        def CheckValueInf(self, MmsAdrPath, TestValue):
-            return (self.ReadDataPoint(MmsAdrPath) < TestValue)
-
-        def CheckValueSup(self, MmsAdrPath, TestValue):
-            return (self.ReadDataPoint(MmsAdrPath) > TestValue)
-
-        def WaitGoose(self, DataSetId, GooseID, Do, Da, Delays, timeOut):
-            return
-
-        def WaitReport(self, DataSetId, GooseID, timeOut):
-            return
 
         ##
     # \b Dummy Services  'a loop back' instance of ACSI services /
@@ -258,24 +240,26 @@ class TEST:
     # @para  _ipAdrTools    Unused (dummy service)
     # @param IEC_Connection  the relevant instance of  Communication.SubNetwork.ConnectedAP.PhysConn
 
-    class Dummy2:
+    class Dummy:
         def __init__(self, _ACSI, _ipAdrTools, _desc):
             self.ACSI       = _ACSI
             self.ipAdrTools = _ipAdrTools
             self.desc       = _desc
-            self.TR         = TR.Trace.Console()
-
+            self.T          = TR.Console(TL.DETAIL)
+            self.VS         = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName)
 
         def Associate(self):
-            # TODO ?
-            self.TR(("Association with:", self.ACSI.IedName+'/'+self.ACSI.APName),TL.GENERAL)
-            return ("dummy")
+            clientID = self.ACSI.IedName + '/' + self.ACSI.APName
+            self.T.Trace(("Assocation with: " + clientID),TL.DETAIL)
+            return clientID
 
-        def ReadDataPoint(self, MmsAdrPath):
+        def ReadDataPoint(self, mmsAdr):
             ## Lecture du data model LOCAL (loop-back mode)
 
-            Adresse  =  'self.DM.' + MmsAdrPath.IntAdr
-            self.TR.Trace(("xxx:"+Adresse + ':' + Adresse), TL.DETAIL)
+            DataPoint = self.VS[mmsAdr]
+            IntAdr = DataPoint.get('IntAdr')
+            Adresse  =  'self.ACSI.DataModel.' + IntAdr
+            self.T.Trace(("xxx:"+Adresse + ':' + Adresse), TL.DETAIL)
 
             try:
                 Test  = eval(Adresse)  # Verify existence of some initialisation data
@@ -286,7 +270,6 @@ class TEST:
             except Exception as inst:  # No data, an exception is expected hera
                 A = type(inst)
                 return None
-
 
         def WriteDataPoint(self, MmsAdrPath , value):
             AdrValue =  'self.DM.' + MmsAdrPath.IntAdr + ".value"
@@ -309,9 +292,9 @@ class API_Test:
 
     def getAPI_TXT(self,mode):
         if mode=="IED":
-            return (TEST.IEDTesting)
+            return (TEST.IED)
         if mode=="SYSTEM":
-            return (TEST.SystemTestingActual)
+            return (TEST.System)
         if mode=="DUMMY":
             return (TEST.Dummy)
 
@@ -319,10 +302,85 @@ class API_Test:
 # \b MAIN call the unitary test 'Test_ParcoursDataModel'
 if __name__ == '__main__':
 
-    ied = API_Test("test iedIED")
-    IED = ied.getAPI_TXT("DUMMY")
-    X = IED('A','B','C')
 
-    X.Associate('IedName','ApName',"IpAdr")
+    TX   = TR.Console(TL.GENERAL)
+    TR1  = TR.Console(TL.DETAIL)
+    TXF  = TR.File(TL.DETAIL,"Trace_FctTst.txt")
+    tIEDfull=[]
+
+    myCpt = 0
+
+    tstAPI  = API_Test("test iedIED")
+    dumACSI = tstAPI.getAPI_TXT("DUMMY")
+    iedACSI = tstAPI.getAPI_TXT("IED")
+    sysACSI = tstAPI.getAPI_TXT("SYSTEM")
+
+    for file in FileListe.lstSystem:
+
+        GM = globalDataModel(TX,'SCL_files/' + file, None)
+
+        indIED = 0
+        T0 = time.time()
+        sysTst = sysACSI(None, '10.10.92.55', ' System Testing')    # ASCI Param will change for each IED
+
+        for ied in GM.tIED:
+            t0_ied = time.time()
+            tIEC_adresse = GM.BrowseDataModel(ied)
+            if ied.IP is None:
+                ip = '0.0.0.0'
+            else:
+                ip = ied.IP
+            nbDa = len(GM.tIED)
+
+            #     ACSI_(self, _IedName, _IedIP, _APName, _SrvTo, _SrvDesc, _iedAdrMMS):
+            IedAP_Model = GM.tIED[indIED].tAccessPoint[0].tServer[0]
+            ACSIparam = ACSI(ied.name, ied.IP, ied.tAccessPoint[0].name, IedAP_Model.timeout, IedAP_Model, tIEC_adresse)
+            IED_ID    = ied.name + ' - ' + ied.tAccessPoint[0].name
+
+# ACSI initialisation and association for System
+            sysTst.ACSI = ACSIparam
+            IED1_sys    = sysTst.Associate(ACSIparam)
+
+# ACSI initialisation and association for 'dummy' testing (loop-back)
+            dummyTst    = dumACSI(ACSIparam, '0.0.0.0'    , ' Loopback testing')
+            ID          = dummyTst.Associate()
+
+# ACSI initialisation and association for IED testing
+            iedTst      = iedACSI(ACSIparam, '0.0.0.0'    , ' IED testing')
+            IED1        = iedTst.Associate()
+
+
+            for iec in tIEC_adresse:
+                if iec.IntAdr is None:  ## 'q' and 't' are excluded
+                    continue
+
+                A = "GM.tIED[" + str(indIED) + "].tAccessPoint[0].Server[0]." + iec.IntAdr  ## 'q' and 't' are excluded
+                AdrValue = "GM.tIED[" + str(indIED) + "].tAccessPoint[0].tServer[0]." + iec.IntAdr + ".value"
+                Test  = eval(AdrValue)  # Verify existence of some initialisation data
+                Value = eval(AdrValue)
+#                try:
+
+                X1 = dummyTst.ReadDataPoint(iec.mmsAdr)     # Internal address to the data Model
+                X2 = iedTst.ReadDataPoint(iec.mmsAdr)       # Actual MMS adress (related to IED name AP name)
+                X3 = sysTst.ReadDataPoint(iec.u_mmsAdr)     #Actual U_TEST (related to IED name AP name)
+
+                if (Value != None):
+                    TR1.Trace((ied.name + ' - ' + ied.tAccessPoint[0].name +  AdrValue + ": ", Value),TL.GENERAL)
+
+#                except Exception as inst:  # No data, an exception is expected hera
+#                    A = type(inst)
+#                    if (A == "<class 'AttributeError'>"):
+#                        break
+
+            TX.Trace(("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i)), TL.GENERAL)
+            indIED = indIED + 1
+
+        TempsTotal = str(time.time() - T0_Total)
+        TX.Trace(("Total Time:" + file + ':' + TempsTotal), TL.GENERAL)
+        TX.Trace(("*** finished *** "), TL.GENERAL)
+
+    Resultat = str(time.time()) - t0_ied
+
+
 
 
