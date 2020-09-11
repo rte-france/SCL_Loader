@@ -468,7 +468,8 @@ class IED:
                     self.tGSECtrl   =  []       ## Array of GSEControl
                     self.tInputs    =  []       ## Array of inputs/Extrefs
                     self.tLogCtrl   =  []       ## Array of LogControl
-                    self.tRCB       =  []       ## Array of RCB
+#+                    self.tRCB       =  []       ## Array of RCB
+                    self.tRptCtrl   =  []       ## Array of ReportControl
             ##      self.DO_Name    = ...       ## Dynamically added with 'setattr' to get actual DO_Name
 
             # Définition de la class Report Control, avec des sous classes
@@ -695,6 +696,15 @@ class IED:
                         self.nofASDU  = _nofASDU                  # @param nofASDU	Number of ASDU (Application service data unit) – see IEC 61850-9-2
                         self.smpMod   = _smpMod                   # @param smpMod	The sampling mode as defined in IEC 61850-7-2; default: SmpPerPeriod; i
                         self.securityEnabled = _securityEnabled   # @param securityEnabled Default: None. Allows to configure the security options per control block instance
+                        self.tIED           = []                  ## Array of subscribed IED
+                        self.SmvOption  = None
+
+                    class IEDSVCSub:
+                        def __init__(self, _apRef, _ldInst, _lnClass, _iedName):
+                            self.apRef   = _apRef
+                            self.ldInst  = _ldInst
+                            self.lnClass = _lnClass
+                            self.iedName = _iedName
 
                     ##
                     # \b smvOption  Sample Values options
@@ -705,13 +715,15 @@ class IED:
                     #  @param security          See IEC61850-9-2...
                     #  @param synchSourceId     if true, the SV message contains the identity of the synchronizing master clock according to IEC 61850-9-3; default = false
 
-                    class smvOption:    # todo not parsed !!!! 
-                        def __init__(self, _refreshTime, _sampleRate, _dataSet, _security, _synchSourceId):
+                    class smvOption:
+                        def __init__(self, _refreshTime,_sampleSynchronized, _sampleRate, _dataSet, _security, _synchSourceId,_timeStamp):
                             self.refreshTime   = _refreshTime    ## The meaning of the options is described in IEC 61850-7-2.
+                            self.sampleSynchronized = _sampleSynchronized ##
                             self.sampleRate    = _sampleRate     ## If any of the attributes is set to true, the appropriate values shall be included into the SMV telegram
                             self.dataSet       = _dataSet        ## If the attribute is set to true, the dataset name shall be included into the SMV telegram
                             self.security      = _security       ## See IEC61850-9-2...
                             self.synchSourceId = _synchSourceId  ## if true, the SV message contains the identity of the synchronizing master clock according to IEC 61850-9-3; default = false
+                            self.timeStamp     = _timeStamp
 
                 ##
                 # \b SettingControlBlock    A control block for Settings
@@ -763,6 +775,14 @@ class IED:
                         self.appID          =_appID                 ## A system wide unique identification of the application to which the GOOSE message belong
                         self.fixedOffs      =_fixedOffs             ## Default value false. If set to true it shows all receivers, that the values GOOSE message have fixed offset in the GOOSE message.
                         self.securityEnabled = _securityEnabled     ## Default: None. Allows to configure the security options per control block instance.
+                        self.tIED           = []    ## Array of subscribed IED
+
+                    class IEDGSESub:
+                        def __init__(self, _apRef, _ldInst, _lnClass, _iedName):
+                            self.apRef   = _apRef
+                            self.ldInst  = _ldInst
+                            self.lnClass = _lnClass
+                            self.iedName = _iedName
 
                 ##
                 # \b DOI  A data object instance, allow to defined values at DO Level

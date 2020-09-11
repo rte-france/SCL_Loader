@@ -102,7 +102,7 @@ class CheckDataInitialValue:
             self.TX.Trace(('\n'), TL.GENERAL)
 
         def CheckDAivalue(self, iec, adresse, value):
-            self.TX.Trace(f'# Expecting: "{value}" as defined by DAI or SDI) \n', TL.GENERAL)
+            self.TX.Trace(f'# Expecting: "{value}" (defined by DAI or SDI) \n', TL.GENERAL)
             self.TX.Trace(f'\t\tExpectedVal = {adresse:70}\n', TL.GENERAL)
             self.TX.Trace(f'\t\tActualValue = getDataValue({iec.mmsAdr})\n', TL.GENERAL)  # Actual Read
             self.TX.Trace(f'\t\ttime.sleep(0.100)' + '\n', TL.GENERAL)

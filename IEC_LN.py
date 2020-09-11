@@ -151,7 +151,19 @@ class Parse_LN:
                 _securityEnabled = pLN.getAttribute("securityEnabled")  ## Default: None. Allows to configure the security options per control block instance.
                 GOOSE = IED.AccessPoint.Server.LN.GSEControl(_name, _desc, _datSet, _confRev, _type, _appID, _fixedOffs,
                                                              _securityEnabled )
-                # TODO LISTE DES IEDs à accrocjer GSECONTROL
+                # Get the list of IED/LD which subscribe to the Goose
+                if pLN.firstChild is not None:
+                    pIEDlst = pLN.firstChild
+                    while pIEDlst.nextSibling is not None:
+                        pIEDlst = pIEDlst.nextSibling
+                        if pIEDlst.localName == "IEDName":
+                            _apRef   = pIEDlst.getAttribute("apRef")
+                            _ldInst  = pIEDlst.getAttribute("ldInst")
+                            _lnClass = pIEDlst.getAttribute("lnClass")
+                            _name = pIEDlst.firstChild.nodeValue
+                            print("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass)
+                            IEDSub = IED.AccessPoint.Server.LN.GSEControl.IEDGSESub(_apRef,_ldInst, _lnClass, _name)
+                            GOOSE.tIED.append(IEDSub)
 
                 tiGCB.append(GOOSE)
                 self.TRX.Trace(("     GSEControl, name: " + _name + " datSet:" + _datSet), TL.DETAIL)
@@ -173,8 +185,36 @@ class Parse_LN:
 
                 SVC = IED.AccessPoint.Server.LN.SampledValueControl(_name, _desc, _datSet, _confRev, _smvID, _multicast,
                                                                     _smpRate, _nofASDU,  _smpMod, _securityEnabled)
-                tiSVC.append(SVC)
                 self.TRX.Trace(("     SampledValueControl, name:" + _name + " smvID:" + _smvID + " datSet:" + _datSet), TL.DETAIL)
+
+                # Get the list of IED/LD which subscribe to the Goose
+                if pLN.firstChild is not None:
+                    pIEDlst = pLN.firstChild
+                    while pIEDlst.nextSibling is not None:
+                        pIEDlst = pIEDlst.nextSibling
+                        if pIEDlst.localName == "IEDName":
+                            _apRef   = pIEDlst.getAttribute("apRef")
+                            _ldInst  = pIEDlst.getAttribute("ldInst")
+                            _lnClass = pIEDlst.getAttribute("lnClass")
+                            _name = pIEDlst.firstChild.nodeValue
+                            print("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass)
+                            IEDSub = IED.AccessPoint.Server.LN.SampledValueControl.IEDSVCSub(_apRef,_ldInst, _lnClass, _name)
+                            SVC.tIED.append(IEDSub)
+                        pSVC= pIEDlst
+                        if pSVC.localName == "SmvOpts":
+                            _refreshTime        = pSVC.getAttribute("refreshTime")
+                            _sampleSynchronized = pSVC.getAttribute("sampleSynchronized")
+                            _sampleRate         = pSVC.getAttribute("sampleRate")
+                            _dataSet            = pSVC.getAttribute("dataSet")
+                            _security           = pSVC.getAttribute("security")
+                            _synchSourceId      = pSVC.getAttribute("synchSourceId")
+                            _timestamp          = pSVC.getAttribute("timestamp")
+                            SVC.SmvOption = IED.AccessPoint.Server.LN.SampledValueControl.smvOption(_refreshTime, \
+                                    _sampleSynchronized,_sampleRate,_dataSet,_security,_synchSourceId,_timestamp)
+
+
+
+                tiSVC.append(SVC)
 
                 #TODO Parse smvOptions
                 ##

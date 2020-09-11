@@ -156,6 +156,7 @@ class DynImport:
             except ImportError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
                 self.TR(("FAILED TO IMPORT, File:" + iFileName ),TL.ERROR)
                 exit(-2)
+
             else:
                 __exception = sys.exc_info()[0]
                 if __exception is not None:
