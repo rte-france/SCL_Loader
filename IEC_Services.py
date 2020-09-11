@@ -683,12 +683,12 @@ class Parse_Services:
 ###
 class Test_Services:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace.Console(TL.GENERAL)
 
-        TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
+        TRX.Trace(("---------------------------------------------------"), TL.DETAIL)
         if scl is None:  # UNIT TEST
             scl = dom.parse(directory + file)
-        TRX.Trace(("File:" + file), TL.GENERAL)
+        TRX.Trace(("File:" + file), TL.DETAIL)
         tServices =[]
         IED_lst = scl.getElementsByTagName("IED")
         for IED in IED_lst:
@@ -697,7 +697,7 @@ class Test_Services:
             _desc     = IED.getAttribute("desc")
             SRV = Parse_Services(_IEDname, TRX)
 
-            TRX.Trace(("IED-Name:" + _IEDname + " desc:" + _desc + " type:" + _type), TL.GENERAL)
+            TRX.Trace(("IED-Name:" + _IEDname + " desc:" + _desc + " type:" + _type), TL.DETAIL)
             pServices = IED.firstChild.nextSibling
             while (pServices):
                 if (pServices.nodeName == 'Private'):

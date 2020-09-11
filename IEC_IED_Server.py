@@ -69,7 +69,7 @@ class Parse_Server:
         desc    = LDi.getAttribute("desc")        ## The description text
         trLDevice = "     LDevice: " + ldName + ' inst:' + inst + ' desc:' + desc
         self.TR.Trace(trLDevice, TL.GENERAL)
-        iDeviceInstance = IED.AccessPoint.Server.LDevice(inst, desc, ldName)  # LN0 et les LN sont ajoutés après
+        iDeviceInstance = IED.AccessPoint.Server.LDevice(inst, ldName, desc)  # LN0 et les LN sont ajoutés après
 
         iIED_array.tAccessPoint[idxAP].tServer[idxServer].tLDevice.append(iDeviceInstance)
 
