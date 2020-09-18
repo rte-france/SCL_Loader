@@ -787,54 +787,93 @@ class IED:
                 ##
                 # \b DOI  A data object instance, allow to defined values at DO Level
                 #
-                # @param desc	    A description text
-                # @param name	    A standardized DO name for example from IEC 61850-7-4. It is the root name part as defined
-                #                   in the LNodeType definition. Its value must be unique at this level, i.e. there shall be
-                #                   at maximum one DOI element for the same data object.
-                # ix                Index of a data element in case of an array type; shall not be used if DOI has no array type
-                # accessControl     Access control definition for this data. The empty string (default) means that the higher-level
-                #                   access control definition applies. Possible values are SCSM dependent
+                # @param DOname	        A standardized DO name for example from IEC 61850-7-4. It is the root name part as defined
+                #                       in the LNodeType definition. Its value must be unique at this level, i.e. there shall be
+                #                       at maximum one DOI element for the same data object.
+                # @param type           The type references the id of a DOType definition
+                # @param accessControl  Access control definition for this data. The empty string (default) means that the higher-level
+                # @param transient      If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
+                #                       access control definition applies. Possible values are SCSM dependent
+                # @param ix             Index of a data element in case of an array type; shall not be used if DOI has no array type
+                # @param desc	        A description text
                 class DOI:
-                    def __init__(self, _desc, _name, _ix, _accessControl):              #todo _ix Not Managed
-                        self.desc       = _desc         ## A description text
-                        self.name       = _name         ## A standardized DO name for example from IEC 61850-7-4
-                        self.ix         = _ix           ## Index of a data element in case of an array type
-                        self.accessControl = _accessControl ## Access control definition for this data. The empty string (default) means that the higher-level.
+                    def __init__(self, _name, _type, _accessControl, _transient, _ix, _desc):
+                        self.DOname         = _name             # The data object name as specified for example in IEC 61850-7-4
+                        self.type           = _type             # The type references the id of a DOType definition
+                        self.accessControl  = _accessControl    # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
+                        self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
+                        self.ix             = _ix               # Index of a data element in case of an array type
+                        self.desc           = _desc             # Descriptive text for the DO element
 
-                    ##
-                    # \b DAI A data attribute instance, allow to defined values at DA Level
-                    #
-                    # @param desc(iec)      The description text for the DAI element
-                    # @param name(iec)	    The name of the Data attribute whose value is given. It is the last name part in a structured attribute name.
-                    # @param sAddr(iec)	    Short address of this Data attribute
-                    # @param valKind(iec)	The meaning of the value from the engineering phases. If missing, the valKind from the type definition applies for any attached value.
-                    # @param ix(iec)	    Index of the DAI element in case of an array type
-                    # @param valImport(iec)	if true, an IED / IED configurator can import values modified by another tool, even if valKind=RO or valKind=Conf; the default value is defined in the DatatypeTemplate section. It is the responsibility of the IED configurator to assure value consistency and value allowance even if valImport is true.
-                    # @param value(APP)     implementation artefact, the declared value (if present) is stored here
-                    class DAI:
-                        def __init__(self, _desc, _name, _sAddr, _valKind,  _ix, _valImport, _value): #todo _ix Not Managed
-                            self.desc      = _desc          ## desc	        The description text for the DAI element
-                            self.name      = _name          ## name	        The name of the Data attribute whose value is given.
-                            self.sAddr     = _sAddr         ## sAddr	    Short address of this Data attribute
-                            self.valKind   = _valKind       ## valKind	    The meaning of the value from the engineering phases. If missing, the va
-                            self.ix        = _ix            ## ix	        Index of the DAI element in case of an array type
-                            self.valImport = _valImport     ## valImport	if true, an IED / IED configurator can import values modified by another
-                            self.value     = _value         ## value        implementation artefact, the declared value is stored here.
+                ##
+                #  \b DAI  A data attribute instance, with the possibility to define a value
+                #  @param _desc(iec)    Some descriptive text for the attribute
+                #  @param _name(iec)    The attribute name; the type tAttributeNameEnum restricts to the attribute names
+                #                       from IEC 61850-7-3, plus new ones starting with lower case letters
+                #  @param _fc(iec)      The functional constraint for this attribute; fc=SE always also implies fc=SG;
+                #                f      c=SG means that the values are visible, but not editable
+                #  @param _dchg(iec)    Defines which trigger option is supported by the attribute (value true means supported).
+                #  @param _qchg(iec     One of those allowed according to IEC61850-7-3 shall be chosen.
+                #  @param _dupd(iec)
+                #
+                #  @param _sAddr(iec)   an optional short address of this  attribute (see 9.5.4.3)
+                #
+                #  @param _bType(iec)   The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                #  @param _type(iec)    The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                #  @param _count(iec)   Optional. Shall state the number of array elements or reference the attribute stating
+                #                       this number in case that this attribute is an array. A referenced attribute shall exist
+                #                        in the same type definition. The default value 0 states that the attribute is no array.
+                #  @param _valKind(iec) Determines how the value shall be interpreted if any is given – see Table 46
+                #  @param _valImport(iec) if true, an IED / IED configurator can import values modified by another tool from an SCD file,
+                #                        even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
+                #                        to assure value consistency and value allowance even if valImport is true.
+                #
+                #  @param _DO(app)        Used to distinguish DO from SDO (only one class for both) (implementation specific)
+                #  @param _SDO(app)
+                #  @param _value(iec/app) To store pre-defined value at DAi level
+
+                class DAI:
+                    def __init__(self, _desc,_name,_fc,_dchg,_qchg,_dupd,_sAddr,_bType,_type
+                                    ,_count,_valKind,_valImp,_DO,_SDO,_value):
+
+                        self.desc    = _desc    # Some descriptive text for the attribute
+                        self.name    = _name    # The attribute name; the type tAttributeNameEnum restricts to the attribute names
+                                                # from IEC 61850-7-3, plus new ones starting with lower case letters
+                        self.fc      = _fc      # The functional constraint for this attribute; fc=SE always also implies fc=SG;
+                                                # fc=SG means that the values are visible, but not editable
+                        self.dchg    = _dchg    # Defines which trigger option is supported by the attribute (value true means supported). One of those allowed according to IEC61850-7-3 shall be chosen.
+                        self.qchg    = _qchg    #  One of those allowed according to IEC61850-7-3 shall be chosen.
+                        self.dupd    = _dupd
+
+                        self.sAddr   = _sAddr   # an optional short address of this  attribute (see 9.5.4.3)
+
+                        self.bType   = _bType   # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                        self.type    = _type    # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+                        self.count   = _count   # Optional. Shall state the number of array elements or reference the attribute stating
+                                                # this number in case that this attribute is an array. A referenced attribute shall exist
+                                                # in the same type definition. The default value 0 states that the attribute is no array.
+                        self.valKind  =_valKind # Determines how the value shall be interpreted if any is given – see Table 46
+                        self.valImport=_valImp  # if true, an IED / IED configurator can import values modified by another tool from an SCD file,
+                                                # even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
+                                                # to assure value consistency and value allowance even if valImport is true.
+                        self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
+                        self.SDO     = _SDO
+                        self.value   = _value   #
 
                         ##
                         # \b SDI A Sub Data attribute instance, allow to defined values at Sub Data Level
                         #
                         # @param desc(iec)      The description text for the DAI element
-                        # @param name(iec)	    The name of the Data attribute whose value is given. It is the last name part in a structured attribute name.
+                        # @param SDIname(iec)	The name of the Data attribute whose value is given. It is the last name part in a structured attribute name.
                         # @param ix(iec)	    Index of the DAI element in case of an array type
                         # @param sAddr(iec)	    Short address of this Data attribute
 
-                        class SDI:  # Utilisé notamment pour les Contrôles complexes
-                            def __init__(self, _desc, _name, _ix,_sAddr ):  # , _tSDI):
-                                self.desc  = _desc          ## desc	        The description text for the DAI element
-                                self.name  = _name          ## name	        The name of the Data attribute whose value is given.
-                                self.ix    = _ix            ## ix	        Index of the DAI element in case of an array type
-                                self.sAddr = _sAddr         ## sAddr	    Short address of this Data attribute
+                    class SDI:  # Utilisé notamment pour les Contrôles complexes
+                        def __init__(self, _desc, _name, _ix,_sAddr ):  # , _tSDI):
+                            self.desc   = _desc          ## desc	        The description text for the DAI element
+                            self.SDIname = _name          ## name	        The name of the Data attribute whose value is given.
+                            self.ix     = _ix            ## ix	        Index of the DAI element in case of an array type
+                            self.sAddr  = _sAddr         ## sAddr	    Short address of this Data attribute
 
                     ##
                     # \b IEC_90_2  for IEC61850-90-2 communication (substation to substation communication)
@@ -1073,13 +1112,13 @@ class DataTypeTemplates:
         #   @param  accessControl(iec)   # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
         #   @param  transient(iec)       # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
         #   @param  desc(iec)            # Descriptive text for the DO element
-        class DOI:
-            def __init__(self, _name, _type, _accessControl, _transient, _desc, ):
-                self.name           = _name             # The data object name as specified for example in IEC 61850-7-4
-                self.type           = _type             # The type references the id of a DOType definition
-                self.accessControl  = _accessControl    # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
-                self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
-                self.desc           = _desc             # Descriptive text for the DO element
+    #    class xxDOI:
+    #        def __init__(self, _name, _type, _accessControl, _transient, _desc, ):
+    #            self.DOname         = _name             # The data object name as specified for example in IEC 61850-7-4
+    #            self.type           = _type             # The type references the id of a DOType definition
+    #            self.accessControl  = _accessControl    # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
+    #            self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
+    #            self.desc           = _desc             # Descriptive text for the DO element
 
     ##
     # \b DOType An instantiable data object type; referenced from LNodeType or from the
@@ -1102,61 +1141,7 @@ class DataTypeTemplates:
             self.tDA  = _tDA            # Table of DA.
 
 
-        ##
-        #  \b DAI  A data attribute instance, with the possibility to define a value
-        #  @param _desc(iec)    Some descriptive text for the attribute
-        #  @param _name(iec)    The attribute name; the type tAttributeNameEnum restricts to the attribute names
-        #                       from IEC 61850-7-3, plus new ones starting with lower case letters
-        #  @param _fc(iec)      The functional constraint for this attribute; fc=SE always also implies fc=SG;
-        #                f      c=SG means that the values are visible, but not editable
-        #  @param _dchg(iec)    Defines which trigger option is supported by the attribute (value true means supported).
-        #  @param _qchg(iec     One of those allowed according to IEC61850-7-3 shall be chosen.
-        #  @param _dupd(iec)
-        #
-        #  @param _sAddr(iec)   an optional short address of this  attribute (see 9.5.4.3)
-        #
-        #  @param _bType(iec)   The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
-        #  @param _type(iec)    The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
-        #  @param _count(iec)   Optional. Shall state the number of array elements or reference the attribute stating
-        #                       this number in case that this attribute is an array. A referenced attribute shall exist
-        #                        in the same type definition. The default value 0 states that the attribute is no array.
-        #  @param _valKind(iec) Determines how the value shall be interpreted if any is given – see Table 46
-        #  @param _valImport(iec) if true, an IED / IED configurator can import values modified by another tool from an SCD file,
-        #                        even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
-        #                        to assure value consistency and value allowance even if valImport is true.
-        #
-        #  @param _DO(app)        Used to distinguish DO from SDO (only one class for both) (implementation specific)
-        #  @param _SDO(app)
-        #  @param _value(iec/app) To store pre-defined value at DAi level
 
-        class DAI:
-            def __init__(self, _desc,_name,_fc,_dchg,_qchg,_dupd,_sAddr,_bType,_type
-                            ,_count,_valKind,_valImp,_DO,_SDO,_value):
-
-                self.desc    = _desc    # Some descriptive text for the attribute
-                self.name    = _name    # The attribute name; the type tAttributeNameEnum restricts to the attribute names
-                                        # from IEC 61850-7-3, plus new ones starting with lower case letters
-                self.fc      = _fc      # The functional constraint for this attribute; fc=SE always also implies fc=SG;
-                                        # fc=SG means that the values are visible, but not editable
-                self.dchg    = _dchg    # Defines which trigger option is supported by the attribute (value true means supported). One of those allowed according to IEC61850-7-3 shall be chosen.
-                self.qchg    = _qchg    #  One of those allowed according to IEC61850-7-3 shall be chosen.
-                self.dupd    = _dupd
-
-                self.sAddr   = _sAddr   # an optional short address of this  attribute (see 9.5.4.3)
-
-                self.bType   = _bType   # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
-                self.type    = _type    # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
-                self.count   = _count   # Optional. Shall state the number of array elements or reference the attribute stating
-                                        # this number in case that this attribute is an array. A referenced attribute shall exist
-                                        # in the same type definition. The default value 0 states that the attribute is no array.
-                self.valKind  = _valKind # Determines how the value shall be interpreted if any is given – see Table 46
-                self.valImport= _valImp # if true, an IED / IED configurator can import values modified by another tool from an SCD file,
-                                        # even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
-                                        # to assure value consistency and value allowance even if valImport is true.
-
-                self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
-                self.SDO     = _SDO
-                self.value   = _value   #TODO  Actual value ???
     ##
     # \b DAType the definition of a Data Attribute type.
     #

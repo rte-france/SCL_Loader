@@ -100,43 +100,40 @@ class IECda:
 #
 # @param    _TR     _TR instance of the trace system
 # @param    file    SCL file to use (SCD, IID, ICD, ...)
+class DictType:
+    def __init__(self, _LNodeType, _DoType, _DaType, _EnumType):
+        self.LNodeType  = _LNodeType
+        self.DoType      = _DoType
+        self.DaType     = _DaType
+        self.EnumType   = _EnumType
 
 class globalDataModel:
-    def __init__(self, _TR,  file, _SCL):
+    def __init__(self, _TR,  fileName, _SCL):
         self.TR   = _TR                 ##_TR instance of the trace system
         self.tIED = []
 
-        self.scl = self.LoadSCLModel(file, _SCL)
-
-
-        DataType      = self.scl.getElementsByTagName("DataTypeTemplates")
-
-        self.LNode = Parse_LNodeType(self.scl,self.TR)          # class init
-        self.LNode.Create_LNodeType_Dict(DataType)    # Create the 'dictionary' of LNODE
-
-        self.DOType    = Parse_DOType(self.scl, self.TR)        # class init
-        self.DOType.Create_DOType_Dict(DataType)     # Create the 'dictionary' of DoType
-
-        self.DAType    = Parse_DAType(self.scl, self.TR)
-        self.DAType.Create_DAType_Dict(DataType)
-
-        self.EnumType   = Parse_EnumType(self.scl , self.TR)
-        self.EnumType.Create_EnumType_Dict(DataType)
-        ##
-        # \b LoadSCLModel
-        #
-        # Load the SCL file and parse the communication structure
-        #
-        #   @param file the SCL file name, without the directory.
-        #
-
-    def LoadSCLModel(self, fileName, _SCL):
         t0 = time.time()
         if _SCL is None:
             _SCL = dom.parse(fileName)
         t1 = time.time()
         deltaT = t1 - t0
         self.TR.Trace("Time to load the SCL file: " + fileName + ':' + str(deltaT),TL.GENERAL)
+
+        DataType      = _SCL.getElementsByTagName("DataTypeTemplates")
+
+        self.LNode = Parse_LNodeType(_SCL,self.TR)          # class init
+        self.LNode.Create_LNodeType_Dict(DataType)              # Create the 'dictionary' of LNODE
+
+        self.DOType    = Parse_DOType(_SCL, self.TR)        # class init
+        self.DOType.Create_DOType_Dict(DataType)                # Create the 'dictionary' of DoType
+
+        self.DAType    = Parse_DAType(_SCL, self.TR)
+        self.DAType.Create_DAType_Dict(DataType)
+
+        self.EnumType   = Parse_EnumType(_SCL , self.TR)
+        self.EnumType.Create_EnumType_Dict(DataType)
+
+        self.Dico = DictType(self.LNode,self.DOType,self.DAType,self.EnumType)
 
         self.tIED = self.getIED_withComm(_SCL)  # Expect a file list
 
@@ -145,7 +142,7 @@ class globalDataModel:
         tNetWork = subNetWork.ParseCommSection(comm)  # <SubNetWork>
         tServices = Test_Services.main('', fileName, _SCL)
 
-        return _SCL
+        return
 
     #<IED name="AUT1A_SITE_1" type=".." manufacturer="..." configVersion="..." originalSclVersion="2007" ...>
     # #		<AccessPoint name="ADMINISTRATION_AP"></AccessPoint>
@@ -163,11 +160,11 @@ class globalDataModel:
     def getIED_withComm(self, scl):
 
         comm    = scl.getElementsByTagName("Communication")
-        tIEDNet  = ParseCommunication(scl, self.TR)      # Analyse de la section <Communication>
+        tIEDNet  = ParseCommunication(scl, self.TR)             # Analyse de la section <Communication>
         tNetWork = tIEDNet.ParseCommSection(comm)               #                           <SubNetWork>
                                                                 #                               <ConnectedAP...>
         ##      Gather information on server from the data model aspect
-        tIEDComm        = Parse_Server(scl, self.TR)              # IED / SERVER / LD
+        tIEDComm        = Parse_Server(scl, self.TR, self.Dico)            # IED / SERVER / LD / LN
         tIED            = tIEDComm.Parse_IED(self.TR)
 
         self.TR.Trace(("nombre de IED/server: "+str(len(tIED)))     , TL.DETAIL)       # 42
@@ -251,8 +248,9 @@ class globalDataModel:
                         iDO = self.DOType.getIEC_DoType(DO.type)          # Look-up for DO Type
                         tDA = iDO.tDA
 ## No need for IEDName    DO_Name  =  IEDName + SEP1 + LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].name
-                        DO_Name1  =  LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].name
-                        DO_Name2  =  LD.inst + SEP2 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP2 + LN.tDO[k].name
+                        DO_Name1  =  LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].DOname
+                        DO_Name1  =  LD.inst + SEP1 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP1 + LN.tDO[k].DOname
+                        DO_Name2  =  LD.inst + SEP2 + LN.lnPrefix + LN.lnClass + LN.lnInst + SEP2 + LN.tDO[k].DOname
                         self.BrowseDA(tIEC_adresse, DO_Name1, DO_Name2, tDA)
 
             return(tIEC_adresse)
@@ -425,8 +423,6 @@ class globalDataModel:
                 return(tAddress[i].value)
         return(None)
 
-
-
 #    def CheckDatapointSCL(self, iec):
 #        bType = iec.BasicType
 #        if iec.TypeValue != None:
@@ -489,7 +485,7 @@ if __name__ == '__main__':
     for file in fileliste:
         Test_ParcoursDataModel.main('SCL_files/', file, None)
 
-    fileliste = FL.lstIED   # IED level file list
-    for file in fileliste:
-        Test_ParcoursDataModel.main('SCL_files/', file, None)
+#    fileliste = FL.lstIED   # IED level file list
+#    for file in fileliste:
+#        Test_ParcoursDataModel.main('SCL_files/', file, None)
 

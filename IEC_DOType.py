@@ -14,6 +14,7 @@ from IEC_Trace import Trace
 from IEC_Trace import Level as TL
 from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
+from IEC61850_XML_Class import IED
 
 ##
 # \b Parse_DOType: this class create the list of DoType / Data Attributes elements
@@ -96,7 +97,7 @@ class Parse_DOType:
                     if (p1.firstChild is not None) and p1.localName=="Val":
                         _value = p1.firstChild.data
 
-                iDA = IECType.DOType.DAI(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
+                iDA = IED.AccessPoint.Server.LN.DAI(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
                  , _count, _valKind, _valImp, "DA", _type, _value)
 
                 tDA.append(iDA)
@@ -114,7 +115,7 @@ class Parse_DOType:
                 _count= pDA.getAttribute("count")
                 if _count is None:
                     _count = "0"
-                iDA = IECType.DOType.DAI(_desc, _name, '', '_dchg', '_qchg', '_dupd', '_sAddr', _type , _type
+                iDA = IED.AccessPoint.Server.LN.DAI(_desc, _name, '', '_dchg', '_qchg', '_dupd', '_sAddr', _type , _type
                  , _count, '_valKind', '_valImp', _type, _type, '_value')
 
                 tDA.append(iDA)

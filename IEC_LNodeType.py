@@ -3,6 +3,7 @@ from IEC_Trace import Trace
 from IEC_Trace import Level    as TL
 from IEC_FileListe import FileListe as FL
 from IEC61850_XML_Class import DataTypeTemplates as IECType
+from IEC61850_XML_Class import IED
 
 
 ##
@@ -65,13 +66,14 @@ class Parse_LNodeType:
             if  pDO.localName is None:
                 pDO = pDO.nextSibling
                 continue
-            _name           = pDO.getAttribute("name")
+            _DOname         = pDO.getAttribute("name")
             _type           = pDO.getAttribute("type")
             _accessControl  = pDO.getAttribute("accessControl")
             _transient      = pDO.getAttribute("transient")
+            _ix             = pDO.getAttribute("ix")
             _desc           = pDO.getAttribute("desc")
-            iDO= IECType.LNodeType.DOI(_name, _type, _accessControl, _transient, _desc)
-            self.TRX.Trace(("     DO:"+_name+" type:"+_type+" desc:"+_desc),TL.DETAIL)
+            iDO= IED.AccessPoint.Server.LN.DOI(_DOname, _type, _accessControl, _transient, _ix, _desc)
+            self.TRX.Trace(("     DO:"+_DOname+" type:"+_type+" desc:"+_desc),TL.DETAIL)
             tDO.append(iDO)
             pDO = pDO.nextSibling
         return tDO

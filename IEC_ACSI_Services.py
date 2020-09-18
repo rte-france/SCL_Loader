@@ -349,33 +349,33 @@ if __name__ == '__main__':
             iedTst      = iedACSI(ACSIparam, '0.0.0.0'    , ' IED testing')
             IED1        = iedTst.Associate()
 
-
+            i = 0
             for iec in tIEC_adresse:
                 if iec.IntAdr is None:  ## 'q' and 't' are excluded
                     continue
 
                 A = "GM.tIED[" + str(indIED) + "].tAccessPoint[0].Server[0]." + iec.IntAdr  ## 'q' and 't' are excluded
                 AdrValue = "GM.tIED[" + str(indIED) + "].tAccessPoint[0].tServer[0]." + iec.IntAdr + ".value"
-                Test  = eval(AdrValue)  # Verify existence of some initialisation data
-                Value = eval(AdrValue)
-#                try:
+                try:
+                    Test  = eval(AdrValue)  # Verify existence of some initialisation data
+                    Value = eval(AdrValue)
 
-                X1 = dummyTst.ReadDataPoint(iec.mmsAdr)     # Internal address to the data Model
-                X2 = iedTst.ReadDataPoint(iec.mmsAdr)       # Actual MMS adress (related to IED name AP name)
-                X3 = sysTst.ReadDataPoint(iec.u_mmsAdr)     #Actual U_TEST (related to IED name AP name)
+                    X1 = dummyTst.ReadDataPoint(iec.mmsAdr)     # Internal address to the data Model
+                    X2 = iedTst.ReadDataPoint(iec.mmsAdr)       # Actual MMS adress (related to IED name AP name)
+                    X3 = sysTst.ReadDataPoint(iec.u_mmsAdr)     #Actual U_TEST (related to IED name AP name)
 
-                if (Value != None):
-                    TR1.Trace((ied.name + ' - ' + ied.tAccessPoint[0].name +  AdrValue + ": ", Value),TL.GENERAL)
-
-#                except Exception as inst:  # No data, an exception is expected hera
-#                    A = type(inst)
-#                    if (A == "<class 'AttributeError'>"):
-#                        break
+                    if (Value != None):
+                        TR1.Trace((ied.name + ' - ' + ied.tAccessPoint[0].name +  AdrValue + ": ", Value),TL.GENERAL)
+                        i = i + 1
+                except Exception as inst:  # No data, an exception is expected hera
+                    A = type(inst)
+                    if (A == "<class 'AttributeError'>"):
+                          break
 
             TX.Trace(("IED:" + IED_ID + "nbDA:" + str(nbDa) + " NbMmsADr:" + str(i)), TL.GENERAL)
             indIED = indIED + 1
 
-        TempsTotal = str(time.time() - T0_Total)
+        TempsTotal = str(time.time() - T0)
         TX.Trace(("Total Time:" + file + ':' + TempsTotal), TL.GENERAL)
         TX.Trace(("*** finished *** "), TL.GENERAL)
 

@@ -36,6 +36,9 @@ class Parse_LN:
         self.TRX      = _TR             ## Instance of the TRACE service.
         self.Dyn      = DynImport()     ## Create an instance of DynImpot for private TAG
 
+
+
+
     ##
     # \b Parse_LN:
     #
@@ -253,7 +256,9 @@ class Parse_LN:
                 tiRCB.append(iRCB)
                 pLN = pLN.nextSibling
                 continue
+
             continue
+
         iLN.tSVCtrl = tiSVC
         iLN.tDataSet = tDS
         iLN.tGSECtrl = tiGCB
@@ -504,21 +509,25 @@ class Parse_LN:
     # @return  _value   _value found (or None)
     # @return  iDOI     modified instance DOI.
 
-    def Parse_DOI(self, iLN, pDOI, DoName):      # Instance of LN  & DOI is scl pointto DOI tag
-        _name = pDOI.getAttribute("name")                   ## The name identifying this GOOSE control block
-        _desc = pDOI.getAttribute("desc")                   ## A description text
-        _ix   = pDOI.getAttribute("ix")                     ## The name of the data set to be sent by the GSE control block.
-        _accessControl = pDOI.getAttribute("accessControl") ## The configuration revision number of this control block.
-        self.TRX.Trace(("DOI: name:" + _name + " desc:" + _desc), TL.DETAIL)
-        iDOI = IED.AccessPoint.Server.LN.DOI(_desc, _name, _ix, _accessControl) #, None, None, None)  # None for RTE private Type
-        setattr( iLN ,iDOI.name,iDOI)
-        pDAI = pDOI.firstChild  # Pointeur DAI ou SDI
+    def Parse_DOI(self, iLN, pDOI, DoName):                 # Instance of LN  & DOI is scl pointto DOI tag
+        DOname           = pDOI.getAttribute("name")        ## The name identifying this GOOSE control block
+        _type           = pDOI.getAttribute("type")         ## The type references the id of a DOType definition
+        _accessControl  = pDOI.getAttribute("accessControl")## The configuration revision number of this control block.
+        _transient      = pDOI.getAttribute("transient")    ##
+        _desc           = pDOI.getAttribute("desc")         ## A description text
+        _ix             = pDOI.getAttribute("ix")           ## Index of a data element in case of an array type; shall not be used if DOI has no array type
+        self.TRX.Trace(("DOI: name:" + DOname + " desc:" + _desc), TL.DETAIL)
+        iDOI = IED.AccessPoint.Server.LN.DOI(DOname, _type, _accessControl,_transient, _desc, _ix) # None for RTE private Type
+        setattr( iLN ,iDOI.DOname,iDOI)
 
-        while pDAI:  # USE CASE:
-            if pDAI.localName is None:                  # <DOI name="LEDRs" desc="RstOper">
-                pDAI = pDAI.nextSibling                         # <SDI name="Oper">
-                continue                                            # <SDI name="origin">
-            if pDAI.localName == "Private":                             # <DAI name="orCat" sAddr="96.1.3.10.4" />
+        pDAI = pDOI.firstChild
+
+        while pDAI:
+            if pDAI.localName is None:      # <DOIS name = "LEDRS" desc ="RstOper"
+                pDAI = pDAI.nextSibling         # <SDI name="Oper">
+                continue                        # <SDI name="origin">
+
+            if pDAI.localName == "Private":     # <DAI name="orCat" sAddr="96.1.3.10.4" />
                 type=pDAI.getAttribute("type")
 # WG10 PRIVATE
                 if type == "eTr-IEC61850-90-2":
@@ -578,15 +587,32 @@ class Parse_LN:
     def Parse_DAI_VAL(self, pDAI, iDOI):
         _value = None
         if pDAI.localName == "DAI":
-            _desc       = pDAI.getAttribute("desc")         ## desc	        The description text for the DAI element
-            _name       = pDAI.getAttribute("name")         ## name	        The name of the Data attribute whose value is given.
-            _sAddr      = pDAI.getAttribute("sAddr")        ## sAddr	    Short address of this Data attribute
-            _valKind    = pDAI.getAttribute("valKind")      ## valKind	    The meaning of the value from the engineering phases. If missing, the va
-            _ix         = pDAI.getAttribute("ix")           ## ix	        Index of the DAI element in case of an array type
-            _valImport  = pDAI.getAttribute("valImport")    ## valImport	if true, an IED / IED configurator can import values modified by another
-                                                            ## value        implementation artefact, the declared value is stored here.
+            _name    = pDAI.getAttribute("name")  		# The attribute name; the type tAttributeNameEnum restricts to the attribute names
+            											# from IEC 61850-7-3, plus new ones starting with lower case letters
+            _fc      = pDAI.getAttribute("fc")    		# The functional constraint for this attribute; fc=SE always also implies fc=SG;
+            											# fc=SG means that the values are visible, but not editable
+            _dchg    = pDAI.getAttribute("dchg")  		# Defines which trigger option is supported by the attribute (value true means supported). One of those allowed according to IEC61850-7-3 shall be chosen.
+            _qchg    = pDAI.getAttribute("qchg")   		#  One of those allowed according to IEC61850-7-3 shall be chosen.
+            _dupd    = pDAI.getAttribute("dupd")
 
-            iDAI = IED.AccessPoint.Server.LN.DOI.DAI(_desc, _name, _sAddr, _valKind, _ix,  _valImport, _value)  # _value !
+            _sAddr   = pDAI.getAttribute("sAddr")   	# an optional short address of this  attribute (see 9.5.4.3)
+
+            _bType   = pDAI.getAttribute("bType")   	# The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+            _type    = pDAI.getAttribute("type")    	# The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
+            _count   = pDAI.getAttribute("count")   	# Optional. Shall state the number of array elements or reference the attribute stating
+            											# this number in case that this attribute is an array. A referenced attribute shall exist
+            											# in the same type definition. The default value 0 states that the attribute is no array.
+            _valKind  = pDAI.getAttribute("valKind")	# Determines how the value shall be interpreted if any is given – see Table 46
+            _valImport= pDAI.getAttribute("valImport") 	# if true, an IED / IED configurator can import values modified by another tool from an SCD file,
+            											# even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
+            											# to assure value consistency and value allowance even if valImport is true.
+            _desc    = pDAI.getAttribute("desc")   		# Some descriptive text for the attribute
+            _DoDaSdo = ''      						    # Used to distinguish DO from SDO (only one class for both) #implementation
+            _SDO     = ''
+            _value   = ''      						    # Actual initialized value
+
+            iDAI = IED.AccessPoint.Server.LN.DAI( _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type, _count,
+                                                  _valKind, _valImport, _desc, '', '', '')  # _value !
             setattr(iDOI, _name, iDAI)
 
             # Is there a value ?
@@ -648,7 +674,7 @@ class Parse_LN:
     #
     def Parse_SDI(self, pDAI, iDOI, DoName):
         pDAI1 = pDAI
-        BaseName = DoName + '.' + iDOI.name
+        BaseName = DoName + '.' + iDOI.DOname
         t_IX = [None, None, None, None]
         while pDAI1 is not None:
             if pDAI1.localName is None:
@@ -702,7 +728,7 @@ class Parse_LN:
         _sdi_ix = pDAI_v.getAttribute("ix")
         _sAddr  = pDAI_v.getAttribute("sAddr")
         _sdi_name = sdi_name + '.' + _name  # </SDI>
-        iSDI = IED.AccessPoint.Server.LN.DOI.DAI.SDI(_desc, _name, _sdi_ix, _sAddr)
+        iSDI = IED.AccessPoint.Server.LN.DAI.SDI(_desc, _name, _sdi_ix, _sAddr)
 
         # Is it a table of SDI ?
         if len(_sdi_ix) > 0:
