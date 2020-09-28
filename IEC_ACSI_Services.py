@@ -253,7 +253,15 @@ class TEST:
             self.T.Trace(("Assocation with: " + clientID),TL.DETAIL)
             return clientID
 
-        def ReadDataPoint(self, mmsAdr):
+        def ReadDataPointReport(self, mmsAdr):
+            DataPoint = self.VS['REPORT/'+mmsAdr]
+            return(DataPoint)
+
+        def ReadDataPointGoose(self, mmsAdr):
+            DataPoint = self.VS['GOOSE/'+mmsAdr]
+            return(DataPoint)
+
+        def ReadDataPointACSI(self, mmsAdr):
             ## Lecture du data model LOCAL (loop-back mode)
 
             DataPoint = self.VS[mmsAdr]

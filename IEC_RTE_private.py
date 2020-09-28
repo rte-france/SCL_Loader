@@ -40,7 +40,7 @@ class RTE_Private:
         ## pDataModel - the pointer to the data model
         self.pDataModel  = _pDataModel
         ## TR - the initialized trace service.
-        self.TR          = Trace.Console(TL.GENERAL)
+        self.TR          = Trace(TL.GENERAL)
     ##
     # \b IDRC: # RTE Specific, SCADA communication
     class IDRC:

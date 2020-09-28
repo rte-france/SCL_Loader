@@ -10,7 +10,7 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-import time
+import time, sys
 from IEC_FileListe import FileListe
 from IEC_Trace import Trace
 from IEC_Trace import Level    as TL
@@ -56,41 +56,32 @@ class CodeGeneration():
             self.IEDmmsadresse  = _IEDmmsadresse
 
     ##
-    # \b CreateGooseReadData: Generate a Read Data function for a given DA
+    # \b CreateReadData: Generate a Read Data function for a given DA
     #
-    # @param fileId:    Python generated file to use
-    # @param IED:       IED name
+    # @param mode:      RPT or GSEport Control Block (if NONE, ACSI READ will be used)
+    # @param IED_ID:    IED name + Acces Point Name
     # @param mmsAdr:    mmsAdr of the DA (LD.LN.DO.DA ...)
-    # @param DA:        DA def
-    # @param GCB:       Goose Control Block
-
-    ##
-    # \b CreateReportReadData: Generate a Read Data function for a given DA
-    #
-    # @param IED_ID:       IED name
-    # @param mmsAdr:    mmsAdr of the DA (LD.LN.DO.DA ...)
-    # @param DA:        DA def
-    # @param RCB:       Report Control Block (if NONE, ACSI READ will be used)
+    # @param DA:        DO name or DA name.
     #                   !!!! for 'CF', 'DC' direct read to the Global Model shall be considered
     def CreateReadData(self, mode, IED_ID, mmsAdr, DA):
 
         path = mmsAdr.split('/')
         LD = path[0]
         LN = path[1]
-        if DA.daName == '':
+        if DA.daName is '':
             name = DA.doName
         else:
             name = DA.daName
         dataName = LD + '_'+ LN + '_' + name
         if DA.fc in FC_ACSI:
-            self.FileId.write("\t\tdef GetACSI_"+ dataName + "( IED_ID, mmsAdr, DA, RCB )\n")
-            self.FileId.write("\t\t\tvalue=ReadDataACSI(" + IED_ID + mmsAdr + ")\n")
+            self.FileId.write("\t\tdef GetACSI_"+ dataName + "(  IED_ID, mmsAdr, DA )\n")
+            self.FileId.write("\t\t\tvalue=ReadDataACSI( IED_ID + mmsAdr + )\n")
         else:
-            self.FileId.write("\t\tdef GetData_"+ mode + '_' + dataName + "( IED, mmsAdr, DA, RCB )\n")
+            self.FileId.write("\t\tdef GetData_"+ mode + '_' + dataName + "( IED_ID, mmsAdr, DA, RCB )\n")
             if mode == "RPT":
-                self.FileId.write("\t\t\tvalue=VS[ REPORT/" + IED_ID + mmsAdr + "]\n")
+                self.FileId.write('\t\t\tvalue=VS[ "REPORT/" + ' + ' IED_ID ' +  '+ mmsAdr ]\n')
             else:
-                self.FileId.write("\t\t\tvalue=VS[ GOOSE/" + IED_ID + mmsAdr + "]\n")
+                self.FileId.write('\t\t\tvalue=VS[ "GOOSE/+" + ' + ' IED_ID ' +  '+ mmsAdr ]\n')
 
         self.FileId.write("\t\t\treturn value\n\n")
 
@@ -111,14 +102,11 @@ class CodeGeneration():
 
 
     ##
-    # \b FindLD: find an instance of a LD for a given IED publisher
+    # \b FindLD: find an instance of a LD , from a giben LD name
     #
-    # Analyse des DO InRef
     # @param    GM                :  global DAtaModel
     # @param    LDinst            :  The GOOSE subsScripteur instance LD inst  [Several]
-    # @param    publisherBaseName : IedName+ApName of goose publisher (shall be unique in a given SCD file
     #
-    # NOTE  : this is not efficient, it would be better to create a dictionary of 'PublisherName'..
 
     def FindLD(self, GM, LDinst):
         # Browse IED
@@ -277,11 +265,8 @@ class CodeGeneration():
     ##
     # \b GetGooseSubscriber: for a given LDinst, return the list of Subscribers
     #
-    # Analyse des DO InRef
-    # @param fileId     : Python generated file to use
     # @param LDinst     : Logical Device Name
 
-## Parcours des IEDs . LDinst + LN0 + Inputs + ExtRef
     def GetGooseSubscriber(self, LDinst):
         LD = self.FindLD(self.GM, LDinst) # Looking for the LD / Basename
         tGSE = LD.LLN0.tGSECtrl
@@ -290,8 +275,6 @@ class CodeGeneration():
     ##
     # \b GetSMVSubscriber: for a given LDinst, return the list of SV Subscribers
     #
-    # Analyse des DO InRef
-    # @param fileId     : Python generated file to use
     # @param LDinst     : Logical Device Name
     def GetSMVSubscriber(self, LDinst):
         LD = self.FindLD(self.GM, LDinst)  # Looking for the LD / Basename
@@ -301,7 +284,6 @@ class CodeGeneration():
     ##
     # \b GetSubscriberList: Create a list of subscrinbers for GOOSE and SV
     #
-    # @param fileId     : Python generated file to use
     # @param tGSE_SVC   : Table of Goose or SV Control Block
     # @param txt        : 'Goose Subscriber' or 'SV Subscriber'
     def GetSubscriberList(self, tGSE_SVC, txt):
@@ -341,7 +323,6 @@ class CodeGeneration():
         self.TR.Trace(("Create file"+fName),TL.GENERAL)
 
     ## First analyse extract the data being pubished via Report, Goose and dSV
-
         self.FileId.write("# Output data for LD:" + LD.inst + "\n" )
 
     # Aspect Report PUBLISHER :
@@ -381,13 +362,10 @@ class CodeGeneration():
                 self.DataSetRead(LN, DSName, "SMV")
                 nbDAPublished = nbDAPublished + nbDA
                 nbFlux        = nbFlux + nbSV
-
     ## TOTAL
-
         self.FileId.write('# ....\n')
         self.FileId.write('# LD' + LD.inst + ' Total number of DA published ' + str(nbDAPublished) + '\n')
         self.FileId.write('# ....\n')
-
     ##
     ## Input data for the LD.
     ##
@@ -408,7 +386,7 @@ class CodeGeneration():
                     for da in DOType.tDA:
                         if da.name.startswith('set'):
                             try:
-                                refCB = 'LD.LLN0.' + do.DOname + '.' + da.name + '.value'
+                                refCB = 'LD.LLN0.' + do.name + '.' + da.name + '.value'
                                 CB = eval(refCB)
 
                                 CBname = CB.split('.')[1]
@@ -418,10 +396,10 @@ class CodeGeneration():
                                 nbDASubscribed = nbDASubscribed + nbDA
                                 nbSVSubscribed = nbSVSubscribed + nbSV
 
-                            except (AttributeError, NameError, IndexError) as e:
+                            except (AttributeError, NameError) as e:
                                 print(e)
                                 pass
-## Analysis of <Inputs>/ExtRef>
+            ## Analysis of <Inputs>/ExtRef>
             self.FileId.write('# External data based on ExRef / Inputs \n')
             try:
                 RefInputs= LD.LLN0.tInputs
@@ -430,8 +408,11 @@ class CodeGeneration():
                         self.FileId.write('\t\t ' + ExRf.iedName + '.' + ExRf.srcLDInst + '.' + ExRf.lnClass  + '.' +
                                     ExRf.pDO     + '.' + ExRf.pDA +       '.' + ExRf.srcCBName + '\n')
                         nbDASubscribed = nbDASubscribed + 1
-            except AttributeError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
-#                print('tInputs or tExtRef is empty')
+            # The potantially 'expected' exception is AttributeError:, usually bad FileName, ClassName or FunctionName
+            except AttributeError as e:
+                print('tInputs or tExtRef is empty')
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
                 pass
 
             self.FileId.close()
@@ -482,12 +463,9 @@ if __name__ == '__main__':
 #    TX = Trace.Console(TL.GENERAL)
     TX = Trace.File(TL.DETAIL,"Trace_FctTst.txt")
     tIEDfull=[]
-
-
     myCpt = 0
 
     for file in FileListe.lstSystem:
-
         GM = globalDataModel(TX,'SCL_files/' + file, None)
         CG = CodeGeneration("CodeGeneration", TX, GM)
 

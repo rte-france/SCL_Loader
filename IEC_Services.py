@@ -683,7 +683,7 @@ class Parse_Services:
 ###
 class Test_Services:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.GENERAL)
+        TRX = Trace(TL.GENERAL)
 
         TRX.Trace(("---------------------------------------------------"), TL.DETAIL)
         if scl is None:  # UNIT TEST

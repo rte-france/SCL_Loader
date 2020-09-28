@@ -49,7 +49,7 @@ class Parse_DOType:
         _iedType = iDoType.get('iedType')
         _desc    = iDoType.get('desc')
         _tDA     = iDoType.get('tDA')
-        instDoType = IECType.DOType(doType, _cdc, _iedType, _desc, _tDA)
+        instDoType = IECType.DOType(doType, _iedType, _cdc, _desc, _tDA)
         return instDoType
     ##
     # @return the dictionary of DoType

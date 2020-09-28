@@ -96,7 +96,7 @@ class Parse_LN:
         tiLCB = []  # Tableau des instances des LCB du LN0
         tExtRef = []  # Tableau des ExtRef (Inputs)
         tDS = []  # Tableau des instances des DatatSet du LN0 (l'objet DA contient la liste des FCDA)
-
+        tiDOI = []
         while pLN:
             if pLN.localName is None:
                pLN = pLN.nextSibling
@@ -120,7 +120,7 @@ class Parse_LN:
                 LN_id = iLN.lnPrefix + iLN.lnClass + iLN.lnInst
                 DoName = IEDname + AP_Name + '/' + LN_id  # Use for collecting DAI
                 iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName)
-
+                tiDOI.append(iDOI)
                 pLN = pLN.nextSibling
                 continue
 
@@ -164,7 +164,7 @@ class Parse_LN:
                             _ldInst  = pIEDlst.getAttribute("ldInst")
                             _lnClass = pIEDlst.getAttribute("lnClass")
                             _name = pIEDlst.firstChild.nodeValue
-                            print("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass)
+                            self.TRX.Trace(("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass),TL.DETAIL)
                             IEDSub = IED.AccessPoint.Server.LN.GSEControl.IEDGSESub(_apRef,_ldInst, _lnClass, _name)
                             GOOSE.tIED.append(IEDSub)
 
@@ -200,7 +200,7 @@ class Parse_LN:
                             _ldInst  = pIEDlst.getAttribute("ldInst")
                             _lnClass = pIEDlst.getAttribute("lnClass")
                             _name = pIEDlst.firstChild.nodeValue
-                            print("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass)
+                            self.TRX.Trace(("IED: " + _name + " ,apRef:" + _apRef + " ,ldInst:" + _ldInst + " ,lnClass:+" + _lnClass), TL.DETAIL)
                             IEDSub = IED.AccessPoint.Server.LN.SampledValueControl.IEDSVCSub(_apRef,_ldInst, _lnClass, _name)
                             SVC.tIED.append(IEDSub)
                         pSVC= pIEDlst
@@ -264,6 +264,7 @@ class Parse_LN:
         iLN.tGSECtrl = tiGCB
         iLN.tRptCtrl = tiRCB
         iLN.tLogCtrl = tiLCB
+        iLN.tiDOI    = tiDOI
         return iLN
 
     ##
@@ -527,9 +528,16 @@ class Parse_LN:
                 pDAI = pDAI.nextSibling         # <SDI name="Oper">
                 continue                        # <SDI name="origin">
 
+            p1 = pDAI
+            if p1.localName == "Val":
+                _value = p1.firstChild.data
+                iDOI.value = _value
+                print("xxxxxxxxxxx Value for DOI", iDOI.DOname, _value)
+                self.TRX.Trace(("    Balise1 <VAL/>: " + _value), TL.DETAIL)
+
             if pDAI.localName == "Private":     # <DAI name="orCat" sAddr="96.1.3.10.4" />
                 type=pDAI.getAttribute("type")
-# WG10 PRIVATE
+
                 if type == "eTr-IEC61850-90-2":
                     pI90_2 = pDAI.firstChild.nextSibling
                     if (pI90_2.nodeName == "eTr-IEC61850-90-2:ProxyOf"):
@@ -541,8 +549,8 @@ class Parse_LN:
                         _lnInst       = pI90_2.getAttribute("lnInst")
                         _doName       = pI90_2.getAttribute("doName")
                         iDOI.IEC_90_2 = IED.AccessPoint.Server.LN.DOI.IEC_90_2(_externalScl,_iedName,_ldInst, _prefix, _lnClass, _lnInst, _doName )
-# WG10 PRIVATE
-                elif type == "IEC_60870_5_104":
+
+                elif type == "IEC_60870_5_104": # WG10 PRIVATE
                     p104 = pDAI.firstChild
                     if p104 is not None:
                         p104 = p104.nextSibling
@@ -556,11 +564,12 @@ class Parse_LN:
                             iDOI.IEC104 = IED.AccessPoint.Server.LN.DOI.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
                 else:
                     self.Dyn.PrivateDynImport(type, pDAI, iDOI)
+                    pDAI = pDAI.nextSibling
+                    continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
-                pDAI = pDAI.nextSibling                             # </SDI>
-                continue                                            # <DAI name="ctlVal" sAddr="96.1.3.10.3" />
             if pDAI.localName == "DAI":                             # <DAI name="ctlNum" sAddr="96.1.3.10.6" />
                 pX, value, iDAI = self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
+                print("DAI Value"+value)
     #            tDAI.append(iDOI)
                 pDAI = pDAI.nextSibling
                 continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
@@ -586,6 +595,7 @@ class Parse_LN:
 
     def Parse_DAI_VAL(self, pDAI, iDOI):
         _value = None
+        tDAI = []
         if pDAI.localName == "DAI":
             _name    = pDAI.getAttribute("name")  		# The attribute name; the type tAttributeNameEnum restricts to the attribute names
             											# from IEC 61850-7-3, plus new ones starting with lower case letters
@@ -614,6 +624,7 @@ class Parse_LN:
             iDAI = IED.AccessPoint.Server.LN.DAI( _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type, _count,
                                                   _valKind, _valImport, _desc, '', '', '')  # _value !
             setattr(iDOI, _name, iDAI)
+            tDAI.append(iDAI)
 
             # Is there a value ?
             p1 = pDAI.firstChild
@@ -639,6 +650,7 @@ class Parse_LN:
                     self.TRX.Trace(("    Balise2 <VAL/> vide"), TL.DETAIL)
             else:
                 pDAI = pDAI.nextSibling
+
         return pDAI, _value, iDOI
 
     """

@@ -470,6 +470,7 @@ class IED:
                     self.tLogCtrl   =  []       ## Array of LogControl
 #+                    self.tRCB       =  []       ## Array of RCB
                     self.tRptCtrl   =  []       ## Array of ReportControl
+                    self.tDO        = []        ## Array of (from LNOType).
             ##      self.DO_Name    = ...       ## Dynamically added with 'setattr' to get actual DO_Name
 
             # Définition de la class Report Control, avec des sous classes
@@ -804,7 +805,8 @@ class IED:
                         self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
                         self.ix             = _ix               # Index of a data element in case of an array type
                         self.desc           = _desc             # Descriptive text for the DO element
-
+                        self.value          =  None
+                        self.tDAI           = []
                 ##
                 #  \b DAI  A data attribute instance, with the possibility to define a value
                 #  @param _desc(iec)    Some descriptive text for the attribute
@@ -859,7 +861,7 @@ class IED:
                         self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
                         self.SDO     = _SDO
                         self.value   = _value   #
-
+                        self.tDAI    = []
                         ##
                         # \b SDI A Sub Data attribute instance, allow to defined values at Sub Data Level
                         #
@@ -1102,23 +1104,6 @@ class DataTypeTemplates:
             self.lnClass    = _lnClass      # The LN base class of this type as specified in IEC 61850-7-x; observe that here an enumeration exists,
                                             # which allows extensions (names containing only capital letters)
             self.tDO = _tDO                 # Table of the DO element
-
-
-        ##
-        #  DOI element of a LNodeType
-        #
-        #   @param  name(iec)            # The data object name as specified for example in IEC 61850-7-4
-        #   @param  type(iec)            # The type references the id of a DOType definition
-        #   @param  accessControl(iec)   # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
-        #   @param  transient(iec)       # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
-        #   @param  desc(iec)            # Descriptive text for the DO element
-    #    class xxDOI:
-    #        def __init__(self, _name, _type, _accessControl, _transient, _desc, ):
-    #            self.DOname         = _name             # The data object name as specified for example in IEC 61850-7-4
-    #            self.type           = _type             # The type references the id of a DOType definition
-    #            self.accessControl  = _accessControl    # Access control definition for this DO. If it is missing, then any higher-level access control definition applies
-    #            self.transient      = _transient        # If set to true, it indicates that the Transient definition from IEC 61850-7-4 applies
-    #            self.desc           = _desc             # Descriptive text for the DO element
 
     ##
     # \b DOType An instantiable data object type; referenced from LNodeType or from the

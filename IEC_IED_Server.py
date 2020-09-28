@@ -10,6 +10,7 @@
 #
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
+import sys
 
 import xml.dom.minidom as dom
 
@@ -21,6 +22,7 @@ from IEC_LN             import Parse_LN
 from IEC61850_XML_Class import IED
 from IEC_LN             import Parse_LN
 from IEC_PrivateSupport import DynImport
+from IEC_LNodeType      import Parse_LNodeType
 
 ##
 # \b Parse_Server: this class create the list of DoType / Data Attributes elements
@@ -35,11 +37,14 @@ class Parse_Server:
     #   Constructor is used to keep initialize the Parse_LN class (forwarding TRACE class).
     # @param _scl: pointer to the SCL structure created by miniDOM
     # @param _TRX: Trace function
-    def __init__(self, _scl, TR):       ## Constructor for Server
+    def __init__(self, _scl, TR, Dico):       ## Constructor for Server
         self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
         self.TR         = TR            ## Instance of the TRACE service.
         self.pLN        = Parse_LN(TR)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
         self.Dyn        = DynImport()
+        self.Dict       = Dico          ## From the global model, access to LNode, DO, DA and Enum Types dictionary
+
+
     ##
     # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
     #
@@ -99,6 +104,39 @@ class Parse_Server:
             #                        tLN.append(iLN)
             LN_index = LN_index + 1
             setattr(iDeviceInstance, LN_id, iLN)  # = LDeviceInstance
+
+            lstDO= self.Dict.LNodeType.getIEC_LNodeType(iLN.lnType)
+            iLN.tDO = lstDO.tDO
+            for iDO in lstDO.tDO:
+                try:
+                    x= eval( 'iLN.' +iDO.DOname)
+                except:
+                    e = sys.exc_info()[0]
+                    print(e)
+
+                try:
+                    setattr(iLN,iDO.DOname, iDO)
+
+                except TypeError as ex:             # For DOI 'name' is renamed to 'DOame' (The CDC DPL as a 'name' property)
+                    print("Exception" + ex)
+
+                lstDA = self.Dict.DoType.getIEC_DoType(iDO.type)
+                iDO.tDA = lstDA.tDA
+                for iDA in lstDA.tDA:
+                    try:
+                        setattr(iDO, iDA.name, iDA)
+                    except TypeError as ex:         # Risk of name Clash if a DAI is 'name'.
+                        print("Exception" + ex)
+
+                    if iDA.bType == 'Struct':
+                        typeStruct = iDA.type
+                        lstDA2 = self.Dict.DaType.getIEC_DaType(iDA.type)
+                        for iDA2 in lstDA2.tBDA:
+                            try:
+                                setattr(iDA, iDA2.name, iDA2)
+                            except TypeError as ex:
+                                print("Exception" + ex)
+
             if (pLNi.nextSibling) is not None:
                 pLNi = pLNi.nextSibling
                 continue

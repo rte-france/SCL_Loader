@@ -87,7 +87,7 @@ class DynImport:
     def __init__(self):
         self.DicoPrivate = {}       ## For full tag name like 'RTE-FIP'
         self.TagList     = []       ## For generic tag starting a simple name like 'RTE-', 'GE_', 'Siemens-'...
-        self.TR          = Trace.Console(TL.DETAIL)
+        self.TR          = Trace(TL.DETAIL)
 
         #       dicDoType[id] = {"import": cdc, "commentaire": desc, "tDA": tDA
         #                  start with TAG         class name
