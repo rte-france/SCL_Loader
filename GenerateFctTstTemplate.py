@@ -11,7 +11,7 @@
 #
 
 import time, sys
-from IEC_FileListe import FileListe
+from IEC_FileListe import FileListe as FL
 from IEC_Trace import Trace
 from IEC_Trace import Level    as TL
 from IEC_ParcoursDataModel import globalDataModel
@@ -461,12 +461,12 @@ class CodeGeneration():
 if __name__ == '__main__':
 
 #    TX = Trace.Console(TL.GENERAL)
-    TX = Trace.File(TL.DETAIL,"Trace_FctTst.txt")
+    TX = Trace(TL.DETAIL,"Trace_FctTst.txt")
     tIEDfull=[]
     myCpt = 0
 
-    for file in FileListe.lstSystem:
-        GM = globalDataModel(TX,'SCL_files/' + file, None)
+    for file in FL.lstSystem:
+        GM = globalDataModel(TX,FL.root + file, None)
         CG = CodeGeneration("CodeGeneration", TX, GM)
 
         CG.LNodeType = GM.LNode

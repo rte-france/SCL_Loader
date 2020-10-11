@@ -275,7 +275,7 @@ class ParseCommunication:
 # \b Test_Communication: unitary test for Communication part
 class Test_Communication:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace (TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
@@ -284,14 +284,14 @@ class Test_Communication:
         comm = scl.getElementsByTagName("Communication")
         subNetWork = ParseCommunication(comm, TRX)
         tNetWork = subNetWork.ParseCommSection(comm)  # <SubNetWork>
-        TRX.Trace(("FIN IEC_SUBSTATION"), TL.GENERAL)
+        TRX.Trace(("FIN IEC_Communication"), TL.GENERAL)
 ##
 # \b MAIN call the unitary test 'Test_Communication' for Communication part
 if __name__ == '__main__':
     fileliste = FL.lstFull  # List of system level files (SCL, SCD,...)
     for file in fileliste:
-        Test_Communication.main('SCL_files/', file, None)
+        Test_Communication.main(FL.root, file, None)
 
     fileliste = FL.lstIED  # List of IED level files (SCL, SCD,...)
     for file in fileliste:
-        Test_Communication.main('SCL_files/', file, None)
+        Test_Communication.main(FL.root, file, None)

@@ -14,11 +14,11 @@ from importlib import import_module
 import time
 
 
-from IEC_Trace import Trace as TR
+from IEC_Trace import Trace
 from IEC_Trace import Level as TL
 from IEC_FileListe import FileListe
 from IEC_ParcoursDataModel import globalDataModel
-
+from IEC_FileListe import FileListe as FL
 #import ACSI_Services as IED_ACSI
 
 #dummy implementation...
@@ -172,7 +172,7 @@ class TEST:
             self.ACSI       = _ACSI
             self.ipAdrTools = _ipAdrTools
             self.desc       = _desc
-            self.T          = TR.Console(TL.GENERAL)
+            self.T          = Trace(TL.GENERAL)
 
             UTEST     = import_module("utest")
             self.IEC  = getattr(UTEST,"IECToolKit")
@@ -245,7 +245,7 @@ class TEST:
             self.ACSI       = _ACSI
             self.ipAdrTools = _ipAdrTools
             self.desc       = _desc
-            self.T          = TR.Console(TL.DETAIL)
+            self.T          = Trace(TL.DETAIL)
             self.VS         = TEST.CreateDictionary(self.ACSI.iedAdrMMS,self.ACSI.IedName,self.ACSI.APName)
 
         def Associate(self):
@@ -310,10 +310,8 @@ class API_Test:
 # \b MAIN call the unitary test 'Test_ParcoursDataModel'
 if __name__ == '__main__':
 
-
-    TX   = TR.Console(TL.GENERAL)
-    TR1  = TR.Console(TL.DETAIL)
-    TXF  = TR.File(TL.DETAIL,"Trace_FctTst.txt")
+    TR1  = Trace(TL.DETAIL)
+    TX   = Trace(TL.DETAIL,"Trace_FctTst.txt")
     tIEDfull=[]
 
     myCpt = 0
@@ -325,7 +323,7 @@ if __name__ == '__main__':
 
     for file in FileListe.lstSystem:
 
-        GM = globalDataModel(TX,'SCL_files/' + file, None)
+        GM = globalDataModel(TR1, FL.root + file, None)
 
         indIED = 0
         T0 = time.time()
@@ -387,7 +385,6 @@ if __name__ == '__main__':
         TX.Trace(("Total Time:" + file + ':' + TempsTotal), TL.GENERAL)
         TX.Trace(("*** finished *** "), TL.GENERAL)
 
-    Resultat = str(time.time()) - t0_ied
 
 
 

@@ -23,6 +23,7 @@ from IEC61850_XML_Class import IED
 from IEC_LN             import Parse_LN
 from IEC_PrivateSupport import DynImport
 from IEC_LNodeType      import Parse_LNodeType
+import IEC_ParcoursDataModel
 
 ##
 # \b Parse_Server: this class create the list of DoType / Data Attributes elements
@@ -290,13 +291,14 @@ class Parse_Server:
 
 class Test_IED_Server:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
             scl = dom.parse(directory + file)
         TRX.Trace(("File:" + file), TL.GENERAL)
-        iIED = Parse_Server(scl, TRX)
+        Model = IEC_ParcoursDataModel.globalDataModel(TRX, directory + file, scl)
+        iIED =  Parse_Server(scl, TRX, Model.Dico)
 
         tIEDglobal= iIED.Parse_IED(TRX)
         TRX.Trace(("END of IEC_IED_Server"), TL.GENERAL)
@@ -305,8 +307,8 @@ class Test_IED_Server:
 if __name__ == '__main__':
     fileliste = FL.lstFull  # List of system files (SCD..)
     for file in fileliste:
-        Test_IED_Server.main('SCL_files/', file, None)
+        Test_IED_Server.main(FL.root, file, None)
 
     fileliste = FL.lstIED   # List of IED files (ICD, IID, ..)
     for file in fileliste:
-        Test_IED_Server.main('SCL_files/', file, None)
+        Test_IED_Server.main(FL.root, file, None)

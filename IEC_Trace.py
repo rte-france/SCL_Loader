@@ -59,7 +59,7 @@ class Trace:
             self.Level == logging.NOTSET
 
         if File is not None:
-            logging.basicConfig(filename=File,level=self.Level)
+            logging.basicConfig(handlers=[logging.FileHandler(File, 'w', 'utf-8')],level=self.Level)
         else:
             logging.basicConfig(level=self.Level)
 
@@ -67,13 +67,16 @@ class Trace:
     def Trace(self, msg, msgLevel ):
         if msgLevel is Level.NOTRACE:
             return
-        if self.Level == Level.DETAIL:
-            logging.debug(msg)
-        if self.Level == Level.ERROR:
-            logging.error(msg)
-        if self.Level == Level.GENERAL:
-            logging.info(msg)
+        try:
+            if self.Level == Level.DETAIL:
+                logging.debug(msg)
+            if self.Level == Level.ERROR:
+                logging.error(msg)
+            if self.Level == Level.GENERAL:
+                logging.info(msg)
 
+        except (UnicodeError, UnicodeEncodeError) as e:
+            print('Unicode Error', e)
         return
 
 ##

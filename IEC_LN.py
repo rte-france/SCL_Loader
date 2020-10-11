@@ -14,7 +14,7 @@ import xml.dom.minidom as dom
 from IEC_Trace      import Trace
 from IEC_Trace      import Level  as TL
 from IEC_PrivateSupport import DynImport
-
+from IEC_FileListe  import FileListe as FL
 from IEC61850_XML_Class import IED
 
 ##
@@ -570,7 +570,7 @@ class Parse_LN:
             if pDAI.localName == "DAI":                             # <DAI name="ctlNum" sAddr="96.1.3.10.6" />
                 pX, value, iDAI = self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
                 print("DAI Value"+value)
-    #            tDAI.append(iDOI)
+                iDOI.tDAI.append(iDAI)
                 pDAI = pDAI.nextSibling
                 continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
@@ -776,9 +776,9 @@ class Parse_LN:
 
 class Test_LN:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.GENERAL)
+        TRX = Trace(TL.GENERAL)
 
-        scl = dom.parse('SCL_files/'+file)
+        scl = dom.parse(FL.root+file)
         TRX.Trace(("scl.getElementsByTagName. "+ file),TL.GENERAL)
         tiLN=[]
 
@@ -804,14 +804,11 @@ class Test_LN:
 if __name__ == '__main__':
 
 
-#    Test_LN.main('SCL_files/', 'LD_ALL.SCL', None)
-    Test_LN.main('SCL_files/', 'SCL_20200415.scl', None)
+    fileliste = FL.lstFull  # File list for System Level (SCL/SCD...)
+    for file in fileliste:
+        Test_LN.main(FL.root, file, None)
 
-#    fileliste = FL.lstFull  # File list for System Level (SCL/SCD...)
-#    for file in fileliste:
-#        Test_LN.main('SCL_files/', file, None)
-
-#    fileliste = FL.lstIED  # File list for IED Level (ICD, CID, IID...)
-#    for file in fileliste:
-#        Test_LN.main('SCL_files/', file, None)
+    fileliste = FL.lstIED  # File list for IED Level (ICD, CID, IID...)
+    for file in fileliste:
+        Test_LN.main(FL.root, file, None)
 

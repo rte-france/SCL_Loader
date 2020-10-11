@@ -141,7 +141,7 @@ class Test_EnumType:
     ##
     # Unitary test for Parse_EnumType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         TRX.Trace(("Fichier:", file), TL.GENERAL)
@@ -158,9 +158,9 @@ class Test_EnumType:
 if __name__ == '__main__':
     fileliste = FL.lstFull          #  System level file list
     for file in fileliste:
-        Test_EnumType.main('SCL_files/', file, None)
+        Test_EnumType.main(FL.root, file, None)
 
     fileliste = FL.lstIED          # ED level file list
     for file in fileliste:
-        Test_EnumType.main('SCL_files/',file, None)
+        Test_EnumType.main(FL.root,file, None)
 

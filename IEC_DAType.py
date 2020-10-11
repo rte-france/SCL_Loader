@@ -145,7 +145,7 @@ class Test_DAType:
     ##
     # Unitary test for Parse_DAType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
@@ -162,11 +162,11 @@ class Test_DAType:
 if __name__ == '__main__':
     fileliste = FL.lstFull          # Liste de fichier de niveau système et IED
     for file in fileliste:
-        Test_DAType.main('SCL_files/',file, None)
+        Test_DAType.main(FL.root,file, None)
 
     fileliste = FL.lstIED          # IED level file list
     for file in fileliste:
-        Test_DAType.main('SCL_files/',file, None)
+        Test_DAType.main(FL.root,file, None)
 
 
 

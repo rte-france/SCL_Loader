@@ -120,7 +120,7 @@ class Test_LNodeType:
     ##
     # Unitary for ParseDoType, invoked by IEC_test.py
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
@@ -135,8 +135,8 @@ class Test_LNodeType:
 if __name__ == '__main__':
     fileliste = FL.lstFull  # System level file list
     for file in fileliste:
-        Test_LNodeType.main('SCL_files/', file, None)
+        Test_LNodeType.main(FL.root, file, None)
 
     fileliste = FL.lstIED  # IED level file list
     for file in fileliste:
-        Test_LNodeType.main('SCL_files/', file, None)
+        Test_LNodeType.main(FL.root, file, None)

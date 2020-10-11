@@ -12,7 +12,7 @@
 
 import xml.dom.minidom as dom
 import time
-from IEC_FileListe import FileListe
+from IEC_FileListe import FileListe as FL
 
 from IEC_Trace              import Trace
 from IEC_Trace              import Level   as TL
@@ -204,12 +204,12 @@ class CheckDataInitialValue:
 
     def CheckAllValue(mode):
 
-        TX = Trace.Console(TL.GENERAL)
+        TX = Trace(TL.GENERAL)
         tIEDfull=[]
-        for file in FileListe.lstSystem:
+        for file in FL.lstSystem:
 
             CG = CheckDataInitialValue("CodeGeneration")
-            GM = globalDataModel(TX,'SCL_files/'+ file, None)
+            GM = globalDataModel(TX, FL.root+file, None)
 
             indIED = 0
             T0_Total = time.time()
@@ -272,7 +272,7 @@ class CheckDataInitialValue:
 
 if __name__ == '__main__':
 
-    TX = Trace.Console(TL.DETAIL)
+    TX = Trace(TL.DETAIL)
     tIEDfull=[]
 
 #    CheckDataInitialValue.CheckAllValue('Connected')

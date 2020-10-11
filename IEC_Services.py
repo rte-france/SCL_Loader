@@ -709,14 +709,14 @@ class Test_Services:
 
 
 if __name__ == '__main__':
-    TRX = TConsole(TL.DETAIL)
+    TRX = Trace(TL.DETAIL)
     fileliste = FL.lstFull  # Liste de fichier de niveau système et IED
     for file in fileliste:
-        Test_Services.main('SCL_files/', file, None)
+        Test_Services.main(FL.root, file, None)
 
     fileliste = FL.lstIED  # Liste de fichier de niveau système et IED
     for file in fileliste:
-        Test_Services.main('SCL_files/', file, None)
+        Test_Services.main(FL.root, file, None)
 
     TRX.Trace(("FIN SERVICES"),TL.GENERAL)
 

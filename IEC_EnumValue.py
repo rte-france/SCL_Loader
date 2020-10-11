@@ -320,7 +320,7 @@ class IEC_Enum:
         dBm = 83
 
 if __name__ == '__main__':
-    TRX = Trace.Console(TL.DETAIL)
+    TRX = Trace(TL.DETAIL)
     TRX.Trace(("IEC_Enum Dbpos",   IEC_Enum.Dbpos.pos_off) , TL.GENERAL)
     TRX.Trace(("IEC_Enum Beh",     IEC_Enum.Beh.blocked)   , TL.GENERAL)
     TRX.Trace(("IEC_Enum Health ", IEC_Enum.Health.Warning), TL.GENERAL)

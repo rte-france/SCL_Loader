@@ -335,5 +335,5 @@ class Test_TypeSimpleCheck:
 # This class performs unitary of the main class above, by calling the Test_TypeSimpleCheck.
 if __name__ == '__main__':
     ## TRX initialize the traces
-    TRX = Trace.Console(TL.DETAIL)
+    TRX = Trace(TL.DETAIL)
     Test_TypeSimpleCheck.main(TRX)

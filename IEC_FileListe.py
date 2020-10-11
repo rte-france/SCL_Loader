@@ -14,10 +14,11 @@
 # \b FileListe: Place holder to define the list of SCL files to be used for unit testing: lstED and lstSystem
 #
 class FileListe:
+    root = "\\OneDrive\\SCL_Gil\\SCL_files\\"
     ##  lstIED        a list of IED level file (IID, ICD, CID...)
-    lstIED    = ['LD_all.scl']
+    lstIED    = ['SCD_SITE_MUB_4ZSSBO_1_20200901.SCD'] ## ['LD_all.scl']
     ##  lstSystem     a list of system configuration level file (SCD, SSD...)
 ##    lstSystem = ['SCD_SITE_BCU_4ZSSBO_1_20200901.SCD','SCD_SITE_MUB_4ZBRAN_1_20200901.SCD'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
-    lstSystem = ['SCD_SITE_20200901.SCD'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
+    lstSystem = ['IOP_2019_HV_v6_ed2.3.SCL','SCD_SITE_20200901.SCD'] # 'SCL_20200415.scl']  'OUT_SCL_SITE_PALLUAU_3T.scd'# 'LD_all.scl']
     ##  lstFull       the concatenation of the two previous list
-    lstFull   =  lstIED+lstSystem
+    lstFull   =  lstSystem

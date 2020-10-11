@@ -179,11 +179,13 @@ class ParseSubStation:
 
 
                         elif pBay.localName == "LNode":
-                            _iedName  = pBay.getAttribute("iedName")
-                            _lnClass  = pBay.getAttribute("lnClass")
-                            _lnType   = pBay.getAttribute("lnType")
                             _lnInst   = pBay.getAttribute("lnInst")
-                            iLNode    = poste.Bay.LNode(_iedName,_lnClass, _lnType, _lnInst)
+                            _lnClass  = pBay.getAttribute("lnClass")
+                            _iedName  = pBay.getAttribute("iedName")
+                            _ldInst   = pBay.getAttribute("ldInst")
+                            _prefix   = pBay.getAttribute("prefix")
+                            _lnType   = pBay.getAttribute("lnType")
+                            iLNode    = poste.LNode(_lnInst,_lnClass,_iedName,_ldInst,_prefix,_lnType)
                             poste.tVoltage[idxVolt].tBay[idxBay].tLNode.append(iLNode)
                             self.TRX.Trace(('Substation/Bay/Lnode.iedName: '+ _iedName + " lnClass:" + _lnClass + \
                                        " lnType:" + _lnType + " lnInst:" + _lnInst), TL.DETAIL)
@@ -202,7 +204,7 @@ class ParseSubStation:
 # \b Test_DOType: unitary test for Substation.
 class Test_Substation:
     def main(directory, file, scl):
-        TRX = Trace.Console(TL.DETAIL)
+        TRX = Trace(TL.DETAIL)
 
         TRX.Trace(("---------------------------------------------------"), TL.GENERAL)
         if scl is None:  # UNIT TEST
@@ -217,14 +219,14 @@ class Test_Substation:
 # \b MAIN call the unitary test 'Test_Substation'
 if __name__ == '__main__':
 
-    Test_Substation.main('SCL_files/', 'LD_ALL.SCL', None)
+    Test_Substation.main(FL.root, 'LD_ALL.SCL', None)
 
     fileliste = FL.lstFull  # Liste de fichier de niveau système et IED
     for file in fileliste:
-        Test_Substation.main('SCL_files/', file, None)
+        Test_Substation.main(FL.root, file, None)
 
     fileliste = FL.lstIED  # Liste de fichier de niveau système et IED
     for file in fileliste:
-        Test_Substation.main('SCL_files/', file, None)
+        Test_Substation.main(FL.root, file, None)
 
 

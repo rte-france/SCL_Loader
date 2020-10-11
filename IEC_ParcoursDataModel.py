@@ -21,13 +21,12 @@ from IEC_DAType             import Parse_DAType
 from IEC_EnumType           import Parse_EnumType
 from IEC_Services           import Test_Services
 from IEC_Communication      import ParseCommunication
-from IEC_IED_Server         import Parse_Server
-
-from IEC_Trace              import Trace   as TConsole
+from IEC_Trace              import Trace
 from IEC_Trace              import Level   as TL
 from IEC_TypeSimpleCheck    import Check
-
 from IEC61850_XML_Class     import  DataTypeTemplates as IecType
+
+import IEC_IED_Server
 
 
 global SEP1
@@ -164,7 +163,8 @@ class globalDataModel:
         tNetWork = tIEDNet.ParseCommSection(comm)               #                           <SubNetWork>
                                                                 #                               <ConnectedAP...>
         ##      Gather information on server from the data model aspect
-        tIEDComm        = Parse_Server(scl, self.TR, self.Dico)            # IED / SERVER / LD / LN
+        tIEDComm        = IEC_IED_Server.Parse_Server(scl, self.TR, self.Dico)            # IED / SERVER / LD / LN
+
         tIED            = tIEDComm.Parse_IED(self.TR)
 
         self.TR.Trace(("nombre de IED/server: "+str(len(tIED)))     , TL.DETAIL)       # 42
@@ -439,8 +439,8 @@ class globalDataModel:
 class Test_ParcoursDataModel:
     def main(directory, file, scl):
 
-        TX = TConsole.File(TL.GENERAL, "dump data.txt")
-        TR = TConsole.Console(TL.GENERAL)
+        TX = Trace(TL.GENERAL, "dump data.txt")
+        TR = Trace(TL.GENERAL)
         GM = globalDataModel(TX, directory + file, scl)
         iec_BasicType = ''
         iec_TypeValue = ''
@@ -474,7 +474,6 @@ class Test_ParcoursDataModel:
                 index = index + 1
         T1 = time.time()
         TempsTotal = str(time.time() - T0_Global)
-        TX.Close()
         TR.Trace(("Total execution time" + file + ':' + TempsTotal) ,TL.GENERAL)
         TR.Trace(("*** finished ***"),TL.GENERAL)
 
@@ -483,7 +482,7 @@ class Test_ParcoursDataModel:
 if __name__ == '__main__':
     fileliste = FL.lstFull  # System level file list
     for file in fileliste:
-        Test_ParcoursDataModel.main('SCL_files/', file, None)
+        Test_ParcoursDataModel.main(FL.root, file, None)
 
 #    fileliste = FL.lstIED   # IED level file list
 #    for file in fileliste:
