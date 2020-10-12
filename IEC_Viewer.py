@@ -23,7 +23,7 @@ from PyQt5.QtCore import (QDate, QDateTime, QRegExp, QSortFilterProxyModel, Qt,
                           QTime, QModelIndex, QStringListModel)
 
 # import time
-# from IEC_FileListe import FileListe
+from IEC_FileListe import FileListe as FL
 from IEC_Trace import Trace
 # from IEC_Trace import Level    as TL
 
@@ -62,9 +62,13 @@ class AppDemo(QMainWindow):
     IED_LD, DESC, TYPE, VALUE, TAG, DESC2 = range(6)
 
     def findDOI(self, iLN, do_name):
-        for iDOi in iLN.tiDOI:
-            if iDOi.DOname == do_name:
-                return iDOi
+
+        try:
+            for iDOi in iLN.tiDOI:
+                if iDOi.DOname == do_name:
+                    return iDOi
+        except:
+            print ("do_name:", do_name)
         return None
 
     def findDAI(self, iDO, da_name):
@@ -151,8 +155,9 @@ class AppDemo(QMainWindow):
                             dataKey = dataKey + '/' + txtLN
                             item = item + 1
 
-                            for iDO in iLN.tDO:
+                            for iDO in iLN.tDOI:
                                 iDOType = GM.DOType.getIEC_DoType(iDO.type)
+
                                 _DO = StandardItem(iDO.DOname + '(' + iDOType.cdc + ')', 9, set_bold=True)
                                 _desc2 = StandardItem(iDO.desc, 9, set_bold=False)
                                 dataKey = dataKey + '/' + iDO.DOname
@@ -163,36 +168,54 @@ class AppDemo(QMainWindow):
                                     _type = StandardItem(DOi.type, 9, set_bold=False)
                                     _desc = StandardItem(iDOType.desc, 9, set_bold=False)
                                     _value = StandardItem(DOi.value, 10, set_bold=False)
+#                                    print("_ln.appendRow")
+                                    _ln.appendRow((_DO, _type, _desc, _value))  # , 'xx'))
                                 else:
-                                    DOi.value = '.'
-                                print("_ln.appendRow")
-                                _ln.appendRow((_DO, _type, _desc, _value))  # , 'xx'))
+                                    _ln.appendRow((_DO, _desc2))  # , 'xx'))
 
-                                for iDA in iDO.tDA:
+#                                    _type = StandardItem(DOi.type, 9, set_bold=False)
+#                                    _desc = StandardItem(iDOType.desc, 9, set_bold=False)
+#                                    _value = StandardItem(DOi.value, 10, set_bold=False)
+#                                    _value = '.'
+
+                                for iDA in iDO.tDAI:
+                                    DAi = self.findDAI(iDO, iDA.name)
                                     _DA = StandardItem(iDA.name + '[' + iDA.fc + ']', 9, set_bold=True)
                                     dataKey = dataKey + '/' + iDA.name + '[' + iDA.fc + ']'
                                     ###<*** tDAI est vide...
-                                    DAi = self.findDAI(iDA, iDA.name)
-                                    if DAi is not None and DAi.value is not None:
+#                                    _DO.appendRow((_DA))
+
+                                    if DAi is not None and DAi.value is not None and DAi.value != '_x_':
                                         print('found iDAI' + DAi.value + ',' + DAi.bType + ',' + DAi.type)
-                                        _desc3 = StandardItem(DAi.bType + DAi.type, 8, set_bold=False)
-                                        _desc4 = StandardItem(DAi.value, 8, set_bold=False)
-                                        print("_DA.appendRow")
-                                        _DO.appendRow((_DA, _desc3, _desc4))
+                                        _name  = StandardItem(DAi.name + '[' + DAi.fc + ']', 8, set_bold=True)
+                                        _bType = StandardItem(DAi.bType, 8, set_bold=False)
+                                        _Type  = StandardItem(DAi.type , 8, set_bold=False)
+                                        _value = StandardItem(DAi.value, 10, set_bold=False)
+                                        if _Type == "Struct":
+                                            print('found SRUCT iDAI' + DAi.value + ',' + DAi.bType + ',' + DAi.type)
+                                            self.Structure(iDA, _DA)
+                                            _DO.appendRow((_name, _bType, _Type,_value ))
+                                        else:
+                                            _DO.appendRow((_name, _bType, _Type,_value ))
+
                                     else:
-                                        _desc3 = StandardItem(iDA.bType, 8, set_bold=False)
-                                        _desc4 = StandardItem(iDA.type, 8, set_bold=False)
-                                        iDA.name + '[' + iDA.fc + ']'
+                                        _name  = StandardItem(iDA.name + '[' + iDA.fc + ']', 8, set_bold=False)
+                                        _bType = StandardItem(iDA.bType, 8, set_bold=False)
+                                        _Type  = StandardItem(iDA.type, 8, set_bold=False)
+                                        _value = StandardItem(iDA.value, 10, set_bold=False)
+                                        _DO.appendRow((_name, _bType, _Type, _value))
 
                                         if iDA.bType != 'Enum':
-                                            print("X DA append ROW")
-                                            _DO.appendRow((_DA, _desc3, _desc4))
+#                                            print("X DA append ROW")
+                                            _DA.appendRow((_name, _bType, _Type, _value))
                                         else:
                                             (name, id) = self.Enumeration('ENUM:', iDA.type, _DA)
-                                            print("X DA append ROW")
-                                            _DO.appendRow((_DA, name, id))
+#                                            print("X DA append ROW")
+                                            _DA.appendRow((name, id))
 
                                         if iDA.bType == 'Struct':
+                                            self.Structure(iDA, _DA)
+
                                             iDAType = GM.DAType.getIEC_DaType(iDA.type)
                                             for jDA in iDAType.tBDA:
                                                 _SDA = StandardItem(jDA.name, 8, set_bold=True)
@@ -235,6 +258,19 @@ class AppDemo(QMainWindow):
         _EnumVal = StandardItem(self.wrap(iEnumTxt, 45), 8, set_bold=False)
         return ((_DA_Name, _EnumVal))
 
+    def Structure(self, iDA, _DA):
+
+        iDAType = self.GM.DAType.getIEC_DaType(iDA.type)
+        for jDA in iDAType.tBDA:
+            _SDA   = StandardItem(jDA.name, 8, set_bold=True)
+            _type  = StandardItem(jDA.type, 8, set_bold=True)
+            _value =StandardItem(jDA.value, 8, set_bold=True)
+            _DA.appendRow((_SDA, _type))
+
+            if jDA.type == 'Enum':
+                (name, id) = self.Enumeration('Enum', jDA.bType, _SDA)
+                _SDA.appendRow((_DA, name, id))
+
     def getValue(self, val):
         print(val.data())
         print(val.row())
@@ -249,9 +285,9 @@ if __name__ == '__main__':
 
     myCpt = 0
 
-    for file in FileListe.lstIED:
+    for file in FL.lstIED:
 
-        GM = globalDataModel(TX, 'D:/OneDrive/SCL_gil/SCL_files/' + file, None)
+        GM = globalDataModel(TX, FL.root + file, None)
 
         for ied in GM.tIED:
             app = QApplication(sys.argv)

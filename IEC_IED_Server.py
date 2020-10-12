@@ -17,7 +17,6 @@ import xml.dom.minidom as dom
 from IEC_FileListe      import FileListe  as  FL
 from IEC_Trace          import Trace
 from IEC_Trace          import Level  as TL
-from IEC_LN             import Parse_LN
 
 from IEC61850_XML_Class import IED
 from IEC_LN             import Parse_LN
@@ -41,7 +40,7 @@ class Parse_Server:
     def __init__(self, _scl, TR, Dico):       ## Constructor for Server
         self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
         self.TR         = TR            ## Instance of the TRACE service.
-        self.pLN        = Parse_LN(TR)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
+        self.pLN        = Parse_LN(TR, Dico)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
         self.Dyn        = DynImport()
         self.Dict       = Dico          ## From the global model, access to LNode, DO, DA and Enum Types dictionary
 
@@ -107,6 +106,7 @@ class Parse_Server:
             setattr(iDeviceInstance, LN_id, iLN)  # = LDeviceInstance
 
             lstDO= self.Dict.LNodeType.getIEC_LNodeType(iLN.lnType)
+
             iLN.tDO = lstDO.tDO
             for iDO in lstDO.tDO:
                 try:
@@ -220,10 +220,10 @@ class Parse_Server:
                     ServerSection = Services.firstChild.nextSibling
 
                     if (ServerSection is None):  #Pas de Server, application client pure
-                        self.TR.Trace(('Application client:', IEDname, desc ),TL.DETAIL)
+                        self.TR.Trace(('Application client:', IEDname ),TL.DETAIL)
                         continue
                     if (ServerSection.firstChild is None):  # Pas de Server, application client pure
-                        TR.Trace(('Application client:', IEDname, desc),TL.DETAIL)
+                        TR.Trace(('Application client:', IEDname),TL.DETAIL)
                         if (len(iIED_struct.tAccessPoint))> 0:
                             iIED_struct.tAccessPoint[idxAccessPoint].tServer = None
                         else:

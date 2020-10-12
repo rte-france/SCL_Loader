@@ -861,7 +861,7 @@ class IED:
                         self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
                         self.SDO     = _SDO
                         self.value   = _value   #
-                        self.tDAI    = []
+#                        self.tDAI    = []
                         ##
                         # \b SDI A Sub Data attribute instance, allow to defined values at Sub Data Level
                         #
@@ -871,11 +871,12 @@ class IED:
                         # @param sAddr(iec)	    Short address of this Data attribute
 
                     class SDI:  # Utilisé notamment pour les Contrôles complexes
-                        def __init__(self, _desc, _name, _ix,_sAddr ):  # , _tSDI):
+                        def __init__(self, _desc, _name, _ix,_sAddr, _value ):  # , _tSDI):
                             self.desc   = _desc          ## desc	        The description text for the DAI element
-                            self.SDIname = _name          ## name	        The name of the Data attribute whose value is given.
-                            self.ix     = _ix            ## ix	        Index of the DAI element in case of an array type
-                            self.sAddr  = _sAddr         ## sAddr	    Short address of this Data attribute
+                            self.SDIname = _name         ## name	        The name of the Data attribute whose value is given.
+                            self.ix     = _ix            ## ix	            Index of the DAI element in case of an array type
+                            self.sAddr  = _sAddr         ## sAddr	        Short address of this Data attribute
+                            self.value  = _value         ## value           Preset value
 
                     ##
                     # \b IEC_90_2  for IEC61850-90-2 communication (substation to substation communication)

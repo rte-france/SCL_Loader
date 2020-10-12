@@ -16,7 +16,7 @@ from IEC_Trace      import Level  as TL
 from IEC_PrivateSupport import DynImport
 from IEC_FileListe  import FileListe as FL
 from IEC61850_XML_Class import IED
-
+from IEC_LNodeType import Parse_LNodeType
 ##
 # \b Parse_LN: this class create the list of LN0 and LN as well as all sub-classes
 # @brief
@@ -32,11 +32,10 @@ class Parse_LN:
     #
     # @param _TR    Trace system
 
-    def __init__(self, _TR):
+    def __init__(self, _TR, _dico):
         self.TRX      = _TR             ## Instance of the TRACE service.
         self.Dyn      = DynImport()     ## Create an instance of DynImpot for private TAG
-
-
+        self.dico     = _dico           ## Data Type dictionaries (used for DOI and dAI)
 
 
     ##
@@ -68,11 +67,11 @@ class Parse_LN:
     # @param pLN        : is the result of scl.getElementsByTagName("DataTypeTemplates")
     # @param IEDname    : Use to create the full IEC oath to the data
     # @param AP_Name    : Use to create the full IEC oath to the data
-    # @param tDAI       : table of DAi
+    # @param tDOI       : table of DAi initialisation of DO
     #
     # @return iLN       : The logical node with all its sub-classes.
 
-    def Parse_LN(self, pLN, IEDname, AP_Name, tDAI):
+    def Parse_LN(self, pLN, IEDname, AP_Name, tDOI):
         #
         # LN contains DataSet, ReportControl, GooseControl and DOI/SDI.../SDI/DAI sections (up to 3 levels of SDI
         #
@@ -96,7 +95,7 @@ class Parse_LN:
         tiLCB = []  # Tableau des instances des LCB du LN0
         tExtRef = []  # Tableau des ExtRef (Inputs)
         tDS = []  # Tableau des instances des DatatSet du LN0 (l'objet DA contient la liste des FCDA)
-        tiDOI = []
+        tDOI = []
         while pLN:
             if pLN.localName is None:
                pLN = pLN.nextSibling
@@ -119,8 +118,10 @@ class Parse_LN:
                 self.TRX.Trace(("      *** DOI"), TL.DETAIL)
                 LN_id = iLN.lnPrefix + iLN.lnClass + iLN.lnInst
                 DoName = IEDname + AP_Name + '/' + LN_id  # Use for collecting DAI
-                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName)
-                tiDOI.append(iDOI)
+                LN_instance = self.dico.LNodeType.dicLNodeType.get(iLN.lnType)
+
+                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName, LN_instance.get('tDO'))
+                tDOI.append(iDOI)
                 pLN = pLN.nextSibling
                 continue
 
@@ -214,9 +215,6 @@ class Parse_LN:
                             _timestamp          = pSVC.getAttribute("timestamp")
                             SVC.SmvOption = IED.AccessPoint.Server.LN.SampledValueControl.smvOption(_refreshTime, \
                                     _sampleSynchronized,_sampleRate,_dataSet,_security,_synchSourceId,_timestamp)
-
-
-
                 tiSVC.append(SVC)
 
                 #TODO Parse smvOptions
@@ -264,7 +262,7 @@ class Parse_LN:
         iLN.tGSECtrl = tiGCB
         iLN.tRptCtrl = tiRCB
         iLN.tLogCtrl = tiLCB
-        iLN.tiDOI    = tiDOI
+        iLN.tDOI     = tDOI
         return iLN
 
     ##
@@ -510,17 +508,24 @@ class Parse_LN:
     # @return  _value   _value found (or None)
     # @return  iDOI     modified instance DOI.
 
-    def Parse_DOI(self, iLN, pDOI, DoName):                 # Instance of LN  & DOI is scl pointto DOI tag
-        DOname           = pDOI.getAttribute("name")        ## The name identifying this GOOSE control block
+    def Parse_DOI(self, iLN, pDOI, _iDoName, tDO):                 # Instance of LN  & DOI is scl pointto DOI tag
+        DOIname         = pDOI.getAttribute("name")        ## The name of the DO (beh, health, ..)
         _type           = pDOI.getAttribute("type")         ## The type references the id of a DOType definition
         _accessControl  = pDOI.getAttribute("accessControl")## The configuration revision number of this control block.
         _transient      = pDOI.getAttribute("transient")    ##
         _desc           = pDOI.getAttribute("desc")         ## A description text
         _ix             = pDOI.getAttribute("ix")           ## Index of a data element in case of an array type; shall not be used if DOI has no array type
-        self.TRX.Trace(("DOI: name:" + DOname + " desc:" + _desc), TL.DETAIL)
-        iDOI = IED.AccessPoint.Server.LN.DOI(DOname, _type, _accessControl,_transient, _desc, _ix) # None for RTE private Type
-        setattr( iLN ,iDOI.DOname,iDOI)
+        self.TRX.Trace(("DOI: name:" + DOIname + " desc:" + _desc), TL.DETAIL)
 
+        for iDO in tDO:
+            if iDO.DOname == DOIname:
+                doiType = iDO.type
+                break
+
+
+        iDOI = IED.AccessPoint.Server.LN.DOI(DOIname, doiType, _accessControl,_transient, _desc, _ix) # None for RTE private Type
+        setattr( iLN ,iDOI.DOname,iDOI)
+#        iDOI.tDAI=[]
         pDAI = pDOI.firstChild
 
         while pDAI:
@@ -568,14 +573,12 @@ class Parse_LN:
                     continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
             if pDAI.localName == "DAI":                             # <DAI name="ctlNum" sAddr="96.1.3.10.6" />
-                pX, value, iDAI = self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
-                print("DAI Value"+value)
-                iDOI.tDAI.append(iDAI)
+                pDAI, iDOI = self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
                 pDAI = pDAI.nextSibling
                 continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
             if pDAI.localName == "SDI":                             # <DAI name="Check" sAddr="96.1.3.10.9" />
-                self.Parse_SDI(pDAI, iDOI, DoName)
+                self.Parse_SDI(pDAI, iDOI, DOIname)
                 pDAI = pDAI.nextSibling
                 continue
 
@@ -595,7 +598,6 @@ class Parse_LN:
 
     def Parse_DAI_VAL(self, pDAI, iDOI):
         _value = None
-        tDAI = []
         if pDAI.localName == "DAI":
             _name    = pDAI.getAttribute("name")  		# The attribute name; the type tAttributeNameEnum restricts to the attribute names
             											# from IEC 61850-7-3, plus new ones starting with lower case letters
@@ -621,37 +623,34 @@ class Parse_LN:
             _SDO     = ''
             _value   = ''      						    # Actual initialized value
 
-            iDAI = IED.AccessPoint.Server.LN.DAI( _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type, _count,
-                                                  _valKind, _valImport, _desc, '', '', '')  # _value !
-            setattr(iDOI, _name, iDAI)
-            tDAI.append(iDAI)
+            iDAI = IED.AccessPoint.Server.LN.DAI( _desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type,
+                                                  _count, _valKind, _valImport, '_', _SDO, _value)
 
             # Is there a value ?
             p1 = pDAI.firstChild
             if p1 is not None:  # The SCL may contains empty tag like </xxxx> <xxxx/>
                 p1 = p1.nextSibling
-                if (p1.firstChild is not None):
+                while (p1 is not None):
 
                     if p1.localName == "Val":
                         _value = p1.firstChild.data
                         iDAI.value = _value
                         self.TRX.Trace(("    Balise1 <VAL/>: " + _value), TL.DETAIL)
-                        p1 = p1.firstChild.nextSibling
 
                     if p1 is not None and p1.localName == "Private":
                         pType = pDAI.firstChild.nextSibling
                         _type = pType.getAttribute("type")
                         self.Dyn.PrivateDynImport(_type, pType, iDAI)
 
-                    setattr(iDOI, _name, iDAI)  # I add the iDAI named '_name' to iDOI
-                else:
-                    setattr(iDOI, _name, iDAI)
-                    _value = None
-                    self.TRX.Trace(("    Balise2 <VAL/> vide"), TL.DETAIL)
+                    p1 = p1.nextSibling
+
+                self.TRX.Trace(("    Balise2 <VAL/> vide"), TL.DETAIL)
             else:
                 pDAI = pDAI.nextSibling
 
-        return pDAI, _value, iDOI
+            iDOI.tDAI.append(iDAI)
+
+        return pDAI, iDOI
 
     """
     The code of Parse_SDI(pDAI1, iDOI, n, TRX)is used to collect the
@@ -740,8 +739,8 @@ class Parse_LN:
         _sdi_ix = pDAI_v.getAttribute("ix")
         _sAddr  = pDAI_v.getAttribute("sAddr")
         _sdi_name = sdi_name + '.' + _name  # </SDI>
-        iSDI = IED.AccessPoint.Server.LN.DAI.SDI(_desc, _name, _sdi_ix, _sAddr)
-
+        iSDI = IED.AccessPoint.Server.LN.DAI.SDI(_desc, _name, _sdi_ix, _sAddr, '')
+        iSDI.tDAI = []
         # Is it a table of SDI ?
         if len(_sdi_ix) > 0:
             t_IX[n] = _sdi_ix
@@ -758,18 +757,18 @@ class Parse_LN:
 
         # Reading the Value
         pVAL = pDAI_v.firstChild.nextSibling
-        pVAL, value, iSDI = self.Parse_DAI_VAL(pVAL, iSDI)
-        if value is not None:
+        pVAL, iSDI = self.Parse_DAI_VAL(pVAL, iSDI)
+        if iSDI.value is not None:
             found = False
             for i in range(0, 2):
                 if t_IX[i] is not None:
                     self.TRX.Trace(
-                        ("Value for SDI[idx]: " + str(n) + BaseName + sdi_name + '_' + str(t_IX[i]) + '\t:' + value),
+                        ("Value for SDI[idx]: " + str(n) + BaseName + sdi_name + '_' + str(t_IX[i]) + '\t:' + iSDI.value),
                         TL.DETAIL)
                     found = True
                     break
             if not found:
-                self.TRX.Trace(("Value for SDI: " + str(n) + BaseName + sdi_name + '\t:' + value), TL.DETAIL)
+                self.TRX.Trace(("Value for SDI: " + str(n) + BaseName + sdi_name + '\t:' + iSDI.value), TL.DETAIL)
         return iSDI, sdi_name
 ##
 # \b Test_LN: unitary test for parsing LN
@@ -787,8 +786,8 @@ class Test_LN:
         LN_ZERO = scl.getElementsByTagName("LN0")
         TRX.Trace(("ParseLN0................. "+ file),TL.GENERAL)
         for ptrLN in LN_ZERO:
-            tDAI = []
-            iLN = instLN.Parse_LN(ptrLN, "IED_name", "AP_Name", tDAI)
+            tDOI = []
+            iLN = instLN.Parse_LN(ptrLN, "IED_name", "AP_Name", tDOI)
             tiLN.append(iLN)
 
 # Parse classical LN

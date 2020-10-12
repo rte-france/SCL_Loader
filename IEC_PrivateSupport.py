@@ -173,12 +173,12 @@ class DynImport:
 
                 except ImportError:  # The potantial exception should be ImportErrot:, usually bad FileName, ClassName or FunctionName
                     self.TR.Trace(("FAILED TO IMPORT, File:" + iTag.FileName),TL.ERROR)
-                    exit(-2)
+#               exit(-2)
                 else:
                     __exception = sys.exc_info()[0]
                     if __exception is not None:
                         self.TR.Trace(('Exception:' + __exception.__name__),TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
-                        exit(-2)
+#                        exit(-2)
 
                 return iTag.FileName, iTag.ClassName, iTag.MethodName
 

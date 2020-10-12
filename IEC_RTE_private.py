@@ -275,7 +275,7 @@ class RTE_Private:
         if pRTE is not None:
             _value = pRTE.nodeValue
             setattr(_pDataModel, "LD_ChangeLog", _value)
-            _pDataModel.value = _value
+#            _pDataModel.value = _value
 
     ##
     # \b RTE_LD_Model_ChangeLog
@@ -295,7 +295,7 @@ class RTE_Private:
         if pRTE is not None:
             _value = pRTE.nodeValue
             setattr(_pDataModel, "LD_Model_ChangeLog", _value)
-            _pDataModel.value = _value
+#            _pDataModel.value = _value
 
     ##
     # \b RTE_PARAM
