@@ -14,7 +14,7 @@
 # \b FileListe: Place holder to define the list of SCL files to be used for unit testing: lstED and lstSystem
 #
 class FileListe:
-    root = "\\OneDrive\\SCL_Gil\\SCL_files\\"
+    root = ".\SCL_files\\"
     ##  lstIED        a list of IED level file (IID, ICD, CID...)
     lstIED    = ['SCD_SITE_MUB_4ZSSBO_1_20200901.SCD'] ## ['LD_all.scl']
     ##  lstSystem     a list of system configuration level file (SCD, SSD...)
