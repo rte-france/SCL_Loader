@@ -321,7 +321,7 @@ if __name__ == '__main__':
     iedACSI = tstAPI.getAPI_TXT("IED")
     sysACSI = tstAPI.getAPI_TXT("SYSTEM")
 
-    for file in FileListe.lstSystem:
+    for file in FileListe.lstSystem1:
 
         GM = globalDataModel(TR1, FL.root + file, None)
 

@@ -72,24 +72,15 @@ class Parse_DOType:
                 pDA = pDA.nextSibling
                 continue
             if pDA.localName=="DA":
-
                 _desc    = pDA.getAttribute("desc")
                 _name    = pDA.getAttribute("name")
                 _fc      = pDA.getAttribute("fc")
-
-                _dchg    = pDA.getAttribute("dchg")
-                _qchg    = pDA.getAttribute("qchg")
-                _dupd    = pDA.getAttribute("dupd")
-                _sAddr   = pDA.getAttribute("sAddr")
-
                 _bType   = pDA.getAttribute("bType")
                 _type    = pDA.getAttribute("type")
-
                 _count    = pDA.getAttribute("count")
-
                 _valKind = pDA.getAttribute("valKind")
                 _valImp  = pDA.getAttribute("valImport")
-                _value = '_x_'     # to avoid any crash dur to 'None'
+                _value = '.'     # to avoid any crash due to 'None'
 
                 tVAL = pDA.firstChild
                 if pDA.firstChild is not None:
@@ -97,15 +88,14 @@ class Parse_DOType:
                     if (p1.firstChild is not None) and p1.localName=="Val":
                         _value = p1.firstChild.data
 
-                iDA = IED.AccessPoint.Server.LN.DAI(_desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type
-                 , _count, _valKind, _valImp, "DA", _type, _value)
+                iDA = IED.AccessPoint.Server.LN.DAI(_desc,_name,_fc,_bType,_type,_count,_valKind,_valImp,_value,'DO')
 
                 tDA.append(iDA)
                 if _value != '__None__':
-                    self.TRX.Trace(("     DA name:"+_name+" FC:"+_fc+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
+                    self.TRX.Trace(("     DA name:"+_name+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
 
-                self.TRX.Trace(("     DA name:"+_name+" FC:"+_fc+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
-                self.TRX.Trace(("        desc:"+_desc+" valKind:"+_valKind+" sAddr:"+_sAddr+" qchg:"+_qchg+" desc:"+_desc),TL.DETAIL)
+                self.TRX.Trace(("     DA name:"+_name+" Type"+_type+" bType:"+_bType + " value:"+_value ),TL.DETAIL)
+                self.TRX.Trace(("        desc:"+_desc+" valKind:"+_valKind+" desc:"+_desc),TL.DETAIL)
                 self.TRX.Trace(("       value:"+_value),TL.DETAIL)
 
             if pDA.localName=="SDO":
@@ -115,9 +105,7 @@ class Parse_DOType:
                 _count= pDA.getAttribute("count")
                 if _count is None:
                     _count = "0"
-                iDA = IED.AccessPoint.Server.LN.DAI(_desc, _name, '', '_dchg', '_qchg', '_dupd', '_sAddr', _type , _type
-                 , _count, '_valKind', '_valImp', _type, _type, '_value')
-
+                iDA = IED.AccessPoint.Server.LN.DAI(_desc, _name, ' ',  _type, _type, _count, '', '', '','SDO')
                 tDA.append(iDA)
                 self.TRX.Trace(("     SDO- name:" + _name + ", sdo-type:"+ _type),TL.DETAIL)
             pDA = pDA.nextSibling

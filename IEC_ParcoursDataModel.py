@@ -134,7 +134,13 @@ class globalDataModel:
 
         self.Dico = DictType(self.LNode,self.DOType,self.DAType,self.EnumType)
 
-        self.tIED = self.getIED_withComm(_SCL)  # Expect a file list
+        Poste = _SCL.getElementsByTagName("Substation")
+        if len(Poste)==0:
+            _name = ("NoName")
+        else:
+            _name = Poste[0].getAttribute("name")  # SubStation name
+
+        self.tIED = self.getIED_withComm(_SCL,_name)  # Expect a file list
 
         comm = _SCL.getElementsByTagName("Communication")
         subNetWork = ParseCommunication(comm, self.TR)
@@ -156,16 +162,16 @@ class globalDataModel:
     #
     #  @param   scl     The scl as loaded in memory
 
-    def getIED_withComm(self, scl):
+    def getIED_withComm(self, scl, StationName):
 
         comm    = scl.getElementsByTagName("Communication")
         tIEDNet  = ParseCommunication(scl, self.TR)             # Analyse de la section <Communication>
         tNetWork = tIEDNet.ParseCommSection(comm)               #                           <SubNetWork>
                                                                 #                               <ConnectedAP...>
         ##      Gather information on server from the data model aspect
-        tIEDComm        = IEC_IED_Server.Parse_Server(scl, self.TR, self.Dico)            # IED / SERVER / LD / LN
+        tIEDComm = IEC_IED_Server.Parse_Server(scl, self.TR, self.Dico, StationName)            # IED / SERVER / LD / LN
 
-        tIED            = tIEDComm.Parse_IED(self.TR)
+        tIED,site = tIEDComm.Parse_IED(self.TR)
 
         self.TR.Trace(("nombre de IED/server: "+str(len(tIED)))     , TL.DETAIL)       # 42
         self.TR.Trace(("nombre de subnetWork: "+str(len(tNetWork))) , TL.DETAIL)
@@ -265,18 +271,18 @@ class globalDataModel:
     # @param    DO_Name         Name of the DO
     # @param    DA      instance of a DA
     # @param    fc      Functional Constraint of the data point
-    def BrowseDA(self, tIEC_adresse, DO_Name1 , DO_Name2, DA):
+    def BrowseDA(self, tIEC_adresse, DO_Name1 , DO_Name2, tDA):
 
-        if DA is None:
+        if tDA is None:
             self.TR.Trace(("DA is NONE in BrowseDA DO_Name"+DO_Name1),TL.ERROR)
             return
 
-        for i in range(len(DA)):  # Browse des DA composants le DO.
-            type1    = DA[i].type
-            bType1   = DA[i].bType
-            value    = DA[i].value
-            valKind  = DA[i].valKind
-            FC       = DA[i].fc
+        for DA in tDA:  # Browse des DA composants le DO.
+            type1    = DA.type
+            bType1   = DA.bType
+            value    = DA.value
+            valKind  = DA.valKind
+            FC       = DA.fc
             try:
                 count    = DA[i].count
             except:
@@ -285,13 +291,13 @@ class globalDataModel:
             if count is not None and count !='':
                 cpt = int(count)
                 for j in range(0,cpt):
-                    DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA[i].name + str(j)
-                    DataName2 = DO_Name2 + SEP2 + DA[i].name + str(j) + '['+ FC + ']'
-                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName1, DataName2, FC, DA, value, valKind )
+                    DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA.name + str(j)
+                    DataName2 = DO_Name2 + SEP2 + DA.name + str(j) + '['+ FC + ']'
+                    bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, DataName1, DataName2, FC, DA, value, valKind )
             else:
-                DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA[i].name
-                DataName2  = DO_Name2 + SEP2 + DA[i].name + '['+ FC + ']'
-                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, i, DataName1, DataName2, FC, DA, value, valKind)
+                DataName1  = FC + SEP1 + DO_Name1 + SEP1 + DA.name
+                DataName2  = DO_Name2 + SEP2 + DA.name + '['+ FC + ']'
+                bType2 = self.BrowseTypeSimple(tIEC_adresse, type1, bType1, DataName1, DataName2, FC, DA, value, valKind)
 
     ##
     #
@@ -309,7 +315,7 @@ class globalDataModel:
     # @param    DA
     # @param    value   Actual if defined by SCL or type declaration
     # @param    valkind What actions are possible on the data or not.
-    def BrowseTypeSimple(self, tIEC_adresse, DA_type, bType, idx, DataName1, DataName2, fc, DA, value, valKind):
+    def BrowseTypeSimple(self, tIEC_adresse, DA_type, bType, DataName1, DataName2, fc, DA, value, valKind):
 
         if bType in IecType.bType.Simple:  # Type de base ?
             _iecAdr = IECda("Simple-0   : ", DataName1, DataName2, fc, bType, None, value, valKind)
@@ -317,14 +323,14 @@ class globalDataModel:
             return None
 
         elif (bType == 'Struct'):
-            DA_type = DA[idx].type
+            DA_type = DA.type
             SDA = self.DAType.getIEC_DaType(DA_type)
 
-            for m in range(len(SDA.tBDA)):
-                bType2 = SDA.tBDA[m].type
+            for SDA in SDA.tBDA:
+                bType2 = SDA.type
                 if bType2 in IecType.bType.Simple:
-                    BaseName1 = DataName1 + SEP1 + SDA.tBDA[m].name
-                    BaseName2 = DataName2 + SEP2 + SDA.tBDA[m].name
+                    BaseName1 = DataName1 + SEP1 + SDA.name
+                    BaseName2 = DataName2 + SEP2 + SDA.name
                     _iecAdr = IECda("Simple-xx-1   : ", BaseName1, BaseName2, fc, bType2, None, value, valKind)
                     tIEC_adresse.append(_iecAdr)
                     continue
@@ -332,8 +338,8 @@ class globalDataModel:
                 elif (bType2 == 'Struct'):
                     DA = self.DAType.getIEC_DaType(DA_type)  # DataName SDA.BDA_lst[m].bType)
 ###                    self.BrowseDA(tIEC_adresse, DataName, DA, None)
-                    for n in range(len(DA.tBDA)):
-                        DA1      = DA.tBDA[n]
+                    for DA1 in DA.tBDA:
+#                        DA1      = DA.tBDA[n]
                         type1    = DA1.type
                         bType1   = DA1.bType
                         bName    = DA1.name
@@ -352,21 +358,21 @@ class globalDataModel:
                             tIEC_adresse.append(_iecAdr)
                         elif (DA1.type == 'Struct'):
                             DA2 = self.DAType.getIEC_DaType(DA1.bType)
-                            for k in range(len(DA2.tBDA)):
-                                DataName3 = BaseName1 + SEP1 + DA2.tBDA[k].name
-                                DataName4 = BaseName2 + SEP2 + DA2.tBDA[k].name
-                                bValue = DA2.tBDA[k].value
-                                bValKind = DA2.tBDA[k].valKind
-                                _iecAdr = IECda("Struct-3   : ", DataName3, DataName4, fc, DA2.tBDA[k].type, DA2.tBDA[k].bType,
+                            for BDA in DA2.tBDA:
+                                DataName3 = BaseName1 + SEP1 + BDA.name
+                                DataName4 = BaseName2 + SEP2 + BDA.name
+                                bValue =   BDA.value
+                                bValKind = BDA.valKind
+                                _iecAdr = IECda("Struct-3   : ", DataName3, DataName4, fc, BDA.type, BDA.bType,
                                                 bValue, bValKind)
                                 tIEC_adresse.append(_iecAdr)
                     continue
                 elif (bType2 == 'Enum'):
-                    DataName1 = DataName1 + SEP1 + SDA.tBDA[m].name
-                    DataName2 = DataName2 + SEP2 + SDA.tBDA[m].name
-                    bValue = SDA.tBDA[m].value
-                    bValKind = SDA.tBDA[m].valKind
-                    _iecAdr = IECda("Enum-1     : ", DataName1, DataName2, fc, SDA.tBDA[m].type, SDA.tBDA[m].bType, bValue,
+                    DataName1 = DataName1 + SEP1 + SDA.name
+                    DataName2 = DataName2 + SEP2 + SDA.name
+                    bValue = SDA.value
+                    bValKind = SDA.valKind
+                    _iecAdr = IECda("Enum-1     : ", DataName1, DataName2, fc, SDA.type, SDA.bType, bValue,
                                     bValKind)
                     tIEC_adresse.append(_iecAdr)
                     continue
@@ -376,9 +382,9 @@ class globalDataModel:
                     self.BrowseDA(tIEC_adresse, DataName1, DataName2, DA)
             return None
         elif (bType == 'Enum'):
-            bValue = DA[idx].value
-            bValKind = DA[idx].valKind
-            _iecAdr = IECda("Enum-0     : ", DataName1, DataName2, fc, bType, DA[idx].type, bValue, bValKind)
+            bValue   = DA.value
+            bValKind = DA.valKind
+            _iecAdr = IECda("Enum-0     : ", DataName1, DataName2, fc, bType, DA.type, bValue, bValKind)
             tIEC_adresse.append(_iecAdr)
             return None
 
@@ -417,10 +423,10 @@ class globalDataModel:
     #   @param tAddress  Table of network addresses ConnectedAP.PhysConn.PType
     #
     def GetIPAddress(self, tAddress):
-        for i in range (0,len(tAddress)):
-            self.TR.Trace(("tAddress.type:"+tAddress[i].type + "tAddress.value="+tAddress[i].value),TL.DETAIL)
-            if (tAddress[i].type=="IP"):
-                return(tAddress[i].value)
+        for iAdr in tAddress:
+            self.TR.Trace(("tAddress.type:"+iAdr.type + "tAddress.value="+iAdr.value),TL.DETAIL)
+            if (iAdr.type=="IP"):
+                return(iAdr.value)
         return(None)
 
 #    def CheckDatapointSCL(self, iec):
@@ -455,9 +461,10 @@ class Test_ParcoursDataModel:
                 ip = '0.0.0.0'
             else:
                 ip = ied.IP
-            nbDa = len(GM.tIED)
+            nbIED = len(GM.tIED)
             Resultat = str(time.time() - t0_ied)
-            TX.Trace(("Time for IED:" + ied.name + '(' + ip + ") Number of DA:" + str(nbDa) + "Time" + Resultat),TL.GENERAL)
+            TX.Trace(("Time for IED:" + ied.name + '(' + ip + ") Number of DA:  " + str(len(tIEC_adresse)) + "Time" + Resultat),TL.GENERAL)
+            print('IED: nbIED: '+ str(nbIED) + ' Nb de DA' +  str(len(tIEC_adresse)) + ' temps for browsing:' + Resultat)
 
             index = 0
             IED_ID = ied.name + ied.tAccessPoint[0].name #  ied.name   # TODO ou ied.name+AP_Name

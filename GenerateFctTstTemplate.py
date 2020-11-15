@@ -318,8 +318,8 @@ class CodeGeneration():
             return
 
         ## Create a Python file for each LD
-        fName = 'FctTemplate/Fct_'+LD.inst+'.py'
-        self.FileId = open(fName, "w")
+        fName = FL.rootTemplate+'Fct_'+LD.inst+'.py'
+        self.FileId = open(fName, "a")
         self.TR.Trace(("Create file"+fName),TL.GENERAL)
 
     ## First analyse extract the data being pubished via Report, Goose and dSV
@@ -465,7 +465,7 @@ if __name__ == '__main__':
     tIEDfull=[]
     myCpt = 0
 
-    for file in FL.lstSystem:
+    for file in FL.lstSystem1:
         GM = globalDataModel(TX,FL.root + file, None)
         CG = CodeGeneration("CodeGeneration", TX, GM)
 
@@ -477,8 +477,8 @@ if __name__ == '__main__':
         tLD = []
 
         ## Create a Python file for each LD
-        fNameGlobal = 'FctTemplate/' + file + '_Total.txt'
-        fIdglobal   = open(fNameGlobal, "w")
+        fNameGlobal = FL.rootTemplate + file + '_Total.txt'
+        fIdglobal   = open(fNameGlobal, "a")
 
         for ied in GM.tIED:
 
@@ -490,8 +490,8 @@ if __name__ == '__main__':
 
     T1 = time.time()
     TempsTotal = str(T1 - T0)
-    TX.Trace(("Total execution time:" + file + ':' + TempsTotal),TL.GENERAL)
+    TX.Trace(("Total execution time:" + FL.root + file + ':' + TempsTotal),TL.GENERAL)
 
-    TX.Close()
+#    TX.Close()
 
     print("*** FINISHED ")

@@ -37,6 +37,19 @@ class Parse_LN:
         self.Dyn      = DynImport()     ## Create an instance of DynImpot for private TAG
         self.dico     = _dico           ## Data Type dictionaries (used for DOI and dAI)
 
+    ##
+    #   getGetDA_List(self, iDO, DoName)
+    #
+    #   get the DA list of a given a given DO
+    def getGetDA_List(self, iDO, DaName):
+        DAType = self.dico.DoType.dicDoType.get(iDO.type)
+        tDA=DAType.get('tDA')
+        return(tDA)
+#        for iDA in tDA:
+#            if iDA.name == DaName:
+#                daList = iDA.tDA
+#                print('xxxx')
+##                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName, LN_instance.get('tDO'))
 
     ##
     # \b Parse_LN:
@@ -517,15 +530,18 @@ class Parse_LN:
         _ix             = pDOI.getAttribute("ix")           ## Index of a data element in case of an array type; shall not be used if DOI has no array type
         self.TRX.Trace(("DOI: name:" + DOIname + " desc:" + _desc), TL.DETAIL)
 
+        if DOIname=="PPV":
+            print("PPV")
+
+        doiType = "NotFound"
         for iDO in tDO:
             if iDO.DOname == DOIname:
                 doiType = iDO.type
                 break
 
-
-        iDOI = IED.AccessPoint.Server.LN.DOI(DOIname, doiType, _accessControl,_transient, _desc, _ix) # None for RTE private Type
+        iDOI = IED.AccessPoint.Server.LN.DOI(DOIname, doiType, _accessControl,_transient, _ix, _desc) # None for RTE private Type
         setattr( iLN ,iDOI.DOname,iDOI)
-#        iDOI.tDAI=[]
+        iDOI.tDAI=[]
         pDAI = pDOI.firstChild
 
         while pDAI:
@@ -537,7 +553,7 @@ class Parse_LN:
             if p1.localName == "Val":
                 _value = p1.firstChild.data
                 iDOI.value = _value
-                print("xxxxxxxxxxx Value for DOI", iDOI.DOname, _value)
+##                print("xxxxxxxxxxx Value for DOI", iDOI.DOname, _value)
                 self.TRX.Trace(("    Balise1 <VAL/>: " + _value), TL.DETAIL)
 
             if pDAI.localName == "Private":     # <DAI name="orCat" sAddr="96.1.3.10.4" />
@@ -553,7 +569,7 @@ class Parse_LN:
                         _lnClass      = pI90_2.getAttribute("lnClass")
                         _lnInst       = pI90_2.getAttribute("lnInst")
                         _doName       = pI90_2.getAttribute("doName")
-                        iDOI.IEC_90_2 = IED.AccessPoint.Server.LN.DOI.IEC_90_2(_externalScl,_iedName,_ldInst, _prefix, _lnClass, _lnInst, _doName )
+                        iDOI.IEC_90_2 = IED.AccessPoint.Server.LN.IEC_90_2(_externalScl,_iedName,_ldInst, _prefix, _lnClass, _lnInst, _doName )
 
                 elif type == "IEC_60870_5_104": # WG10 PRIVATE
                     p104 = pDAI.firstChild
@@ -566,21 +582,26 @@ class Parse_LN:
                             _ti         = p104.getAttribute("ti")
                             _usedBy     = p104.getAttribute("usedBy")
                             _inverted   = p104.getAttribute("inverted")
-                            iDOI.IEC104 = IED.AccessPoint.Server.LN.DOI.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
+                            iDOI.IEC104 = IED.AccessPoint.Server.LN.IEC104(_casdu,_ioa, _ti, _usedBy, _inverted )
                 else:
                     self.Dyn.PrivateDynImport(type, pDAI, iDOI)
                     pDAI = pDAI.nextSibling
-                    continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
+                    continue                                    #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
-            if pDAI.localName == "DAI":                             # <DAI name="ctlNum" sAddr="96.1.3.10.6" />
-                pDAI, iDOI = self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
+            if pDAI.localName == "DAI":                         # <DAI name="ctlNum" sAddr="96.1.3.10.6" />
+                DAType = self.dico.DoType.dicDoType.get(iDO.type)
+                tDA = DAType.get('tDA')
+
+                pDAI,  iDAI= self.Parse_DAI_VAL(pDAI, iDOI)     # <DAI name="T" sAddr="96.1.3.10.7" />
+                iDOI.tDAI.append(iDAI)
                 pDAI = pDAI.nextSibling
                 continue                                               #     <DAI name="Test" sAddr="96.1.3.10.8" />
 
             if pDAI.localName == "SDI":                             # <DAI name="Check" sAddr="96.1.3.10.9" />
-                self.Parse_SDI(pDAI, iDOI, DOIname)
+                iDOI = self.Parse_SDI(pDAI, iDOI, DOIname)
                 pDAI = pDAI.nextSibling
-                continue
+                break
+#                continue
 
             pDAI = pDAI.nextSibling
     
@@ -598,6 +619,7 @@ class Parse_LN:
 
     def Parse_DAI_VAL(self, pDAI, iDOI):
         _value = None
+
         if pDAI.localName == "DAI":
             _name    = pDAI.getAttribute("name")  		# The attribute name; the type tAttributeNameEnum restricts to the attribute names
             											# from IEC 61850-7-3, plus new ones starting with lower case letters
@@ -619,13 +641,15 @@ class Parse_LN:
             											# even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
             											# to assure value consistency and value allowance even if valImport is true.
             _desc    = pDAI.getAttribute("desc")   		# Some descriptive text for the attribute
-            _DoDaSdo = ''      						    # Used to distinguish DO from SDO (only one class for both) #implementation
-            _SDO     = ''
             _value   = ''      						    # Actual initialized value
 
-            iDAI = IED.AccessPoint.Server.LN.DAI( _desc, _name, _fc, _dchg, _qchg, _dupd, _sAddr, _bType, _type,
-                                                  _count, _valKind, _valImport, '_', _SDO, _value)
-
+#            for iDA in tDA:
+#                if iDA.name == _name:
+#                    print("iDAi type:" + iDA.type + ', bType: ' + iDA.bType)
+            iDAI = IED.AccessPoint.Server.LN.DAI( _desc, _name, _fc, _bType, _type, _count, _valKind, _valImport, _value, 'DAI')
+#            adr = adr + iDAI.name
+#            daAdr = eval(adr)
+#            setattr(daAdr,iDAI.name,iDAI)
             # Is there a value ?
             p1 = pDAI.firstChild
             if p1 is not None:  # The SCL may contains empty tag like </xxxx> <xxxx/>
@@ -633,8 +657,12 @@ class Parse_LN:
                 while (p1 is not None):
 
                     if p1.localName == "Val":
-                        _value = p1.firstChild.data
+                        if p1.firstChild is not None:
+                            _value = p1.firstChild.data
+                        else:
+                            _value = '*** NONE ***'
                         iDAI.value = _value
+                        setattr(iDOI, iDAI.name, iDAI)
                         self.TRX.Trace(("    Balise1 <VAL/>: " + _value), TL.DETAIL)
 
                     if p1 is not None and p1.localName == "Private":
@@ -648,9 +676,8 @@ class Parse_LN:
             else:
                 pDAI = pDAI.nextSibling
 
-            iDOI.tDAI.append(iDAI)
 
-        return pDAI, iDOI
+        return pDAI, iDAI
 
     """
     The code of Parse_SDI(pDAI1, iDOI, n, TRX)is used to collect the
@@ -671,6 +698,14 @@ class Parse_LN:
                     </SDI>
     """
 
+    def get_SDI(self, pSDI):
+        _name = pSDI.getAttribute("name")
+        _desc = pSDI.getAttribute("desc")
+        _ix = pSDI.getAttribute("ix")
+        _sAddr = pSDI.getAttribute("sAddr")
+        iSDI = IED.AccessPoint.Server.LN.SDI(_desc, _name, _ix, _sAddr)
+        return iSDI
+
     ##
     # \b Parse_SDI
     # @param   pDAI     : the SCL pointer to a SDI
@@ -683,39 +718,46 @@ class Parse_LN:
     # The instances of SDI is added to the DOI by dynamic creation of an attribute (setattr)
     # The code assume that there is a maximum of three levels of SDI.
     #
-    def Parse_SDI(self, pDAI, iDOI, DoName):
-        pDAI1 = pDAI
+    def Parse_SDI(self, pSDI, iDOI, DoName):
+        pSDI1 = pSDI
         BaseName = DoName + '.' + iDOI.DOname
+
+        idxSDI1 = 0
         t_IX = [None, None, None, None]
-        while pDAI1 is not None:
-            if pDAI1.localName is None:
-                pDAI1 = pDAI1.nextSibling
-                continue
-            iSDI1, sdi_name = self.Parse_SDI_Val(pDAI1, iDOI, BaseName, 0, t_IX, '')
-            if pDAI1.firstChild is None:  # No value found by Parse_SDI_Val
-                pDAI1 = pDAI1.nextSibling
-                continue
-            pDAI2 = pDAI1.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
 
-            if pDAI2.localName == "SDI":  # SDI imbriqué
-                while pDAI2 is not None:
-                    if pDAI2.localName == "SDI":  # SDI imbriqué
-                        iSDI2, sdi_name = self.Parse_SDI_Val(pDAI2, iSDI1, BaseName, 1, t_IX, sdi_name)
-                        if pDAI2.firstChild is None:
-                            pDAI2 = pDAI2.nextSibling
-                            continue
-                        pDAI3 = pDAI2.firstChild.nextSibling  # Prochaine balise DAI ou à SDI cas 'origin'.
+        setattr(iDOI, "tSDI1", [])
+        setattr(iDOI, "tDAI" , [])
+        while pSDI1 is not None:
+            if pSDI1.localName is None:
+                pSDI1 = pSDI1.nextSibling
+                if pSDI1 is None:
+                    return iDOI
 
-                        if pDAI3.localName == "SDI":  # SDI imbriqué
-                            while pDAI3 is not None:
-                                if pDAI3.localName == "SDI":  # SDI imbriqué
-                                    iSDI3, sdi_name = self.Parse_SDI_Val(pDAI3, iSDI2, BaseName, 2, t_IX, sdi_name)
-                                pDAI3 = pDAI3.nextSibling
+            if pSDI1.localName=="SDI":
+                iSDI  = self.get_SDI(pSDI1)
+                setattr(iDOI, iSDI.SDIname, iSDI)
+                iDOI.tSDI1.append(iSDI)
+                print("SDI Name:"+iSDI.SDIname)
 
-                    pDAI2 = pDAI2.nextSibling
+                if pSDI1.firstChild is not None:
+                    if pSDI1.firstChild.nextSibling is not None:
+                        pDAI1 = pSDI1.firstChild.nextSibling
+                        while pDAI1 is not None:
+                            if pDAI1.localName == "DAI":  # DAI imbriqué
+### le PDAI est modifié par Parse DAI VAL
+                                (pDAIx, iDAi) = self.Parse_DAI_VAL(pDAI1, iDOI)
+                                setattr(iDOI,iDAi.name,iDAi)
+                                iDOI.tDAI.append(iDAi)
+                                print("   DAI " + iDAi.name  + 'value:' + iDAi.value)
+                            pDAI1 = pDAI1.firstChild
+                            if pDAI1 is not None:
+                                pDAI1 = pDAI1.nextSibling
 
-            pDAI1 = pDAI1.nextSibling
-        return  # tDAI #.nextSibling,
+                idxSDI1 = idxSDI1 + 1
+
+            pSDI1 = pSDI1.nextSibling
+
+        return iDOI
 
     ##
     # \b Parse_SDI_Val
@@ -733,7 +775,7 @@ class Parse_LN:
     # \b Principle
     # The instances of SDI is added to the DOI by dynamic creation of an attribute (setattr)
 
-    def Parse_SDI_Val(self, pDAI_v, iDOI, BaseName, n, t_IX, sdi_name):
+    def  Parse_SDI_Val(self, pDAI_v, iDOI, BaseName, n, t_IX, sdi_name):
         _desc   = pDAI_v.getAttribute("desc")
         _name   = pDAI_v.getAttribute("name")
         _sdi_ix = pDAI_v.getAttribute("ix")
@@ -757,7 +799,7 @@ class Parse_LN:
 
         # Reading the Value
         pVAL = pDAI_v.firstChild.nextSibling
-        pVAL, iSDI = self.Parse_DAI_VAL(pVAL, iSDI)
+        pVAL, iSDI = self.Parse_DAI_VAL(pVAL, iSDI, [])
         if iSDI.value is not None:
             found = False
             for i in range(0, 2):

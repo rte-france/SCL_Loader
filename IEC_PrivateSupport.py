@@ -160,7 +160,7 @@ class DynImport:
             else:
                 __exception = sys.exc_info()[0]
                 if __exception is not None:
-                    self.Trace(('Exception: ' + __exception.__name__),TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
+                    self.TR(("Exception: " + __exception.__name__), TL.ERROR)  # Display the exception, usually bad FileName, ClassName or FunctionName
                     exit(-2)
 
             return iFileName,iClass,iMethod,

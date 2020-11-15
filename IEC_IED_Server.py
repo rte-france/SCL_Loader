@@ -31,19 +31,21 @@ import IEC_ParcoursDataModel
 #   This class is parsing the Server section of the XML and its subsequent LogicalDevices
 #
 #   The main function is Parse IED, which will invoque Parse_Server method and iterativily call IEC_LN..
-
+class Poste:
+    def __init__(self, _name):
+        self.name = _name
 class Parse_Server:
     ## \b Description
     #   Constructor is used to keep initialize the Parse_LN class (forwarding TRACE class).
     # @param _scl: pointer to the SCL structure created by miniDOM
     # @param _TRX: Trace function
-    def __init__(self, _scl, TR, Dico):       ## Constructor for Server
-        self.scl        = _scl          ## Pointer to the SCL as provided by 'minidom'.
-        self.TR         = TR            ## Instance of the TRACE service.
-        self.pLN        = Parse_LN(TR, Dico)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
-        self.Dyn        = DynImport()
-        self.Dict       = Dico          ## From the global model, access to LNode, DO, DA and Enum Types dictionary
-
+    def __init__(self, _scl, TR, _Dico, _Name):       ## Constructor for Server
+        self.scl         = _scl          ## Pointer to the SCL as provided by 'minidom'.
+        self.TR          = TR            ## Instance of the TRACE service.
+        self.pLN         = Parse_LN(TR, _Dico)  ## Invoking the constructor of ParseLN, to initialize TRACE service.
+        self.Dyn         = DynImport()
+        self.Dict        = _Dico          ## From the global model, access to LNode, DO, DA and Enum Types dictionary
+        self.StationName = _Name
 
     ##
     # Parse the IED list created by  a  self.scl.getElementsByTagName("IED"
@@ -93,7 +95,7 @@ class Parse_Server:
                 pLNi = pLNi.nextSibling
                 continue
 
-            iLN = self.pLN.Parse_LN(pLNi, iIED_array.name, iIED_array.tAccessPoint[idxAP].name, iIED_array.tDAI)
+            iLN = self.pLN.Parse_LN(pLNi, iIED_array.name, iIED_array.tAccessPoint[idxAP].name,'...') #, iIED_array.tDAI)
             tLN.append(iLN)
 
             LNtxt = ("       LN: " + iLN.lnPrefix + '_' + iLN.lnType + '_' + iLN.lnInst + \
@@ -109,14 +111,14 @@ class Parse_Server:
 
             iLN.tDO = lstDO.tDO
             for iDO in lstDO.tDO:
-                try:
-                    x= eval( 'iLN.' +iDO.DOname)
-                except:
-                    e = sys.exc_info()[0]
-                    print(e)
-
+#                try:
+#                    x= eval( 'iLN.' +iDO.DOname)
+#                except:
+#                    e = sys.exc_info()[0]
+#                    print(e, 'DO: HS', iDO.DOname)
                 try:
                     setattr(iLN,iDO.DOname, iDO)
+#                    print('OK: DO: ', iDO.DOname)
 
                 except TypeError as ex:             # For DOI 'name' is renamed to 'DOame' (The CDC DPL as a 'name' property)
                     print("Exception" + ex)
@@ -165,7 +167,8 @@ class Parse_Server:
         LD_index  = 0
         tIED_array   = []       ## Iterative version of the Data Model: Table of LN, Table of DO....
         tIED_struct  = []       ## Named based version of the Data Model:  MEASURE.MMXU.X.X
-
+        IED_LST = ()
+        Site = Poste(self.StationName)
         IEDlst = self.scl.getElementsByTagName("IED")
         for ied in IEDlst:
             IEDname             = ied.getAttribute("name")                 ## The identification of the IED, 'Template' in ICD, unique in SCD.
@@ -182,7 +185,7 @@ class Parse_Server:
             iIED_array  = IED(IEDname, _desc, _type, _manufacturer, _configVersion, _originalSclVersion, _originalSclRevision, _engRight, _owner)
 
             iIED_struct = IED(IEDname, _desc, _type, _manufacturer, _configVersion, _originalSclVersion, _originalSclRevision, _engRight, _owner)
-
+            setattr(Site,IEDname,iIED_struct)
             Services = ied.firstChild.nextSibling
     # Skip any Private...
             while (Services.localName is None):
@@ -204,12 +207,14 @@ class Parse_Server:
             if Services.localName=="AccessPoint":
                 pAcccess = Services
 
-                _name   = pAcccess.getAttribute("name")         ## The description text
+                APname   = pAcccess.getAttribute("name")         ## The description text
                 _desc   = pAcccess.getAttribute("desc")         ## Reference identifying this access point within the IED
                 _router = pAcccess.getAttribute("router")       ## The presence and setting to true defines this IED to have a router function.
                 _clock  = pAcccess.getAttribute("clock")        ## The presence and setting to true defines this IED to be a master clock at this bus.
-                _AccessPoint = IED.AccessPoint(_name,_desc,_router,_clock )
+                _AccessPoint = IED.AccessPoint(APname,_desc,_router,_clock )
                 iIED_array.tAccessPoint.append(_AccessPoint)
+                ied = eval('Site.'+IEDname)
+                setattr(ied,APname,_AccessPoint)
                 idxAccessPoint = len(iIED_array.tAccessPoint)-1
 
                 if Services.firstChild is None:
@@ -239,8 +244,10 @@ class Parse_Server:
                             _timeout = ServerSection.getAttribute("timeout")   ## Time out in seconds: if a started transaction isnot completed within this time, it is cancelled and reset
                             iServer = IED.AccessPoint.Server(_desc,_timeout)
                             iIED_array.tAccessPoint[idxAccessPoint].tServer.append(iServer)
-
+                            iedAP = eval('Site.' + IEDname + '.' + APname)
+                            setattr(iedAP, 'SRV', iServer)
                             idxServer =0
+                            iedSRV = eval('Site.' + IEDname + '.' + APname + '.SRV')
 
                             pServer   = ServerSection.firstChild.nextSibling
                             while pServer.nextSibling:
@@ -257,6 +264,7 @@ class Parse_Server:
         # TODO eventually AccesPoint without server
                                    iAuthentication = IED.AccessPoint.Server.Authentication(none,password,weak,strong,certificate)
                                    iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer].authentication = iAuthentication
+                                   setattr(iedSRV, 'Auth', iAuthentication)
 
                                    pServer = pServer.nextSibling
                                    continue
@@ -267,7 +275,7 @@ class Parse_Server:
 
                                 if pServer.localName == "LDevice":
                                     iDeviceInstance,Name = self.Parse_LD_LN(iIED_array, pServer, idxAccessPoint, idxServer)
-                                    setattr(iIED_array.tAccessPoint[idxAccessPoint].tServer[idxServer], Name, iDeviceInstance)  # = LDeviceInstance
+                                    setattr(iedSRV, Name, iDeviceInstance)  # = LDeviceInstance
                                     pServer = pServer.nextSibling
                                     continue
 
@@ -278,13 +286,14 @@ class Parse_Server:
             tIED_array.append(iIED_array)
 
 # Version structurée
+#            IED_LST.append(iIED_struct)
 #            iIED_struct.Server   = tServer
 #            tIED_struct.append(iIED_struct)
             continue
             self.TR.Trace(("FIN SERVER"), TL.DETAIL)
 
         self.TR.Trace(("FIN IED"),TL.DETAIL)
-        return tIED_array
+        return tIED_array, Site
 
 ##
 # \b Test_IED_Server: unitary test for Parse_IED

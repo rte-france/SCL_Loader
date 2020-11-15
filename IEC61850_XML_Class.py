@@ -378,7 +378,7 @@ class IED:
         self.owner              = _owner                ## The owner project of this IED, i.e. the Header id of that SCD file of that project
         self.IP                 = None                  ## APP IP address from the communication
         self.tAddress           = []                    ## APP Table of MMS adresses
-        self.tDAI               = []                    ## APP Table of actual DOI/..SDI../DAI/ values.
+#        self.tDAI               = []                    ## APP Table of actual DOI/..SDI../DAI/ values.
         self.tAccessPoint       = []                    ## APP Table of the Access-Point for this IED
 
     ##
@@ -471,6 +471,7 @@ class IED:
 #+                    self.tRCB       =  []       ## Array of RCB
                     self.tRptCtrl   =  []       ## Array of ReportControl
                     self.tDO        = []        ## Array of (from LNOType).
+                    self.tDOI       = []        ## Data Object Initialization
             ##      self.DO_Name    = ...       ## Dynamically added with 'setattr' to get actual DO_Name
 
             # Définition de la class Report Control, avec des sous classes
@@ -637,8 +638,7 @@ class IED:
 
 
                     class ExtRef:
-                        def __init__(self,  _iedName, _ldInst, _prefix, _lnClass, _lnInst, _doName, _daName, _intAddr, _desc, _service,
-                                            _srcLDInst, _srcPrefix, _srcLNClass, _srcLNInst, _srcCBName, _pDO, _pLN, _pDA, _pServT):
+                        def __init__(self,  _iedName, _ldInst, _prefix, _lnClass, _lnInst, _doName, _daName, _intAddr, _desc, _service,_srcLDInst, _srcPrefix, _srcLNClass, _srcLNInst, _srcCBName, _pDO, _pLN, _pDA, _pServT):
 
                             self.iedName     = _iedName     # The name of the IED from where the input comes. For IED internal references the value @ may be used.
                             self.ldInst      = _ldInst      # The LD instance name from where the input comes
@@ -835,19 +835,13 @@ class IED:
                 #  @param _value(iec/app) To store pre-defined value at DAi level
 
                 class DAI:
-                    def __init__(self, _desc,_name,_fc,_dchg,_qchg,_dupd,_sAddr,_bType,_type
-                                    ,_count,_valKind,_valImp,_DO,_SDO,_value):
+                    def __init__(self, _desc,_name,_fc,_bType,_type,_count,_valKind,_valImp,_value,_do_sdo):
 
                         self.desc    = _desc    # Some descriptive text for the attribute
                         self.name    = _name    # The attribute name; the type tAttributeNameEnum restricts to the attribute names
                                                 # from IEC 61850-7-3, plus new ones starting with lower case letters
                         self.fc      = _fc      # The functional constraint for this attribute; fc=SE always also implies fc=SG;
                                                 # fc=SG means that the values are visible, but not editable
-                        self.dchg    = _dchg    # Defines which trigger option is supported by the attribute (value true means supported). One of those allowed according to IEC61850-7-3 shall be chosen.
-                        self.qchg    = _qchg    #  One of those allowed according to IEC61850-7-3 shall be chosen.
-                        self.dupd    = _dupd
-
-                        self.sAddr   = _sAddr   # an optional short address of this  attribute (see 9.5.4.3)
 
                         self.bType   = _bType   # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
                         self.type    = _type    # The basic type of the attribute, taken from tBasicTypeEnum (see 9.5.4.2)
@@ -858,9 +852,8 @@ class IED:
                         self.valImport=_valImp  # if true, an IED / IED configurator can import values modified by another tool from an SCD file,
                                                 # even if valKind=RO or valKind=Conf. It is the responsibility of the IED configurator
                                                 # to assure value consistency and value allowance even if valImport is true.
-                        self.DoDaSdo = _DO      # Used to distinguish DO from SDO (only one class for both) #implementation
-                        self.SDO     = _SDO
                         self.value   = _value   #
+                        self.do_sdo  = _do_sdo  # need some special trick for SDO...
 #                        self.tDAI    = []
                         ##
                         # \b SDI A Sub Data attribute instance, allow to defined values at Sub Data Level
@@ -870,42 +863,42 @@ class IED:
                         # @param ix(iec)	    Index of the DAI element in case of an array type
                         # @param sAddr(iec)	    Short address of this Data attribute
 
-                    class SDI:  # Utilisé notamment pour les Contrôles complexes
-                        def __init__(self, _desc, _name, _ix,_sAddr, _value ):  # , _tSDI):
-                            self.desc   = _desc          ## desc	        The description text for the DAI element
-                            self.SDIname = _name         ## name	        The name of the Data attribute whose value is given.
-                            self.ix     = _ix            ## ix	            Index of the DAI element in case of an array type
-                            self.sAddr  = _sAddr         ## sAddr	        Short address of this Data attribute
-                            self.value  = _value         ## value           Preset value
+                class SDI:  # Utilisé notamment pour les Contrôles complexes
+                    def __init__(self, _desc, _name, _ix,_sAddr ):  # , _tSDI):
+                        self.desc   = _desc          ## desc	        The description text for the DAI element
+                        self.SDIname = _name         ## name	        The name of the Data attribute whose value is given.
+                        self.ix     = _ix            ## ix	            Index of the DAI element in case of an array type
+                        self.sAddr  = _sAddr         ## sAddr	        Short address of this Data attribute
+#                            self.value  = _value         ## value           Preset value
 
-                    ##
-                    # \b IEC_90_2  for IEC61850-90-2 communication (substation to substation communication)
-                    #
-                    # @param _externalScl : define SCL for the other part of the link
-                    # @param _iedName     : name of the IED
-                    # @param _ldInst      : identification of the logical device
-                    # @param _prefix      : LN prefix
-                    # @param _lnClass     : LN class
-                    # @param _lnInst      : LN instance
-                    # @param _doName      : Data Object to read (?)
+                ##
+                # \b IEC_90_2  for IEC61850-90-2 communication (substation to substation communication)
+                #
+                # @param _externalScl : define SCL for the other part of the link
+                # @param _iedName     : name of the IED
+                # @param _ldInst      : identification of the logical device
+                # @param _prefix      : LN prefix
+                # @param _lnClass     : LN class
+                # @param _lnInst      : LN instance
+                # @param _doName      : Data Object to read (?)
 
-                    class IEC_90_2:             # Private defined by WG10 eTr, technical report for 90-2 communication
-                        def __init__(self,_externalScl,_iedName, _ldInst, _prefix,_lnClass,_lnInst,_doName):
-                            self.externalScl = _externalScl  ## define SCL for the other part of the link
-                            self.iedName     = _iedName      ## name of the IED
-                            self.ldInst      = _ldInst       ## identification of the logical device
-                            self.prefix      = _prefix       ## LN prefix
-                            self.lnClass     = _lnClass      ## LN class
-                            self.lnInst      = _lnInst       ## LN instance
-                            self.doName      = _doName       ## Data Object to read (?)
-                            
-                    class IEC104:              # Private define by WG10 TR 90-2 IEC60870-104 SCADA communication
-                        def __init__(self,_casdu,_ioa,_ti,_usedBy,_inverted):
-                            self.casdu    = _casdu
-                            self.ioa      = _ioa
-                            self.ti       = _ti
-                            self.usedBy   = _usedBy
-                            self.inverted = _inverted
+                class IEC_90_2:             # Private defined by WG10 eTr, technical report for 90-2 communication
+                    def __init__(self,_externalScl,_iedName, _ldInst, _prefix,_lnClass,_lnInst,_doName):
+                        self.externalScl = _externalScl  ## define SCL for the other part of the link
+                        self.iedName     = _iedName      ## name of the IED
+                        self.ldInst      = _ldInst       ## identification of the logical device
+                        self.prefix      = _prefix       ## LN prefix
+                        self.lnClass     = _lnClass      ## LN class
+                        self.lnInst      = _lnInst       ## LN instance
+                        self.doName      = _doName       ## Data Object to read (?)
+
+                class IEC104:              # Private define by WG10 TR 90-2 IEC60870-104 SCADA communication
+                    def __init__(self,_casdu,_ioa,_ti,_usedBy,_inverted):
+                        self.casdu    = _casdu
+                        self.ioa      = _ioa
+                        self.ti       = _ti
+                        self.usedBy   = _usedBy
+                        self.inverted = _inverted
 
                 ##
                 # \b DataSet create a set of data for communication via GOOSE or Report
@@ -968,7 +961,7 @@ class DataTypeTemplates:
     ##
     #  FC          : The set of standardized functional class
     class FC:
-            lstFC = ['ST', 'MX', 'CF', 'DC', 'SP', 'SV', 'SG', 'SE', 'SR', 'OR', 'BL', 'EX', 'CO']
+        lstFC = ['ST', 'MX', 'CF', 'DC', 'SP', 'SV', 'SG', 'SE', 'SR', 'OR', 'BL', 'EX', 'CO']
 
     ##
     # \b bType The complete list of basic type (without Enum nor Struct for application purpose)
