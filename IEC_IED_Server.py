@@ -111,14 +111,8 @@ class Parse_Server:
 
             iLN.tDO = lstDO.tDO
             for iDO in lstDO.tDO:
-#                try:
-#                    x= eval( 'iLN.' +iDO.DOname)
-#                except:
-#                    e = sys.exc_info()[0]
-#                    print(e, 'DO: HS', iDO.DOname)
                 try:
                     setattr(iLN,iDO.DOname, iDO)
-#                    print('OK: DO: ', iDO.DOname)
 
                 except TypeError as ex:             # For DOI 'name' is renamed to 'DOame' (The CDC DPL as a 'name' property)
                     print("Exception" + ex)

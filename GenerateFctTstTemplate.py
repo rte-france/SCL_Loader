@@ -390,7 +390,7 @@ class CodeGeneration():
                                 CB = eval(refCB)
 
                                 CBname = CB.split('.')[1]
-                                print("CBName:" + CBname )
+##                                print("CBName:" + CBname )
 
                                 nbDA, nbSV = self.GetInputData(CB, do.name)
                                 nbDASubscribed = nbDASubscribed + nbDA
@@ -494,4 +494,3 @@ if __name__ == '__main__':
 
 #    TX.Close()
 
-    print("*** FINISHED ")

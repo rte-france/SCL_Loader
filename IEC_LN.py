@@ -45,11 +45,6 @@ class Parse_LN:
         DAType = self.dico.DoType.dicDoType.get(iDO.type)
         tDA=DAType.get('tDA')
         return(tDA)
-#        for iDA in tDA:
-#            if iDA.name == DaName:
-#                daList = iDA.tDA
-#                print('xxxx')
-##                iDOI, iLN = self.Parse_DOI(iLN, pLN, DoName, LN_instance.get('tDO'))
 
     ##
     # \b Parse_LN:
@@ -530,9 +525,6 @@ class Parse_LN:
         _ix             = pDOI.getAttribute("ix")           ## Index of a data element in case of an array type; shall not be used if DOI has no array type
         self.TRX.Trace(("DOI: name:" + DOIname + " desc:" + _desc), TL.DETAIL)
 
-        if DOIname=="PPV":
-            print("PPV")
-
         doiType = "NotFound"
         for iDO in tDO:
             if iDO.DOname == DOIname:
@@ -737,7 +729,6 @@ class Parse_LN:
                 iSDI  = self.get_SDI(pSDI1)
                 setattr(iDOI, iSDI.SDIname, iSDI)
                 iDOI.tSDI1.append(iSDI)
-                print("SDI Name:"+iSDI.SDIname)
 
                 if pSDI1.firstChild is not None:
                     if pSDI1.firstChild.nextSibling is not None:
@@ -748,7 +739,6 @@ class Parse_LN:
                                 (pDAIx, iDAi) = self.Parse_DAI_VAL(pDAI1, iDOI)
                                 setattr(iDOI,iDAi.name,iDAi)
                                 iDOI.tDAI.append(iDAi)
-                                print("   DAI " + iDAi.name  + 'value:' + iDAi.value)
                             pDAI1 = pDAI1.firstChild
                             if pDAI1 is not None:
                                 pDAI1 = pDAI1.nextSibling

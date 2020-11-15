@@ -75,8 +75,8 @@ class MainWindow(QMainWindow):
             self.grid = QVBoxLayout()
             self.grid.setSpacing(10)
 
-            title = QLabel('xxxxxxxxxxxxxx Title xxxxxxxxxxxxxx')
-            self.grid.addWidget(title) #, 0, 0, 1, 3)
+#            title = QLabel('xxxxxxxxxxxxxx Title xxxxxxxxxxxxxx')
+#            self.grid.addWidget(title) #, 0, 0, 1, 3)
 
     ## Button to access to other functions
             self.OpenFile = QPushButton()
@@ -183,7 +183,6 @@ class MainWindow(QMainWindow):
             fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_GIL\SCL_files\*.*', " IEC61850 files")
 
             if fname:
-                print(fname)
                 self.GM = globalDataModel(TX, fname[0], None)
                 self.DisplayTree(self.GM.tIED,self.GM)
                 self.treeView.expandAll()
@@ -204,7 +203,6 @@ class MainWindow(QMainWindow):
             self.show()
 
         def selectNone(self):
-            print("NONE")
             for button in self.box:
                 if button.isChecked()==True:
                     button.setChecked(False)
@@ -212,7 +210,6 @@ class MainWindow(QMainWindow):
             self.hLayoutButtons.invalidate()    # Plus lent que button.repaint()
 
         def selectAll(self):
-            print("ALL")
             for button in self.box:
                 if button.isChecked()==False:
                     button.setChecked(True)
@@ -376,8 +373,6 @@ class MainWindow(QMainWindow):
                     if iDA.bType == 'Struct':
                         iDA = self.GM.DAType.getIEC_DaType(iDA.type)
                         self.Structure(_DA, iDA)
-    #            else:
-    #                print('FC' + iDA.fc + 'removed')
 
         #    def addSDI(self, _DO, SDI_name):
     #        _name  = StandardItem(SDI_name, 10, set_bold=True)
@@ -387,7 +382,6 @@ class MainWindow(QMainWindow):
         def add_DO_tDA(self, _DO, iDO, tDOI):
             for iDA in iDO.tDA:
                 if iDA.do_sdo == 'SDO':
-    #                print("found SDO")
 
                     _SDO = self.Insert_SDO_DOI(_DO, iDA)
                     instDO = self.GM.DOType.getIEC_DoType(iDA.type)
@@ -492,7 +486,7 @@ class MainWindow(QMainWindow):
             col1 = self.treeView.columnAt(x)
             col2 = self.treeView.columnAt(y)
             data = self.treeView.pos()
-            print(col1, col2, data)
+#            print(col1, col2, data)
 
     ### KEEP
     #        for ix in indexes:
@@ -514,7 +508,7 @@ class MainWindow(QMainWindow):
                 index = index.parent()
 
             path = index.data() + '.' + path    # Insert last Data bit.
-            print ("Path:" +   path)
+##            print ("Path:" +   path)
             act_IED=0
             act_TypeDefinition = 1
             act_ReadWriteData = 2
