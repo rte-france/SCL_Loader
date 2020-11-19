@@ -10,16 +10,18 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-from IEC61850_XML_Class import IED
-from IEC61850_XML_Class import DataTypeTemplates as DT
+from IEC61850_XML_Class     import IED
+from IEC61850_XML_Class     import DataTypeTemplates as DT
+from GenerateFctTstTemplate import CodeGeneration
 
 import sys
+import time
 import textwrap
 import PyQt5
 from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QLineEdit, QLabel, QMessageBox, QMenu,QFrame,QDesktopWidget
 from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QWidget, QCheckBox, QLabel
 from PyQt5.QtWidgets import QFileDialog
-from PyQt5.Qt import QStandardItemModel, QStandardItem
+from PyQt5.Qt        import QStandardItemModel, QStandardItem
 from PyQt5.QtGui import QFont, QColor
 
 from PyQt5.QtCore import (QDate, QDateTime, QRegExp, QSortFilterProxyModel, Qt,
@@ -66,6 +68,8 @@ class MainWindow(QMainWindow):
             self.setWindowTitle('RTE IEC68150 ENGINEERING TOOLS')
             self.resize(800, 900)
 
+            self.fname = None
+
             qr = self.frameGeometry()  # geometry of the main window
             cp = QDesktopWidget().availableGeometry().center()  # center point of screen
             qr.moveCenter(cp)  # move rectangle's center point to screen's center point
@@ -78,23 +82,33 @@ class MainWindow(QMainWindow):
 #            title = QLabel('xxxxxxxxxxxxxx Title xxxxxxxxxxxxxx')
 #            self.grid.addWidget(title) #, 0, 0, 1, 3)
 
-    ## Button to access to other functions
-            self.OpenFile = QPushButton()
-            self.button2 = QPushButton()
-            self.button3 = QPushButton()
-            self.OpenFile.setText(' SELECT FILE ')
-            self.button2.setText(' CHECK VALUE ')
-            self.button3.setText(' EDIT  ')
+    ## Layout for the set of action buttons
             self.hLayout = QHBoxLayout()
+
+   ## Check Value Button
+            self.CheckValue = QPushButton()
+            self.CheckValue.setText(' CHECK VALUE ')
+            self.CheckValue.clicked.connect(self.ExecCheckValue)
+            self.hLayout.addWidget(self.CheckValue)
+
+    ##  Template Generation Button
+            self.template = QPushButton()
+            self.template.setText(' TEMPLATE ')
+            self.template.clicked.connect(self.ExecTemplate)
+            self.hLayout.addWidget(self.template)
+
+    ##  Open File  Button
+            self.OpenFile = QPushButton()
+            self.OpenFile.setText(' SELECT FILE ')
+            self.OpenFile.clicked.connect(self.getFile)
             self.hLayout.addWidget(self.OpenFile)
-            self.hLayout.addWidget(self.button2)
-            self.hLayout.addWidget(self.button3)
+
+    ## Add horizontal layout of buttons to the grid layout.
             self.grid.addLayout(self.hLayout)
 
     ## Tick boxes for filtering for funnctional constraint
 #            i = 0
 
-            self.OpenFile.clicked.connect(self.getFile)
             self.frame = QFrame(self)
 #            self.frame.setFrameShape(QFrame.StyledPanel)
 #            self.frame.setFrameShadow(QFrame.Raised)
@@ -178,15 +192,37 @@ class MainWindow(QMainWindow):
 
             return None
 
+        def ExecCheckValue(self):
+            print('Check Value Button')
+
+        def ExecTemplate(self):
+            if self.fname is not None:
+                print('Launch Template Generation')
+                TX = Trace(TL.DETAIL, "Trace_FctTst.txt")
+                CG = CodeGeneration("CodeGeneration", TX, self.GM)
+                CG.GenerateTemplate(self.fname[0], self.GM)
+            else:
+                msg = QMessageBox()
+                msg.setWindowTitle("Alert")
+                msg.setText("You need to load file first")
+                x= msg.exec_()
+
         def getFile(self):
 
-            fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_GIL\SCL_files\*.*', " IEC61850 files")
+            self.fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_GIL\SCL_files\*.*', " IEC61850 files")
 
-            if fname:
-                self.GM = globalDataModel(TX, fname[0], None)
+            if self.fname:
+                T0 = time.time()
+                self.GM = globalDataModel(TX, self.fname[0], None)
+                T1 = time.time()
+                self.treeView.setUpdatesEnabled(False)
                 self.DisplayTree(self.GM.tIED,self.GM)
-                self.treeView.expandAll()
+#                self.treeView.expandAll()
+                self.treeView.setUpdatesEnabled(True)
                 self.show()
+                T2 = time.time()
+                print("Durée chargement:" + str(T1 - T0))
+                print("Durée affichage :" + str(T2 - T1))
 
 
         def butState(self,box):
@@ -198,7 +234,9 @@ class MainWindow(QMainWindow):
             self.treeView.setModel(self.treeModel)
             self.treeView.expandAll()
             self.rootNode.removeRows(0,self.rootNode.rowCount())
+
             self.DisplayTree(self.GM.tIED,self.GM)
+
             self.treeView.expandAll()
             self.show()
 
@@ -222,6 +260,8 @@ class MainWindow(QMainWindow):
                 if chkBox.text() == fc:
                     x= chkBox.isChecked()
                     return x
+
+
 
         def DisplayTree(self, tIED, GM):
             #        tIED = GM.tIED
@@ -258,6 +298,7 @@ class MainWindow(QMainWindow):
             self.dataKey = iIED.name
             self.line    = self.line + 1
             _ied  = StandardItem(iIED.name , 12, set_bold=True)
+            _ied.setCheckable(True)
             _desc = StandardItem(iIED.type , 11, set_bold=False)
             _vide1 = StandardItem('.', 11, set_bold=False)
             _vide2 = StandardItem('.', 11, set_bold=False)
@@ -288,6 +329,7 @@ class MainWindow(QMainWindow):
         def add_LD(self, T_SRV, iLD):
             ldName  = iLD.inst + ', ' + iLD.ldName
             _ldName = StandardItem(ldName,    11, set_bold=False)
+            _ldName.setCheckable(True)
             _desc   = StandardItem(iLD.desc,  11, set_bold=False)
             _vide1 = StandardItem('.', 11, set_bold=False)
             _vide2 = StandardItem('.', 11, set_bold=False)

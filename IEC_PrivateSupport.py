@@ -145,6 +145,11 @@ class DynImport:
     #
     def getClassMethod(self, privateTag):
         iDico = self.DicoPrivate.get(privateTag)    ## Try dictionary first
+        if privateTag is None:
+            return None,None,None
+        if iDico is None:
+            return None,None,None
+        print(privateTag)
         if iDico is not None:
             iFileName = iDico.get("FileName")
             iClass    = iDico.get("ClassName")
@@ -204,7 +209,10 @@ class DynImport:
 
         FileName, ClassName, FunctionName =self.getClassMethod(TypePrivate)
         if (FileName is None) or (ClassName is None) or (FunctionName is None):
-            self.TR.Trace(("UNREGISTERED PRIVATE, type" + TypePrivate),TL.ERROR)
+            try:
+                self.TR.Trace(("UNREGISTERED PRIVATE, type" + TypePrivate),TL.ERROR)
+            except:
+                self.TR.Trace(("UNREGISTERED PRIVATE without type" ),TL.ERROR)
             return
 
         try:

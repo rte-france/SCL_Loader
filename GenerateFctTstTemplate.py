@@ -449,7 +449,7 @@ class CodeGeneration():
                         LN = LD.LN[m]
                         _txtLN = LD.LN[m].lnPrefix + LD.LN[m].lnClass + LD.LN[m].lnInst
 
-                        LNodeType = GM.LNode.getIEC_LNodeType(LN.lnType)  # Look-up for LNType
+                        LNodeType = self.GM.LNode.getIEC_LNodeType(LN.lnType)  # Look-up for LNType
                         # TODO traiter le cas ou on le trouve pas !!!
                         if LN.lnClass == 'LLN0':
                             nbDAPub,nbDASub,nbSV =  self.Parse_LN0(LD, LN, _txtLN)
@@ -457,6 +457,29 @@ class CodeGeneration():
 
         return
 
+    def GenerateTemplate(self, file, GM):
+        TX = Trace(TL.DETAIL, "Trace_FctTst.txt")
+        CG = CodeGeneration("CodeGeneration", TX, GM)
+
+        CG.LNodeType = GM.LNode
+        CG.DOType    = GM.DOType
+        T0  = time.time()
+        tLD = []
+
+        ## Create a Python file for each LD
+        fNameGlobal = file + '_Total.txt'
+        fIdglobal   = open(fNameGlobal, "a")
+
+        for ied in GM.tIED:
+            t0 = time.time()
+            myCpt = CG.ParcoursDataModel(ied,tLD,fIdglobal)
+            TX.Trace(("Counter:"+str(myCpt)),TL.DETAIL)
+
+        fIdglobal.close()
+
+        T1 = time.time()
+        TempsTotal = str(T1 - T0)
+        TX.Trace(("Total execution time:" + FL.root + file + ':' + TempsTotal),TL.GENERAL)
 
 if __name__ == '__main__':
 

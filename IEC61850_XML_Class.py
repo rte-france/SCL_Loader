@@ -10,6 +10,7 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
+# -*- coding: utf-8 -*-
 """@package docstring
 #This class analyse the communication TAG:
 #< Communication >

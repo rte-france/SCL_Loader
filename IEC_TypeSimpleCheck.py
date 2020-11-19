@@ -10,6 +10,7 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
+# -*- coding: utf-8 -*-
 from IEC_Trace      import Trace
 from IEC_Trace      import Level  as TL
 

@@ -10,6 +10,7 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Control System testing.
 #
 
+# -*- coding: utf-8 -*-
 from importlib import import_module
 import time
 

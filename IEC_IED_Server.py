@@ -12,6 +12,7 @@
 #
 import sys
 
+# -*- coding: utf-8 -*-
 import xml.dom.minidom as dom
 
 from IEC_FileListe      import FileListe  as  FL
