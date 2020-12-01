@@ -31,8 +31,13 @@ setup(
     long_description=LONG_DESCRIPTION,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
     package_dir={'': 'src'},  # Optional
-    packages=setuptools.find_namespace_packages(where="src", exclude=["*.tests", "*.tests.*"]),  # Required
+    packages=["scl_loader"],  # Required
     python_requires='>=3.6, <4',
+    classifiers=[
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+    ],
 
     # If there are data files included in your packages that need to be
     # installed, specify them here.
@@ -46,8 +51,6 @@ setup(
     install_requires=REQUIREMENTS,
 
     entry_points={  # Optional
-        'console_scripts': [
-            "scl_loader = scl_loader:main"
-        ],
+        'console_scripts': [],
     },
 )

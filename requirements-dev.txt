@@ -1,4 +1,6 @@
 setuptools
+bumpversion
+twine
 wheel
 pycodestyle
 pytest
