@@ -1,28 +1,48 @@
-# SCL_Loader
+# RTE - scd_manager
 
-The SCL loader software parse and load in memory IEC61850 SCL files (system and/ied levem)
+## Installation
 
-Basically all IEC61850 classes from a SCL files (SCD, ICD, CID, IID) are mapped into 
-Python Class, with table of classes when needed.
+### Installation du package Python
 
-There is a generic way to deal with Private class, hence private can be dealt with and still remains
-private (based on dynamic class loading).
+Si la machine cible a accès au réseau RTE et si Python 3.8 y est déjà installé, il suffit d'exécuter la commande
+suivante pour installer l'application :
 
-Most likely there are still some issues depending on the complexity of the SCL.
-It has been tested with several files, but those cannot be published, if anyone reading this can share SCL files to help the validation...
+```bash
+pip3 install scd_manager -U --user
+```
 
-This is still at an early stage. The current actual "application" is to automtically generate:
-- Table of all MMS adresses data object,including the expected value (from date type definition, and from DAI / DAI /SDI...)
-- Generate scripts to verify that a given IED has actually correctly loaded the initial value.
+Ou, pour installer une version en particulier (notée ci-dessous `X.Y.Z`), il suffit d'exécuter :
 
-Most of python modules can be launched individually.
+```bash
+pip3 install scd_manager==X.Y.Z -U --user
+```
 
-Nearly of the python modules are now documented with 'doxygen' comments. The 'Doxygen_folders.7z' should be extracted and then the documentation is accessible at ./html/index.html at least IEC61850 part should be interesting.
+**Remarque** :
+Ne pas oublier de configurer `pip` pour qu'il recherche les packages sur Nexus. Dans `~/.pip/pip.conf` :
 
-There are more information in the README in WORD format
+```bash
+[global]
+index = https://devin-depot.rte-france.com/repository/pypi-all
+index-url = https://devin-depot.rte-france.com/repository/pypi-all/simple
+trusted-host = devin-depot.rte-france.com
+```
 
+Pour vérifier que l'installation est correcte, il suffit d'exécuter la commande suivante :
 
+```bash
+pip3 show scd_manager | grep -i version
+```
 
+Elle doit afficher la version du projet qui a été installée.
 
+### USAGE
 
+Ouvrir une console dans le répertoire racine du projet
+lancer la commande py -3-32 -m venv straton_python32_env
+lancer la commande : pip install -r .\requirements-dev.txt
+lancer la commande : pip install --editable .   (ne pas oublier le point qui indique le répertoire courant)
+Dans Visual Code, faire Ctrl+Shift+P et taper la commande "Python: Discover Tests" afin de détecter les tests unitaires
 
+## Licence
+
+Ce projet est destiné uniquement à un usage interne à RTE.

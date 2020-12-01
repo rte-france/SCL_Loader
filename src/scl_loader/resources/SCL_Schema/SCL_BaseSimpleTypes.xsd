@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.iec.ch/61850/2003/SCL" targetNamespace="http://www.iec.ch/61850/2003/SCL" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2007B4">
+	<xs:annotation>
+		<xs:documentation xml:lang="en">
+			COPYRIGHT (c) IEC, 2018. This version of this XSD is part of IEC 61850-6:2009/AMD1:2018; see the IEC 61850-6:2009/AMD1:2018 for full legal notices. In case of any differences between the here-below code and the IEC published content, the here-below definition supersedes the IEC publication; it may contain updates. See history files. The whole document has to be taken into account to have a full description of this code component.
+			See www.iec.ch/CCv1 for copyright details.
+		</xs:documentation>
+		<xs:documentation xml:lang="en">
+			SCL schema version "2007" revision "B" release 4,  for IEC 61850-6 Ed. 2.1. 2018-01-22
+			Supersedes "2007B3".
+		</xs:documentation>
+	</xs:annotation>
+	<xs:simpleType name="tConnectivityNodeReference">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value=".+/.+(/.+)*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tAnyName">
+		<xs:restriction base="xs:normalizedString"/>
+	</xs:simpleType>
+	<xs:simpleType name="tName">
+		<xs:restriction base="tAnyName">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tID">
+		<xs:restriction base="xs:token">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="255"/>
+			<xs:pattern value="\S+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tAcsiName">
+		<xs:restriction base="xs:Name">
+			<xs:pattern value="[A-Za-z][0-9A-Za-z_]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tRestrName1stU">
+		<xs:restriction base="xs:Name">
+			<xs:pattern value="[A-Z][0-9A-Za-z]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tRestrName1stL">
+		<xs:restriction base="xs:Name">
+			<xs:pattern value="[a-z][0-9A-Za-z]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tPAddr">
+		<xs:restriction base="xs:normalizedString">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tSclVersion">
+		<xs:restriction base="tName">
+			<xs:pattern value="2[0-2][0-9]{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tSclRevision">
+		<xs:restriction base="xs:Name">
+			<xs:pattern value="[A-Z]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tSclRelease">
+		<xs:restriction base="xs:unsignedByte">
+			<xs:minExclusive value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tEmpty">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="0"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tIEDName">
+		<xs:restriction base="tAcsiName">
+			<xs:maxLength value="64"/>
+			<xs:pattern value="[A-Za-z][0-9A-Za-z_]{0,2}"/>
+			<xs:pattern value="[A-Za-z][0-9A-Za-z_]{4,63}"/>
+			<xs:pattern value="[A-MO-Za-z][0-9A-Za-z_]{3}"/>
+			<xs:pattern value="N[0-9A-Za-np-z_][0-9A-Za-z_]{2}"/>
+			<xs:pattern value="No[0-9A-Za-mo-z_][0-9A-Za-z_]"/>
+			<xs:pattern value="Non[0-9A-Za-df-z_]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tIEDNameIsNone">
+		<xs:restriction base="tAcsiName">
+			<xs:pattern value="None"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tIEDNameOrNone">
+		<xs:union memberTypes="tIEDName tIEDNameIsNone"/>
+	</xs:simpleType>
+	<xs:simpleType name="tOnlyRelativeIEDName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="&#x0040;"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tIEDNameOrRelative">
+		<xs:union memberTypes="tIEDName tOnlyRelativeIEDName"/>
+	</xs:simpleType>
+	<xs:simpleType name="tLDName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="64"/>
+			<xs:pattern value="[A-Za-z][0-9A-Za-z_]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLDInst">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="64"/>
+			<xs:pattern value="[A-Za-z0-9][0-9A-Za-z_]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLDInstOrEmpty">
+		<xs:union memberTypes="tLDInst tEmpty"/>
+	</xs:simpleType>
+	<xs:simpleType name="tPrefix">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="11"/>
+			<xs:pattern value="[A-Za-z][0-9A-Za-z_]*"/>
+			<xs:pattern value=" "/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLNInst">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[0-9]{1,12}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLNInstOrEmpty">
+		<xs:union memberTypes="tLNInst tEmpty"/>
+	</xs:simpleType>
+	<xs:simpleType name="tDataName">
+		<xs:restriction base="tRestrName1stU">
+			<xs:maxLength value="12"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tDataSetName">
+		<xs:restriction base="tAcsiName">
+			<xs:maxLength value="32"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tCBName">
+		<xs:restriction base="tAcsiName">
+			<xs:maxLength value="32"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLogName">
+		<xs:restriction base="tAcsiName">
+			<xs:maxLength value="32"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tAccessPointName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="32"/>
+			<xs:pattern value="[A-Za-z0-9][0-9A-Za-z_]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tAssociationID">
+		<xs:restriction base="xs:normalizedString">
+			<xs:minLength value="1"/>
+			<xs:pattern value="[0-9A-Za-z]+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tVisibleBasicLatin">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[&#x0020;-&#x007E;]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tMessageID">
+		<xs:restriction base="tVisibleBasicLatin">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="129"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tFullAttributeName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[a-zA-Z][a-zA-Z0-9]*(\([0-9]+\))?(\.[a-zA-Z][a-zA-Z0-9]*(\([0-9]+\))?)*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tFullDOName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[A-Z][0-9A-Za-z]{0,11}(\.[a-z][0-9A-Za-z]*(\([0-9]+\))?)?"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tSubDataName">
+		<xs:restriction base="tRestrName1stL">
+			<xs:minLength value="1"/>
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tNamespaceName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value="[&#x0020;-&#x007E;]+:20\d\d[A-Z]?"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tLineType">
+		<xs:restriction base="xs:normalizedString">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tProcessType">
+		<xs:restriction base="xs:normalizedString">
+			<xs:minLength value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tProcessName">
+		<xs:restriction base="xs:normalizedString">
+			<xs:pattern value=".+(/.+)*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="tEnumStringValue">
+		<xs:restriction base="xs:normalizedString">
+			<xs:maxLength value="127"/>
+			<xs:pattern value="[\p{IsBasicLatin}\p{IsLatin-1Supplement}]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

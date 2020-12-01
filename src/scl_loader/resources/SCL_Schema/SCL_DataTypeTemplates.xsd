@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:scl="http://www.iec.ch/61850/2003/SCL" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://www.iec.ch/61850/2003/SCL" targetNamespace="http://www.iec.ch/61850/2003/SCL" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2007B4">
+	<xs:annotation>
+		<xs:documentation xml:lang="en">
+			COPYRIGHT (c) IEC, 2018. This version of this XSD is part of IEC 61850-6:2009/AMD1:2018; see the IEC 61850-6:2009/AMD1:2018 for full legal notices. In case of any differences between the here-below code and the IEC published content, the here-below definition supersedes the IEC publication; it may contain updates. See history files. The whole document has to be taken into account to have a full description of this code component.
+			See www.iec.ch/CCv1 for copyright details.
+		</xs:documentation>
+		<xs:documentation xml:lang="en">
+			SCL schema version "2007" revision "B" release 4,  for IEC 61850-6 Ed. 2.1. 2018-01-22
+			Supersedes "2007B3".
+		</xs:documentation>
+	</xs:annotation>
+	<xs:include schemaLocation="SCL_BaseTypes.xsd"/>
+	<xs:attributeGroup name="agDATrgOp">
+		<xs:attribute name="dchg" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="qchg" type="xs:boolean" use="optional" default="false"/>
+		<xs:attribute name="dupd" type="xs:boolean" use="optional" default="false"/>
+	</xs:attributeGroup>
+	<xs:complexType name="tAbstractDataAttribute" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tUnNaming">
+				<xs:sequence>
+					<xs:element name="Val" type="tVal" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="name" type="tAttributeNameEnum" use="required"/>
+				<xs:attribute name="sAddr" type="xs:normalizedString" use="optional"/>
+				<xs:attribute name="bType" type="tBasicTypeEnum" use="required"/>
+				<xs:attribute name="valKind" type="tValKindEnum" use="optional" default="Set"/>
+				<xs:attribute name="type" type="tAnyName" use="optional"/>
+				<xs:attribute name="count" type="tDACount" use="optional" default="0"/>
+				<xs:attribute name="valImport" type="xs:boolean" use="optional" default="false"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tLNodeType">
+		<xs:complexContent>
+			<xs:extension base="tIDNaming">
+				<xs:sequence>
+					<xs:element name="DO" type="tDO" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="iedType" type="tAnyName" use="optional" default=""/>
+				<xs:attribute name="lnClass" type="tLNClassEnum" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tDO">
+		<xs:complexContent>
+			<xs:extension base="tUnNaming">
+				<xs:attribute name="name" type="tDataName" use="required"/>
+				<xs:attribute name="type" type="tName" use="required"/>
+				<xs:attribute name="accessControl" type="xs:normalizedString" use="optional"/>
+				<xs:attribute name="transient" type="xs:boolean" use="optional" default="false"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tDOType">
+		<xs:complexContent>
+			<xs:extension base="tIDNaming">
+				<xs:choice minOccurs="0" maxOccurs="unbounded">
+					<xs:element name="SDO" type="tSDO"/>
+					<xs:element name="DA" type="tDA">
+						<xs:unique name="uniqueProtNsInDA">
+							<xs:selector xpath="scl:ProtNs"/>
+							<xs:field xpath="@type"/>
+							<xs:field xpath="."/>
+						</xs:unique>
+					</xs:element>
+				</xs:choice>
+				<xs:attribute name="iedType" type="tAnyName" use="optional" default=""/>
+				<xs:attribute name="cdc" type="tCDCEnum" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tSDO">
+		<xs:complexContent>
+			<xs:extension base="tUnNaming">
+				<xs:attribute name="name" type="tSubDataName" use="required"/>
+				<xs:attribute name="type" type="tName" use="required"/>
+				<xs:attribute name="count" type="tSDOCount" use="optional" default="0"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tDA">
+		<xs:complexContent>
+			<xs:extension base="tAbstractDataAttribute">
+				<xs:sequence>
+					<xs:element name="ProtNs" type="tProtNs" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attributeGroup ref="agDATrgOp"/>
+				<xs:attribute name="fc" type="tFCEnum" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tDAType">
+		<xs:complexContent>
+			<xs:extension base="tIDNaming">
+				<xs:sequence>
+					<xs:element name="BDA" type="tBDA" maxOccurs="unbounded"/>
+					<xs:element name="ProtNs" type="tProtNs" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="iedType" type="tAnyName" use="optional" default=""/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tBDA">
+		<xs:complexContent>
+			<xs:extension base="tAbstractDataAttribute"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tEnumType">
+		<xs:complexContent>
+			<xs:extension base="tIDNaming">
+				<xs:sequence>
+					<xs:element name="EnumVal" type="tEnumVal" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tProtNs">
+		<xs:simpleContent>
+			<xs:extension base="tNamespaceName">
+				<xs:attribute name="type" use="optional" default="8-MMS">
+					<xs:simpleType>
+						<xs:restriction base="xs:normalizedString">
+							<xs:minLength value="1"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="tEnumVal">
+		<xs:simpleContent>
+			<xs:extension base="tEnumStringValue">
+				<xs:attribute name="ord" type="xs:int" use="required"/>
+				<xs:attributeGroup ref="agDesc"/>
+			</xs:extension>
+		</xs:simpleContent>
+	</xs:complexType>
+	<xs:complexType name="tDataTypeTemplates">
+		<xs:sequence>
+			<xs:element name="LNodeType" type="tLNodeType" maxOccurs="unbounded">
+				<xs:unique name="uniqueDOInLNodeType">
+					<xs:selector xpath="scl:DO"/>
+					<xs:field xpath="@name"/>
+				</xs:unique>
+			</xs:element>
+			<xs:element name="DOType" type="tDOType" maxOccurs="unbounded">
+				<xs:unique name="uniqueDAorSDOInDOType">
+					<xs:selector xpath="./*"/>
+					<xs:field xpath="@name"/>
+				</xs:unique>
+			</xs:element>
+			<xs:element name="DAType" type="tDAType" minOccurs="0" maxOccurs="unbounded">
+				<xs:unique name="uniqueBDAInDAType">
+					<xs:selector xpath="scl:BDA"/>
+					<xs:field xpath="@name"/>
+				</xs:unique>
+				<xs:unique name="uniqueProtNs">
+					<xs:selector xpath="scl:ProtNs"/>
+					<xs:field xpath="@type"/>
+					<xs:field xpath="."/>
+				</xs:unique>
+			</xs:element>
+			<xs:element name="EnumType" type="tEnumType" minOccurs="0" maxOccurs="unbounded">
+				<xs:unique name="uniqueOrdInEnumType">
+					<xs:selector xpath="scl:EnumVal"/>
+					<xs:field xpath="@ord"/>
+				</xs:unique>
+				<xs:unique name="uniqueEnumValue">
+					<xs:selector xpath="scl:EnumVal"/>
+					<xs:field xpath="."/>
+				</xs:unique>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:element name="DataTypeTemplates" type="tDataTypeTemplates">
+		<xs:key name="DOTypeKey">
+			<xs:selector xpath="scl:DOType"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+		<xs:keyref name="ref2DOType" refer="DOTypeKey">
+			<xs:selector xpath="scl:LNodeType/scl:DO"/>
+			<xs:field xpath="@type"/>
+		</xs:keyref>
+		<xs:keyref name="ref2DOTypeForSDO" refer="DOTypeKey">
+			<xs:selector xpath="scl:DOType/scl:SDO"/>
+			<xs:field xpath="@type"/>
+		</xs:keyref>
+		<xs:unique name="uniqueDTT_ID">
+			<xs:selector xpath="*"/>
+			<xs:field xpath="@id"/>
+		</xs:unique>
+		<xs:key name="EnumTypeDATypeKey">
+			<xs:selector xpath="scl:DAType | scl:EnumType"/>
+			<xs:field xpath="@id"/>
+		</xs:key>
+		<xs:keyref name="ref2EnumTypeDAType" refer="scl:EnumTypeDATypeKey">
+			<xs:selector xpath="scl:DOType/scl:DA | scl:DAType/scl:BDA"/>
+			<xs:field xpath="@type"/>
+		</xs:keyref>
+	</xs:element>
+</xs:schema>

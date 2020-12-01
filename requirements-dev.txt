@@ -1,0 +1,7 @@
+setuptools
+wheel
+pycodestyle
+pytest
+pytest-cov
+pytest-dependency
+-r requirements.txt
