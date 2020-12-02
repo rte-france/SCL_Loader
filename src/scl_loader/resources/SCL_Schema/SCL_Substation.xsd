@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:scl="http://www.iec.ch/61850/2003/SCL" xmlns="http://www.iec.ch/61850/2003/SCL" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://www.iec.ch/61850/2003/SCL" elementFormDefault="qualified" attributeFormDefault="unqualified" version="2007B4">
+	<xs:annotation>
+		<xs:documentation xml:lang="en">
+			COPYRIGHT (c) IEC, 2018. This version of this XSD is part of IEC 61850-6:2009/AMD1:2018; see the IEC 61850-6:2009/AMD1:2018 for full legal notices. In case of any differences between the here-below code and the IEC published content, the here-below definition supersedes the IEC publication; it may contain updates. See history files. The whole document has to be taken into account to have a full description of this code component.
+			See www.iec.ch/CCv1 for copyright details.
+		</xs:documentation>
+		<xs:documentation xml:lang="en">
+			SCL schema version "2007" revision "B" release 4,  for IEC 61850-6 Ed. 2.1. 2018-01-22
+			Supersedes "2007B3".
+		</xs:documentation>
+	</xs:annotation>
+	<xs:include schemaLocation="SCL_BaseTypes.xsd"/>
+	<xs:attributeGroup name="agVirtual">
+		<xs:attribute name="virtual" type="xs:boolean" use="optional" default="false"/>
+	</xs:attributeGroup>
+	<xs:complexType name="tLNodeContainer" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tNaming">
+				<xs:sequence>
+					<xs:element name="LNode" type="tLNode" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tPowerSystemResource" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tLNodeContainer"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tEquipmentContainer" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="PowerTransformer" type="tPowerTransformer" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInPowerTransformer">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInPTR">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="GeneralEquipment" type="tGeneralEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInGeneralEquipment">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInGE">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tEquipment" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:attributeGroup ref="agVirtual"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tAbstractConductingEquipment" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tEquipment">
+				<xs:sequence>
+					<xs:element name="Terminal" type="tTerminal" minOccurs="0" maxOccurs="2"/>
+					<xs:element name="SubEquipment" type="tSubEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubEquipment">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInACESubEquipment">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tConductingEquipment">
+		<xs:complexContent>
+			<xs:extension base="tAbstractConductingEquipment">
+				<xs:sequence>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForCE">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForCE">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="tCommonConductingEquipmentEnum" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tSubEquipment">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForSubEq">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForSubEq">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="phase" type="tPhaseEnum" use="optional" default="none"/>
+				<xs:attributeGroup ref="agVirtual"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tPowerTransformer">
+		<xs:complexContent>
+			<xs:extension base="tEquipment">
+				<xs:sequence>
+					<xs:element name="TransformerWinding" type="tTransformerWinding" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInTransformerWinding">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInPTW">
+							<xs:selector xpath="./scl:SubEquipment|./scl:TapChanger|./scl:EqFunction"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="SubEquipment" type="scl:tSubEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubEquipmentPTR">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInPTRSubEquipment">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForPTR">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForPTR">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="tPowerTransformerEnum" use="required" fixed="PTR"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tTransformerWinding">
+		<xs:complexContent>
+			<xs:extension base="tAbstractConductingEquipment">
+				<xs:sequence>
+					<xs:element name="TapChanger" type="tTapChanger" minOccurs="0">
+						<xs:unique name="uniqueLNodeInTapChanger">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInLTC">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="NeutralPoint" type="tTerminal" minOccurs="0"/>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForPTW">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForPTW">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="tTransformerWindingEnum" use="required" fixed="PTW"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tTapChanger">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="SubEquipment" type="scl:tSubEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubEquipmentLTC">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInLTCSubEquipment">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForLTC">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForLTC">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="xs:Name" use="required" fixed="LTC"/>
+				<xs:attributeGroup ref="agVirtual"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tGeneralEquipment">
+		<xs:complexContent>
+			<xs:extension base="tEquipment">
+				<xs:sequence>
+					<xs:element name="EqFunction" type="scl:tEqFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFuncForGE">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFuncForGE">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="tGeneralEquipmentEnum" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tSubstation">
+		<xs:complexContent>
+			<xs:extension base="tEquipmentContainer">
+				<xs:sequence>
+					<xs:element name="VoltageLevel" type="tVoltageLevel" maxOccurs="unbounded">
+						<xs:unique name="uniqueChildNameInVoltageLevel">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+						<xs:unique name="uniqueLNodeInVoltageLevel">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="Function" type="tFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFunctionSS">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInSubstationFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tVoltageLevel">
+		<xs:complexContent>
+			<xs:extension base="tEquipmentContainer">
+				<xs:sequence>
+					<xs:element name="Voltage" type="tVoltage" minOccurs="0"/>
+					<xs:element name="Bay" type="tBay" maxOccurs="unbounded">
+						<xs:unique name="uniqueChildNameInBay">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+						<xs:unique name="uniqueLNodeInBay">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="Function" type="scl:tFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFunctionVL">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInVoltageLevelFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="nomFreq" use="optional">
+					<xs:simpleType>
+						<xs:restriction base="xs:decimal">
+							<xs:minInclusive value="0"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+				<xs:attribute name="numPhases" use="optional">
+					<xs:simpleType>
+						<xs:restriction base="xs:unsignedByte">
+							<xs:minExclusive value="0"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tBay">
+		<xs:complexContent>
+			<xs:extension base="tEquipmentContainer">
+				<xs:sequence>
+					<xs:element name="ConductingEquipment" type="tConductingEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInConductingEquipment">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInCE">
+							<xs:selector xpath="./scl:SubEquipment|./scl:EqFunction"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="ConnectivityNode" type="tConnectivityNode" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInConnectivityNode">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="Function" type="scl:tFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFunctionB">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInBayFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tLNode">
+		<xs:complexContent>
+			<xs:extension base="tUnNaming">
+				<xs:attribute name="iedName" type="tIEDNameOrNone" use="optional" default="None"/>
+				<xs:attribute name="ldInst" type="tLDInstOrEmpty" use="optional" default=""/>
+				<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+				<xs:attribute name="lnClass" type="tLNClassEnum" use="required"/>
+				<xs:attribute name="lnInst" type="tLNInstOrEmpty" use="optional" default=""/>
+				<xs:attribute name="lnType" type="tName" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tFunction">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="SubFunction" type="tSubFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInSubFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="GeneralEquipment" type="tGeneralEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInGeneralEquipmentOfFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInGEFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="ConductingEquipment" type="tConductingEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInConductingEquipmentOfFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInCondEq">
+							<xs:selector xpath="./scl:SubEquipment|./scl:EqFunction"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="xs:normalizedString" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tSubFunction">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="GeneralEquipment" type="tGeneralEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInGeneralEquipmentOfSubFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInGESubFunc">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="ConductingEquipment" type="scl:tConductingEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInConductingEquipmentOfSubFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueSubEquipmentSubFunc">
+							<xs:selector xpath="./scl:SubEquipment"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="SubFunction" type="scl:tSubFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubSubFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueSubSubFunc">
+							<xs:selector xpath="./scl:SubFunction"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="xs:normalizedString" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tAbstractEqFuncSubFunc" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="GeneralEquipment" type="tGeneralEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInGeneralEquipmentOfFuncForEquipment">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInGEFuncForEquipment">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="EqSubFunction" type="scl:tEqSubFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInSubFuncForEquipment">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueSubFuncForEquipment">
+							<xs:selector xpath="./scl:EqSubFunction"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="xs:normalizedString" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tEqFunction">
+		<xs:complexContent>
+			<xs:extension base="tAbstractEqFuncSubFunc"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tEqSubFunction">
+		<xs:complexContent>
+			<xs:extension base="tAbstractEqFuncSubFunc"/>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tConnectivityNode">
+		<xs:complexContent>
+			<xs:extension base="tLNodeContainer">
+				<xs:attribute name="pathName" type="tConnectivityNodeReference" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tTerminal">
+		<xs:complexContent>
+			<xs:extension base="tUnNaming">
+				<xs:attribute name="name" type="tAnyName" use="optional" default=""/>
+				<xs:attribute name="connectivityNode" type="tConnectivityNodeReference" use="required"/>
+				<xs:attribute name="processName" type="tProcessName" use="optional"/>
+				<xs:attribute name="substationName" type="tName" use="optional"/>
+				<xs:attribute name="voltageLevelName" type="tName" use="optional"/>
+				<xs:attribute name="bayName" type="tName" use="optional"/>
+				<xs:attribute name="cNodeName" type="tName" use="required"/>
+				<xs:attribute name="lineName" type="tName" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tGeneralEquipmentContainer" abstract="true">
+		<xs:complexContent>
+			<xs:extension base="tPowerSystemResource">
+				<xs:sequence>
+					<xs:element name="GeneralEquipment" type="tGeneralEquipment" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInGeneralEquipment2">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInGE2">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="Function" type="tFunction" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueLNodeInFunction">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+						<xs:unique name="uniqueChildNameInFunction">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tLine">
+		<xs:complexContent>
+			<xs:extension base="tGeneralEquipmentContainer">
+				<xs:sequence>
+					<xs:element name="Voltage" type="tVoltage" minOccurs="0"/>
+					<xs:element name="ConductingEquipment" type="scl:tConductingEquipment" maxOccurs="unbounded"/>
+					<xs:element name="ConnectivityNode" type="scl:tConnectivityNode" minOccurs="0" maxOccurs="unbounded"/>
+				</xs:sequence>
+				<xs:attribute name="type" type="tLineType" use="optional"/>
+				<xs:attribute name="nomFreq" use="optional">
+					<xs:simpleType>
+						<xs:restriction base="xs:decimal">
+							<xs:minInclusive value="0"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+				<xs:attribute name="numPhases" use="optional">
+					<xs:simpleType>
+						<xs:restriction base="xs:unsignedByte">
+							<xs:minExclusive value="0"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tProcess">
+		<xs:complexContent>
+			<xs:extension base="tGeneralEquipmentContainer">
+				<xs:sequence>
+					<xs:element name="ConductingEquipment" type="scl:tConductingEquipment" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="Substation" type="tSubstation" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueChildNameInProcessSubstation">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+						<xs:unique name="uniqueLNodeInProcessSubstation">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+					</xs:element>
+					<xs:element name="Line" type="tLine" minOccurs="0" maxOccurs="unbounded"/>
+					<xs:element name="Process" type="tProcess" minOccurs="0" maxOccurs="unbounded">
+						<xs:unique name="uniqueChildNameInSubProcess">
+							<xs:selector xpath="./*"/>
+							<xs:field xpath="@name"/>
+						</xs:unique>
+						<xs:unique name="uniqueLNodeInSubProcess">
+							<xs:selector xpath="./scl:LNode"/>
+							<xs:field xpath="@lnInst"/>
+							<xs:field xpath="@lnClass"/>
+							<xs:field xpath="@iedName"/>
+							<xs:field xpath="@ldInst"/>
+							<xs:field xpath="@prefix"/>
+						</xs:unique>
+					</xs:element>
+				</xs:sequence>
+				<xs:attribute name="type" type="tProcessType" use="optional"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:element name="Substation" type="tSubstation">
+		<xs:unique name="uniqueChildNameInSubstation">
+			<xs:selector xpath="./*"/>
+			<xs:field xpath="@name"/>
+		</xs:unique>
+		<xs:unique name="uniqueLNodeInSubstation">
+			<xs:selector xpath="./scl:LNode"/>
+			<xs:field xpath="@lnInst"/>
+			<xs:field xpath="@lnClass"/>
+			<xs:field xpath="@iedName"/>
+			<xs:field xpath="@ldInst"/>
+			<xs:field xpath="@prefix"/>
+		</xs:unique>
+	</xs:element>
+	<xs:element name="Process" type="tProcess">
+		<xs:unique name="uniqueChildNameInProcess">
+			<xs:selector xpath="./*"/>
+			<xs:field xpath="@name"/>
+		</xs:unique>
+		<xs:unique name="uniqueLNodeInProcess">
+			<xs:selector xpath="./scl:LNode"/>
+			<xs:field xpath="@lnInst"/>
+			<xs:field xpath="@lnClass"/>
+			<xs:field xpath="@iedName"/>
+			<xs:field xpath="@ldInst"/>
+			<xs:field xpath="@prefix"/>
+		</xs:unique>
+	</xs:element>
+	<xs:element name="Line" type="tLine">
+		<xs:unique name="uniqueChildNameInLine">
+			<xs:selector xpath="./*"/>
+			<xs:field xpath="@name"/>
+		</xs:unique>
+		<xs:unique name="uniqueLNodeInLine">
+			<xs:selector xpath="./scl:LNode"/>
+			<xs:field xpath="@lnInst"/>
+			<xs:field xpath="@lnClass"/>
+			<xs:field xpath="@iedName"/>
+			<xs:field xpath="@ldInst"/>
+			<xs:field xpath="@prefix"/>
+		</xs:unique>
+	</xs:element>
+</xs:schema>

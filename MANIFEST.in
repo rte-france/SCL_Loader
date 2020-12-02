@@ -1,0 +1,3 @@
+include requirements.txt LICENSE
+include src/scl_loader/resources/SCL_Schema/*.xsd
+global-exclude *.py[cod] __pycache__ *.so testss
