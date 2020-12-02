@@ -1,3 +1,4 @@
+![Lint and Test Python 🐍 distribution 📦](https://github.com/rte-france/SCL_Loader/workflows/Lint%20and%20Test%20Python%20%F0%9F%90%8D%20distribution%20%F0%9F%93%A6/badge.svg)
 # RTE - scl_loader
 
 ## Installation
