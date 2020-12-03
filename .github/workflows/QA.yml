@@ -1,0 +1,32 @@
+name: Lint and Test Python 🐍 distribution 📦
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+        architecture: 'x64'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: 🔬Lint with flake8 🔬
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 ./src/scl_loader/scl_loader.py --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 ./src/scl_loader/scl_loader.py --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: ⚗️Test with pytest ⚗️
+      run: |
+        pip install pytest
+        pip install pytest-cov
+        pytest --doctest-modules --junitxml=junit/test-results.xml --cov=scl_loader --cov-report=xml --cov-report=html
