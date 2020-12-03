@@ -1,4 +1,4 @@
-name: Publish Python 🐍 distribution 📦 to TestPyPI
+name: TESTPypi - Publish Python 🐍 distribution 📦
 
 on: workflow_dispatch
 
@@ -18,7 +18,7 @@ jobs:
     - name: Build 🏭 and Publish 🚀 distribution 📦 to TestPyPI
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TOKEN_PYPI }}
+        TWINE_PASSWORD: ${{ secrets.TOKEN_TESTPYPI }}
       run: |
         python setup.py sdist bdist_wheel
         twine upload --repository-url https://test.pypi.org/legacy/ dist/*
