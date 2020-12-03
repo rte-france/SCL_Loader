@@ -18,7 +18,7 @@ HERE = path.abspath(path.dirname(__file__))
 # Get the long description from the README file
 with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
     LONG_DESCRIPTION = f.read()
-    
+
 with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
     REQUIREMENTS = f.read()
 
@@ -26,7 +26,7 @@ with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 setup(
     name='scl_loader',  # Required
-    version='1.0.0',  # Required
+    version='1.2.0',  # Required
     description='Outil de manipulation de SCD',  # Required
     long_description=LONG_DESCRIPTION,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
