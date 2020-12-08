@@ -17,8 +17,6 @@ REG_DA = r'(?:\{.+\})?[BS]?DA'
 REG_DO = r'(?:\{.+\})?S?DO'
 REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P)'  # |Server)'
-REG_LN = r'(?:\{.+\})?LN'
-REG_LN0 = r'(?:\{.+\})?LN0'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 SEP1 = '$'          # Standard MMS separator.
@@ -104,7 +102,16 @@ NODES_ATTRS = {
         'daName',
         'fc',
         'ix'
-    ]
+    ],
+    'SubNetWork' : [
+        'type',
+        'name'
+    ],
+    'ConnectedAP' : [
+        'iedName',
+        'apName',
+        'redProt'
+    ],
 }
 
 
@@ -158,6 +165,8 @@ def _get_node_name(node: etree.Element):
             name = node.get('ldName')
         elif tag == 'Private':
             name = node.get('type')
+        elif tag == 'ConnectedAP':
+            name = node.get('iedName')        
         else:
             name = tag
 
@@ -301,10 +310,14 @@ class SCDNode:
             new_node = DA(self._datatypes, elem, self._fullattrs, **attributes)
         elif re.fullmatch(REG_DO, elem.tag):
             new_node = DO(self._datatypes, elem, self._fullattrs, **attributes)
-        elif re.fullmatch(REG_LN, elem.tag):
+        elif elem.tag.split('}')[-1] == 'LN':
             new_node = LN(self._datatypes, elem, self._fullattrs, **attributes)
-        elif re.fullmatch(REG_LN0, elem.tag):
+        elif elem.tag.split('}')[-1] == 'LN0':
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
+        elif elem.tag.split('}')[-1] == 'SubNetwork':
+            new_node = SubNetwork(self._datatypes, elem, self._fullattrs, **attributes)
+        elif elem.tag.split('}')[-1] == 'ConnectedAP':
+            new_node = ConnectedAP(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
 
@@ -798,6 +811,68 @@ class IED(SCDNode):
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
 
+class SubNetwork(SCDNode):
+    """
+        Class to manage an SubNetwork
+    """
+
+    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
+        """
+            Constructor
+
+            Parameters
+            ----------
+            `datatypes`
+                Instance of the DataTypeTemplates object from the SCD/SCL file.
+
+            `node_elem` (optional)
+                etree.Element element from the SCD/SCL file to build the node object.
+
+            `fullattrs` (optional)
+                If True, all the possible attributes for the SCD objects will be created
+                even if they are not described in the SCD/SCL file.
+
+            `kwargs` (optional)
+                Dictionary of the node attributes.
+
+            /!\\ At least one of node_elem or kwargs must be provided /!\\
+        """
+        self._all_attributes = []
+        self._all_attributes.extend(NODES_ATTRS['SubNetWork'])
+        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
+
+
+class ConnectedAP(SCDNode):
+    """
+        Class to manage an IED
+    """
+
+    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
+        """
+            Constructor
+
+            Parameters
+            ----------
+            `datatypes`
+                Instance of the DataTypeTemplates object from the SCD/SCL file.
+
+            `node_elem` (optional)
+                etree.Element element from the SCD/SCL file to build the node object.
+
+            `fullattrs` (optional)
+                If True, all the possible attributes for the SCD objects will be created
+                even if they are not described in the SCD/SCL file.
+
+            `kwargs` (optional)
+                Dictionary of the node attributes.
+
+            /!\\ At least one of node_elem or kwargs must be provided /!\\
+        """
+        self._all_attributes = []
+        self._all_attributes.extend(NODES_ATTRS['ConnectedAP'])
+        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
+
+
 class SCD_handler():
     """
         Class to handle a SCD/SCL file
@@ -814,7 +889,6 @@ class SCD_handler():
             `fullattrs` (optional)
                 If True, all the possible attributes for the SCD objects will be created
                 even if they are not described in the SCD/SCL file.
-
         """
         self._scd_path = scd_path
         schema_doc = etree.parse(XSD_PATH)

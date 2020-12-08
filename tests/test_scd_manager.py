@@ -94,7 +94,7 @@ class TestSCD_OPEN():
             I Should be able to create a SCL object with its children (except IEDs and Datatype)
         """
         assert self.scd.Header.toolID == 'ggu' # pylint: disable=maybe-no-member
-        assert self.scd.Communication.Net1.ConnectedAP.GSE.Address.P[0].type == 'VLAN-ID' # pylint: disable=maybe-no-member
+        assert self.scd.Communication.Net1.LD_All.GSE.Address.P[0].type == 'VLAN-ID' # pylint: disable=maybe-no-member
 
     def test_create_DA_by_kwargs(self):
         """
