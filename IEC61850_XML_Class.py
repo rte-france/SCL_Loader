@@ -962,7 +962,7 @@ class DataTypeTemplates:
     ##
     #  FC          : The set of standardized functional class
     class FC:
-        lstFC = ['ST', 'MX', 'CF', 'DC', 'SP', 'SV', 'SG', 'SE', 'SR', 'OR', 'BL', 'EX', 'CO']
+        lstFC = ('BL','CF', 'CO', 'DC', 'EX', 'MX','OR','SE', 'SG','SP', 'SR', 'ST', 'SV')
 
     ##
     # \b bType The complete list of basic type (without Enum nor Struct for application purpose)
@@ -971,7 +971,7 @@ class DataTypeTemplates:
     #   String : A subset of bType for all String type
     #   Number : A subset of bType for all kind of numbers.
     class bType:
-        Simple = ["BOOLEAN", "INT8" ,"INT16" ,"INT24" , "INT32" , "INT64",
+        Simple = set(["BOOLEAN", "INT8" ,"INT16" ,"INT24" , "INT32" , "INT64",
                              "INT8U","INT16U","INT24U", "INT32U",
                   "FLOAT32", "FLOAT64",
                   "Dbpos"  , "Tcmd",                # 'Enum' need to be treated as specific type.
@@ -986,14 +986,14 @@ class DataTypeTemplates:
                   "EntryID",
 #                  "AnalogueValueCtlF",
                   "Octet6", "Octet16"          # Edition 2.1
-                  ]
+                  ])
 
-        String  = ["BOOLEAN","VisString64","VisString129","VisString255","Unicode255",
-                   "ObjRef", "Quality", "Timestamp","Tcmd"]     # TODO String or Number ?
+        String  = set(["BOOLEAN","VisString64","VisString129","VisString255","Unicode255",
+                   "ObjRef", "Quality", "Timestamp","Tcmd"])     # TODO String or Number ?
 
-        Number =  ["Check",
+        Number =  set(["Check",
                    "INT8U","INT16U","INT32U","INT8","INT16","INT32","INT64",
-                   "FLOAT32","Octet64"]
+                   "FLOAT32","Octet64"])
     ##
     #   Quality     : The detailed quality bits
     # The following type declaration are only prototypes versions:
@@ -1031,7 +1031,7 @@ class DataTypeTemplates:
             self.quality  = _TimeQuality
     ##
     #  PhyComAddr  : This Physical communication address.
-    #  WARNING d'après IEC61850-8-1, le 'EntryTime' des BRCB est exprimé en S depuis 01/01/1984
+    #  WARNING according to IEC61850-8-1, the 'EntryTime' of BRCB is expressend as Seconds since 01/01/1984
     class PhyComAddr:
         def __init__(self, _Addr, _PRIORITY, _VID, _APPID):     # Défini dans IEC61850-1-2
             self.Addr       = _Addr         #Octet String 6         ==> [Adr Mac] bytes en python
