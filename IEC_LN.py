@@ -10,6 +10,8 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 # -*- coding: utf-8 -*-
+
+
 import xml.dom.minidom as dom
 from IEC_Trace      import Trace
 from IEC_Trace      import Level  as TL
@@ -17,6 +19,7 @@ from IEC_PrivateSupport import DynImport
 from IEC_FileListe  import FileListe as FL
 from IEC61850_XML_Class import IED
 from IEC_LNodeType import Parse_LNodeType
+
 ##
 # \b Parse_LN: this class create the list of LN0 and LN as well as all sub-classes
 # @brief
