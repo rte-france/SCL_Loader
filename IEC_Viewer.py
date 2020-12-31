@@ -10,33 +10,49 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-from IEC61850_XML_Class     import IED
-from IEC61850_XML_Class     import DataTypeTemplates as DT
+from IEC61850_XML_Class import DataTypeTemplates as DT
 from GenerateFctTstTemplate import CodeGeneration
 
+from TreeView_DataModel import DataModelTree
+from DataType_View      import DataType_Table
+from DataType_View      import LNODETYPE, DOTYPE, DATYPE, ENUMTYPE
+
+from scl_loader import SCD_handler
+
 import sys
+import os
 import time
 import textwrap
-import PyQt5
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTreeView, QLineEdit, QLabel, QMessageBox, QMenu,QFrame,QDesktopWidget
-from PyQt5.QtWidgets import QDialogButtonBox, QDialog, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QWidget, QCheckBox, QLabel
-from PyQt5.QtWidgets import QFileDialog
-from PyQt5.Qt        import QStandardItemModel, QStandardItem
+
+from PyQt5.QtWidgets import QMainWindow,QApplication,QDesktopWidget,QVBoxLayout,QHBoxLayout, QTableWidget, QTableWidgetItem
+from PyQt5.QtWidgets import QFileDialog,QTableView,QWidget,QPushButton,QFrame,QCheckBox,QTreeView,QMessageBox
+from PyQt5.Qt        import QStandardItemModel, QStandardItem, QThread, Qt
 from PyQt5.QtGui import QFont, QColor
 
-from PyQt5.QtCore import (QDate, QDateTime, QRegExp, QSortFilterProxyModel, Qt,
-                          QTime, QModelIndex, QStringListModel)
+#                          QTime, QModelIndex, QStringListModel)
+
+IED_LD, TYPE, VALUE, DESC, DESC2 = range(5)
 
 
-from IEC_FileListe import FileListe as FL
-from IEC_Trace import Trace
-from IEC_FileListe import FileListe
-from IEC_Trace import Trace    as TConsole
-from IEC_Trace import Level    as TL
-from IEC_ParcoursDataModel import globalDataModel
+class LoadSCL(object):
+    def __init__(self,fname):
+        print("init")
+        self.fname=fname
+        self.T0 = time.time()
+    def __enter__(self):
+        HERE = os.path.abspath(os.path.dirname(__file__))
+        filepath = os.path.join(HERE, self.fname[0])
+        self.sclMgr = SCD_handler(filepath, True)
+        self.T1  = time.time()
+        self.delta = self.T1-self.T0
+        return (self.sclMgr,self.delta)
 
+    def __exit__(self,  exc_type, exc_val, exc_tb):
+        print("SCL loaded with success")
+#        return(self.T1 - self.T0)
 
 class StandardItem(QStandardItem):
+
     def __init__(self, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
         super().__init__()
 
@@ -47,12 +63,8 @@ class StandardItem(QStandardItem):
         self.setForeground(color)
         self.setFont(fnt)
         self.setText(txt)
-
-class IED_IP:
-    def __init__(self,_iedName, _APName, _IP):
-        self.iedName = _iedName
-        self.APName  = _APName
-        self.IP      = _IP
+        self.layoutMainView = None
+        self.nameMainView   = 'DataModel'
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -61,146 +73,199 @@ class MainWindow(QMainWindow):
 
     class AppDemo(QWidget):
 
-        IED_LD, TYPE, VALUE, DESC, DESC2 = range(5)
-
-        def __init__(self, _TL):
+        def __init__(self):
             super().__init__()
             self.setWindowTitle('RTE IEC68150 ENGINEERING TOOLS')
             self.resize(800, 900)
-
+            self.line = 0
+            self.dataKey = ''
             self.fname = None
+            self.tIED = []
+
+            self.fname = []
 
             qr = self.frameGeometry()  # geometry of the main window
             cp = QDesktopWidget().availableGeometry().center()  # center point of screen
             qr.moveCenter(cp)  # move rectangle's center point to screen's center point
             self.move(qr.topLeft())  # top left of rectangle becomes top left of window centering it
 
-            self.grid = QGridLayout()
-            self.grid = QVBoxLayout()
-            self.grid.setSpacing(10)
+            self.winLayout = QVBoxLayout()           ## Most the HMI is vertical
+            self.winLayout.setSpacing(10)
 
-#            title = QLabel('xxxxxxxxxxxxxx Title xxxxxxxxxxxxxx')
-#            self.grid.addWidget(title) #, 0, 0, 1, 3)
-
-    ## Layout for the set of action buttons
-            self.hLayout = QHBoxLayout()
-
-   ## Check Value Button
-            self.CheckValue = QPushButton()
-            self.CheckValue.setText(' CHECK VALUE ')
-            self.CheckValue.clicked.connect(self.ExecCheckValue)
-            self.hLayout.addWidget(self.CheckValue)
-
-    ##  Template Generation Button
-            self.template = QPushButton()
-            self.template.setText(' TEMPLATE ')
-            self.template.clicked.connect(self.ExecTemplate)
-            self.hLayout.addWidget(self.template)
-
-    ##  Open File  Button
-            self.OpenFile = QPushButton()
-            self.OpenFile.setText(' SELECT FILE ')
-            self.OpenFile.clicked.connect(self.getFile)
-            self.hLayout.addWidget(self.OpenFile)
-
-    ## Add horizontal layout of buttons to the grid layout.
-            self.grid.addLayout(self.hLayout)
-
-    ## Tick boxes for filtering for funnctional constraint
-#            i = 0
-
-            self.frame = QFrame(self)
-#            self.frame.setFrameShape(QFrame.StyledPanel)
-#            self.frame.setFrameShadow(QFrame.Raised)
-            self.frame.setStyleSheet("background-color: rgb(200, 255, 255)")
-            self.frame.setStyleSheet("foreground-color: blue;\n")
-            self.frame.setFrameStyle(QFrame.Box | QFrame.Sunken)
-            self.frame.setLineWidth(4)
-
-            self.hLayoutButtons = QHBoxLayout(self.frame)
-            self.hLayoutButtons.addWidget(self.frame)
+            AppButtons = self.ApplicationButtons()      # Top application button (TEMPLATE, SELECT FILE)
+            self.winLayout.addLayout(AppButtons)
 
 
-            self.box      = []
-            i = 0
-            for fc in DT.FC.lstFC:
-                chkbox = QCheckBox(fc,self.frame)
-                if i==0 or i==2 or i==4 or i==6:
-                    chkbox.setChecked(False)
-                else:
-                    chkbox.setChecked(True)
-                self.box.append(chkbox)
-                self.hLayoutButtons.addWidget(chkbox)
-                chkbox.stateChanged.connect(lambda:self.butState(chkbox))
-                i = i + 1
+## MAIN VIEW, start with treeView
 
-            self.checkAllButton    = QPushButton("ALL",self.frame)
-            self.checkAllButton.clicked.connect(self.selectAll)
-            self.hLayoutButtons.addWidget(self.checkAllButton)
+            self.treeLayout = QVBoxLayout()
+            self.nameMainView = 'DataModel'
 
-            self.checkNoneButton  = QPushButton("None",self.frame)
-            self.checkNoneButton.clicked.connect(self.selectNone)
-            self.hLayoutButtons.addWidget(self.checkNoneButton)
+            self.ButtonSection,self.frameLeft = self.leftButtons()
 
-            self.grid.addLayout(self.hLayoutButtons)
-            self.grid.addWidget(self.frame)
+            self.containerLayout= QHBoxLayout()                     # Container for 2 vertical layout
+            self.containerLayout.addLayout(self.ButtonSection)      # Set of buttons on the LEFT
+            self.containerLayout.addWidget(self.frameLeft)          # Set the frame
 
+            self.setLayout(self.winLayout)
+## Creation of all widgets
 
+## Initial View is Data Model
+            self.datatype = DataType_Table(self.winLayout, self.containerLayout)
 
-            self.application = 'ApplicationName'  ## name A name of the application
-            self.TR = _TL  ## Trace Level used
-            self.LNodeType = None  ## Access to the LNodeType dictionary
-#            self.GM = GM  ## The Global Data Model of the SCL used
-            self.FileId = None  ## File ID of the output file
-            self.IED_ID = None  ## IED name + AcccessPoint Name
+## Initial View is Data Model
+            self.DataModelTree = DataModelTree(self.winLayout, self.containerLayout)
+            self.FT_frame = self.datatype.DataTypeButtons(self.winLayout, self.DataModelTree.FC_frame)
 
-            self.line    = 0
-            self.dataKey = ''
+            self.treeView , self.treeModel   = self.DataModelTree.CreateTreeView()
+            self.FC_frame = self.DataModelTree.FCbuttons(self.winLayout, self.datatype.DT_frame)
 
-            self.t_AdrIP = []
+            self.tableView  = None
+            self.ShowDataModel()
 
-            self.treeView = QTreeView()
-            self.treeView.setHeaderHidden(False)
-
-            self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
-            self.treeView.customContextMenuRequested.connect(self.openMenu)
-            self.treeView.clicked.connect(self.openMenu)
-
-#            model =       QStandardItemModel(list_view)
-            self.treeModel = QStandardItemModel(self.treeView)
-            self.treeModel.setColumnCount(6)
-            #        self.treeModel.setHorizontalHeaderLabels(["IED/AP/SRV/LD/LN", "Desc", "SDO", "", "DA","SDA"])
-            self.treeModel.setHeaderData(self.IED_LD, Qt.Horizontal, "IED/AP/SRV/LD")         # 0
-            self.treeModel.setHeaderData(self.TYPE,   Qt.Horizontal, "Type")                  # 1
-            self.treeModel.setHeaderData(self.VALUE,  Qt.Horizontal, "Value")                 # 2 ==> Read / Write data
-            self.treeModel.setHeaderData(self.DESC,   Qt.Horizontal, "Object 'desc'")         # Object 'desc'
-            self.treeModel.setHeaderData(self.DESC2,  Qt.Horizontal, "Type 'desc'")           # Data Type Desction
-
-            self.grid.addWidget(self.treeView) #,2,0,1, 10)
-            self.rootNode = self.treeModel.invisibleRootItem()
-
-            self.setLayout(self.grid)
+            self.winLayout.addLayout(self.containerLayout)               # Finally add this to the globalLayout
+            self.setLayout(self.winLayout)
             self.show()
-            self.treeView.doubleClicked.connect(self.getValue)
 
-            self.treeView.setModel(self.treeModel)
-            self.treeView.expandAll()
-            self.treeView.setColumnWidth(0, 300)
-            self.treeView.setColumnWidth(1, 200)
-            self.treeView.setColumnWidth(2, 100)
-            self.treeView.setColumnWidth(3, 100)
+        ## CheckValue, Template, LoadFile
+        def ApplicationButtons(self):
+            ## Layout for the set of action buttons
+            hLayout = QHBoxLayout()
 
-            return None
+            ## Check Value Button
+            CheckValue = QPushButton()
+            CheckValue.setText(' CHECK VALUE ')
+            CheckValue.clicked.connect(self.ExecCheckValue)
+            hLayout.addWidget(CheckValue)
+
+            ##  Template Generation Button
+            template = QPushButton()
+            template.setText(' TEMPLATE ')
+            template.clicked.connect(self.ExecTemplate)
+            hLayout.addWidget(template)
+
+            ##  Open File  Button
+            OpenFile = QPushButton()
+            OpenFile.setText(' SELECT FILE ')
+            OpenFile.clicked.connect(self.getFile)
+            hLayout.addWidget(OpenFile)
+
+            ## Add horizontal layout of buttons to the grid layout.
+            return hLayout
+
+        ## Call Back Functions for vertical Buttons
+        def ShowDataModel(self):
+            print('Data Model Button')
+            self.MainView = 'DataModel'
+
+            self.commuteView(self.winLayout, self.FT_frame, self.FC_frame,"Data Type" , "Function Constraint")
+
+            try:
+                if self.datatype.currentView == LNODETYPE:
+                    self.commuteView(self.containerLayout, self.datatype.LNtableView, self.treeView, LNODETYPE,"TreeView")
+                elif self.datatype.currentView == DOTYPE:
+                    self.commuteView(self.containerLayout, self.datatype.DOTypeView,  self.treeView, DOTYPE,   "TreeView")
+                elif self.datatype.currentView == DATYPE:
+                    self.commuteView(self.containerLayout, self.datatype.DATypeView,  self.treeView, DATYPE,   "TreeView")
+                elif self.datatype.currentView == ENUMTYPE:
+                    self.commuteView(self.containerLayout, self.datatype.EnumTypeView,self.treeView, ENUMTYPE, "TreeView")
+            except:
+                print("Not initialized")
+                pass
+
+            self.containerLayout.update()
+            self.treeView.repaint()
+            self.treeView.show()
+
+        def ShowCommunication(self):
+            print('Show Communication Button')
+
+        def ShowDataType(self):
+            print('ShowDataType Button')
+
+            self.MainView = 'DataType'
+            if self.tableView is not None:
+                self.tableView.setVisible(False)
+                self.datatype.DisplayTableLNODE()
+                return
+
+            self.commuteView(self.winLayout,      self.FC_frame, self.FT_frame,"Function Constraint", "Data Type")
+
+            if self.datatype.currentView == LNODETYPE:
+                self.commuteView(self.containerLayout,self.treeView, self.datatype.LNtableView,"TreeView",LNODETYPE)
+            elif self.datatype.currentView == DOTYPE:
+                self.commuteView(self.containerLayout,self.treeView, self.datatype.DOTypeView,"TreeView",DOTYPE)
+            elif self.datatype.currentView == DATYPE:
+                self.commuteView(self.containerLayout,self.treeView, self.datatype.DATypeView,"TreeView", DATYPE)
+            elif self.datatype.currentView == ENUMTYPE:
+                self.commuteView(self.containerLayout,self.treeView, self.datatype.EnumTypeView,"TreeView",ENUMTYPE)
+
+        def commuteView(self, Layout, ViewFrom, ViewTo, NameFrom, NameTo):
+            print("Replace view:" + NameFrom + " by view to" + NameTo)
+
+            ViewFrom.setVisible(False)
+            ViewTo.setVisible(True)
+            ViewTo.setUpdatesEnabled(True)
+            Layout.addWidget(ViewTo)
+            Result = Layout.replaceWidget(ViewFrom, ViewTo, Qt.FindChildrenRecursively)
+            if Result is not None:
+                print(type(Result))
+            print('Result_3:', Result)
+            Layout.update()
+            ViewTo.repaint()
+            ViewTo.show()
+#            self.currentView = NameTo
+
+        def setTableViewLnode(self):
+            if self.nameMainView == 'DataType':
+                print('Table View already active')
+                return
+
+        ## Buttons: Data Model, Communication, Data Type [Horizontal Layout]
+        def leftButtons(self):
+
+            Left_frame = QFrame(self)
+            #            self.frame.setFrameShape(QFrame.StyledPanel)
+            #            self.frame.setFrameShadow(QFrame.Raised)
+            Left_frame.setLineWidth(4)
+            Left_frame.setStyleSheet("background-color: rgb(200, 255, 255)")
+            Left_frame.setStyleSheet("foreground-color: blue;\n")
+            Left_frame.setFrameStyle(QFrame.Box | QFrame.Sunken)
+
+            LeftButtons = QVBoxLayout(Left_frame)
+            LeftButtons.addWidget(Left_frame)
+
+            ## Check Value Button
+            DataModel = QPushButton()
+            DataModel.setText(' DATA MODEL ')
+            DataModel.clicked.connect(self.ShowDataModel)
+            LeftButtons.addWidget(DataModel)
+
+            ##  Template Generation Button
+            Communication = QPushButton()
+            Communication.setText(' COMMUNICATION ')
+            Communication.clicked.connect(self.ShowCommunication)
+            LeftButtons.addWidget(Communication)
+
+            ##  Open File  Button
+            DataType = QPushButton()
+            DataType.setText(' DATA TYPE ')
+            DataType.clicked.connect(self.ShowDataType)
+            LeftButtons.addWidget(DataType)
+
+            return LeftButtons,Left_frame
+
 
         def ExecCheckValue(self):
             print('Check Value Button')
 
         def ExecTemplate(self):
+
             if self.fname is not None:
                 print('Launch Template Generation')
-                TX = Trace(TL.DETAIL, "Trace_FctTst.txt")
-                CG = CodeGeneration("CodeGeneration", TX, self.GM)
-                CG.GenerateTemplate(self.fname[0], self.GM)
+                CG = CodeGeneration("CodeGeneration","FctTemplate",self.sclMgr)
+                CG.GenerateTemplate(self.fname[0],self.tIED)
+
             else:
                 msg = QMessageBox()
                 msg.setWindowTitle("Alert")
@@ -209,312 +274,29 @@ class MainWindow(QMainWindow):
 
         def getFile(self):
 
-            self.fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_GIL\SCL_files\*.*', " IEC61850 files")
+            self.fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_View\SCL_files\*.*',
+                                         " IEC61850 files")
 
-            if self.fname:
-                T0 = time.time()
-                self.GM = globalDataModel(TX, self.fname[0], None)
-                T1 = time.time()
-                self.treeView.setUpdatesEnabled(False)
-                self.DisplayTree(self.GM.tIED,self.GM)
-#                self.treeView.expandAll()
-                self.treeView.setUpdatesEnabled(True)
-                self.show()
-                T2 = time.time()
-                print("Durée chargement:" + str(T1 - T0))
-                print("Durée affichage :" + str(T2 - T1))
+            with LoadSCL(self.fname) as (sclMgr,delta):   #, self.T_LoadSCL):
+                print("Chargement SCL initial:")         # str(self.T_LoadSCL))
 
+            print("Chargement all IED       :")
+            self.treeView.setUpdatesEnabled(False)
+            self.tIED =  sclMgr.get_all_IEDs()
+            T2 = time.time()
 
-        def butState(self,box):
-            self.rootNode.model().layoutAboutToBeChanged.emit()
-#            self.treeView.dataChanged(self)
-    #       self.treeView.setModel(self.treeModel)
+#            class DataType_Table:
+#                def __init__(self, _containerLayout):
+            self.datatype.Initialize(sclMgr)
 
-            self.rootNode.model().layoutChanged.emit()
-            self.treeView.setModel(self.treeModel)
-            self.treeView.expandAll()
-            self.rootNode.removeRows(0,self.rootNode.rowCount())
-
-            self.DisplayTree(self.GM.tIED,self.GM)
+            self.DataModelTree.DisplayTree(self.tIED)
 
             self.treeView.expandAll()
+            self.treeView.setUpdatesEnabled(True)
             self.show()
-
-        def selectNone(self):
-            for button in self.box:
-                if button.isChecked()==True:
-                    button.setChecked(False)
-#                    button.repaint()           # Affichage progressif...
-            self.hLayoutButtons.invalidate()    # Plus lent que button.repaint()
-
-        def selectAll(self):
-            for button in self.box:
-                if button.isChecked()==False:
-                    button.setChecked(True)
- #                   button.repaint()           # Affichage progressif...
-            self.hLayoutButtons.invalidate()    # Plus lent que button.repaint()
-
-        def getFC_Checked(self, fc):
-            for chkBox in self.box:
-                txt = chkBox.text()
-                if chkBox.text() == fc:
-                    x= chkBox.isChecked()
-                    return x
-
-
-
-        def DisplayTree(self, tIED, GM):
-            #        tIED = GM.tIED
-            for iIED in tIED:
-                T_IED = self.add_IED(iIED)  # Return the column head
-                iedName = iIED.name
-                for iAP in iIED.tAccessPoint:
-                    T_AP = self.add_AP(T_IED, iAP)
-                    apName = iAP.name
-                    for iSRV in iAP.tServer:
-                        T_SRV = self.add_SRV(T_AP, iSRV)
-                        IP_Adr = IED_IP(iedName, apName, iSRV.IP)
-                        self.t_AdrIP.append(IP_Adr)
-
-                        for iLD in iSRV.tLDevice:
-                            T_LD = self.add_LD(T_SRV, iLD)
-                            mmsAdr = iLD.inst
-                            for iLN in iLD.LN:
-                                T_LN = self.add_LN(T_LD, iLN)
-
-                                for iDO in iLN.tDO:
-                                    iDOType = GM.DOType.getIEC_DoType(iDO.type)
-                                    if iDOType is None:
-                                        break
-                                    _DO = self.Insert_DO_DOI(' DO ', T_LN, iDO, iDOType)
-                                    if _DO is None:
-                                        break
-                                    self.add_DO_tDA(_DO, iDO, iLN.tDOI)
 
         def wrap(self, string, lenght):
             return '\n'.join(textwrap.wrap(string, lenght))
-
-        def add_IED(self,iIED):
-            self.dataKey = iIED.name
-            self.line    = self.line + 1
-            _ied  = StandardItem(iIED.name , 12, set_bold=True)
-            _ied.setCheckable(True)
-            _desc = StandardItem(iIED.type , 11, set_bold=False)
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-
-            self.rootNode.appendRow((_ied,_vide1,_vide2, _desc))
-            return _ied
-
-        def add_AP(self, T_IED, iAP):
-            _ap  = StandardItem(iAP.name, 8, set_bold=False)
-            _txt = StandardItem(iAP.desc, 8, set_bold=False)
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            T_IED.appendRow((_ap, _vide1,_vide2, _txt))
-            return _ap
-
-        def add_SRV(self, T_AP, iSRV):
-            if iSRV.timeout is not None:
-                _srv1 = StandardItem(( 'Server,'+ iSRV.IP + ' , ' + iSRV.timeout ), 10, set_bold=True)
-            else:
-                _srv1 = StandardItem(('Server,' + iSRV.IP ), 10, set_bold=True)
-
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            _desc = StandardItem(iSRV.desc, 10, set_bold=False)
-            T_AP.appendRow((_srv1, _vide1, _vide2, _desc))
-            return _srv1
-
-        def add_LD(self, T_SRV, iLD):
-            ldName  = iLD.inst + ', ' + iLD.ldName
-            _ldName = StandardItem(ldName,    11, set_bold=False)
-            _ldName.setCheckable(True)
-            _desc   = StandardItem(iLD.desc,  11, set_bold=False)
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            T_SRV.appendRow((_ldName, _vide1, _vide2, _desc))
-            return _ldName
-
-        def add_LN(self, T_LD, iLN):
-            txtLN = iLN.lnPrefix + iLN.lnClass + iLN.lnInst  # ' + iLD.inst
-            _ln = StandardItem(txtLN, 10, set_bold=True)
-            _lnClass = StandardItem(iLN.lnClass, 10, set_bold=True)
-            _lnDesc = StandardItem(iLN.lnDesc, 10, set_bold=False)
-            _vide1 = StandardItem('.', 10, set_bold=False)
-            _vide2 = StandardItem('.', 10, set_bold=False)
-            T_LD.appendRow((_ln, _lnClass,_vide1, _vide2, _lnDesc))
-            return _ln
-
-        def Insert_DO_DOI(self, do_doi, _ln, iDOi, iDOType):
-
-            if iDOType is not None:
-    #            print("DOI:" + iDOi.DOname + ',' + iDOi.type + ',' + iDOType.desc)
-                _DO       = StandardItem(iDOi.DOname + ', ' + iDOType.cdc + ',' + do_doi + ':' + iDOType.desc, 9, set_bold=True)
-                _desc     = StandardItem(iDOi.desc   , 9, set_bold=False)
-                _type     = StandardItem(iDOi.type   , 9, set_bold=False)
-                _typeDesc = StandardItem(iDOType.desc, 9, set_bold=False)
-                if iDOi.value is None:
-                    _value = StandardItem('__DO__', 10, set_bold=False)
-                else:
-                    _value = StandardItem(iDOi.value  , 10, set_bold=False)
-
-                _ln.appendRow((_DO, _type, _value, _desc,_typeDesc))  # , 'xx'))
-
-            else:
-                return None
-            return  _DO
-
-        def Insert_SDO_DOI(self, _DO, iDO):
-            _SDO      = StandardItem(iDO.name, 9, set_bold=True)
-            _desc     = StandardItem(iDO.desc   , 9, set_bold=False)
-            _type     = StandardItem(iDO.type   , 9, set_bold=False)
-    #            _typeDesc = StandardItem(iDOType.desc, 9, set_bold=False)
-            if iDO.value is None:
-                _value = StandardItem('__DO__', 10, set_bold=False)
-            else:
-                _value = StandardItem(iDO.value  , 10, set_bold=False)
-
-            _DO.appendRow((_SDO, _type, _value, _desc)) #,_typeDesc))  # , 'xx'))
-            return _SDO
-
-        def getDADOName(self, DA_DO):
-            if type(DA_DO).__name__ == "DOI":
-                name = DA_DO.DOname
-            else:
-                name = DA_DO.name
-            return name
-        def checkDODAName(self, DA, DOname):
-            DAName = self.getDADOName(DA)
-            return DAName == DOname
-
-        def addDA(self, _DO, iDA,tDOI, iDOname ):
-
-            for iDO in tDOI:
-                if (iDO.DOname == iDOname):
-                    for iDAi in iDO.tDAI:
-                        if iDAi.name == iDA.name:
-    #                        print("DAI for:"+iDO.DOname + '.' + iDAi.name + iDAi.value)
-                            iDA.value = iDAi.value
-
-    #                try:
-    #                    for iSDI in iDO.tSDI1:
-    #                        print(".................SDI for:"+iSDI.SDIname)
-    #                except:
-    #                    pass
-
-            if iDA.bType != 'Struct':
-                self.addDA_DA(_DO, iDA, iDA)
-            else:
-                if self.getFC_Checked(iDA.fc):
-                    _DA   = StandardItem(iDA.name + '[' + iDA.fc + ']', 10, set_bold=True)
-                    _Type = StandardItem(iDA.bType, 10, set_bold=False)
-                    _value =StandardItem(iDA.value, 10, set_bold=False)
-                    _desc = StandardItem(iDA.desc , 10, set_bold=False)
-                    _DO.appendRow((_DA, _Type, _value, _desc))
-                    if iDA.bType == 'Struct':
-                        iDA = self.GM.DAType.getIEC_DaType(iDA.type)
-                        self.Structure(_DA, iDA)
-
-        #    def addSDI(self, _DO, SDI_name):
-    #        _name  = StandardItem(SDI_name, 10, set_bold=True)
-    #        _DO.appendRow((_name))
-    #        return _name
-
-        def add_DO_tDA(self, _DO, iDO, tDOI):
-            for iDA in iDO.tDA:
-                if iDA.do_sdo == 'SDO':
-
-                    _SDO = self.Insert_SDO_DOI(_DO, iDA)
-                    instDO = self.GM.DOType.getIEC_DoType(iDA.type)
-                    for iDA in instDO.tDA:
-                        self.addDA(_SDO,iDA,tDOI,iDO.DOname)
-                else:
-                   self.addDA(_DO,iDA,tDOI,iDO.DOname)
-
-        def addDA_DA(self, _DO, iDA,daType):
-            if not self.getFC_Checked(iDA.fc):
-                return
-
-            _DA = StandardItem(iDA.name + ' [' + iDA.fc +' ] ', 9, set_bold=False)
-            _DAtype_desc = StandardItem(iDA.desc + '[' + daType.desc + ']', 9, set_bold=False)
-            _DA_value    = StandardItem(iDA.value, 9, set_bold=False)
-            _DA_desc     = StandardItem(iDA.desc , 9, set_bold=False)
-            if daType.bType == 'Enum':
-
-                name = StandardItem('Enum [' + iDA.type + ']', 8, set_bold=False)
-                value = StandardItem(iDA.value, 8, set_bold=False)
-                desc  = StandardItem(iDA.desc,  8, set_bold=False)
-                _DO.appendRow((_DA, name, value, desc))
-
-            elif daType.bType == 'Struct':
-                _DA_type = StandardItem(iDA.bType + '(' + iDA.type + ')', 10, set_bold=False)
-                _DO.appendRow((_DA, _DA_type, DA_value, _DA_desc ))
-            else:
-                _DA_type = StandardItem(iDA.bType , 9, set_bold=False)
-                _DO.appendRow((_DA, _DA_type, _DA_value, _DA_desc, _DAtype_desc))
-
-            return
-
-        def EnumerationFull(self, DaName, typeEnum, _DA):
-            iEnum = GM.EnumType.getIEC_EnumType(typeEnum)
-            iEnumTxt = '('
-            cpt = 0
-            for iVal in iEnum.tEnumval:
-                if cpt < len(iEnum.tEnumval) - 1:
-                    iEnumTxt = iEnumTxt + iVal.strValue + ':' + iVal.ord + ','
-                else:
-                    iEnumTxt = iEnumTxt + iVal.strValue + ':' + iVal.ord + ')'
-                cpt = cpt + 1
-            _DA_Name = StandardItem(DaName + ':' + iEnum.id, 8, set_bold=False)
-            _EnumVal = StandardItem(self.wrap(iEnumTxt, 100), 8, set_bold=False)
-            return ((_DA_Name, _EnumVal))
-
-        def Structure(self, _DA,  iDA ):
-
-            for jDA in iDA.tBDA:
-                _SDA   = StandardItem(jDA.name , 8, set_bold=False)
-                _type  = StandardItem(jDA.type , 8, set_bold=False)
-                _value = StandardItem(jDA.value, 8, set_bold=False)
-
-                if jDA.type == 'Enum':
-    ##                (name, id) = self.Enumeration('Enum Structure ( '+jDA.bType+ ') ', _SDA)
-                    name  = StandardItem( 'Enum(s) ('+jDA.bType + ')' , 8, set_bold=False)
-                    value = StandardItem( jDA.value , 8, set_bold=False)
-                    _DA.appendRow((_SDA, name, value))
-                    continue
-
-                _DA.appendRow((_SDA, _type, _value))
-
-                if jDA.type == 'Struct':
-                    subDAType = self.GM.DAType.getIEC_DaType(jDA.bType)
-                    self.Structure(_SDA, subDAType)
-
-        def msgbtn(i):
-            print("Button pressed is:", i.text())
-
-        def findDOI(self, iLN, do_name):
-
-            try:
-                for iDOi in iLN.tDOI:
-                    if iDOi.DOname == do_name:
-                        return iDOi
-            except:
-                print ("do_name:", do_name)
-            return None
-
-        def findDAI(self, iDO, da_name):
-            for iDAi in iDO.tDAI:
-                if iDAi.name == da_name:
-                    return iDAi
-            return None
-
-        def findDA(self, iDO, da_name):
-            for iDA in iDO.tDA:
-                if iDA.name == da_name:
-                    return iDA
-            return None
-
 
         def openMenu(self, value):
             return
@@ -597,16 +379,13 @@ class MainWindow(QMainWindow):
 if __name__ == '__main__':
 
     #    TX = Trace.Console(TL.GENERAL)
-    TX = Trace(TL.DETAIL, "Trace_FctTst.txt")
     tIEDfull = []
 
     myCpt = 0
 
-
     app = QApplication(sys.argv)
     Win = MainWindow()
-    demo = Win.AppDemo(TX)
+    demo = Win.AppDemo()
     demo.show()
     sys.exit(app.exec_())
 
-MainWindow
