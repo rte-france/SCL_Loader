@@ -162,7 +162,7 @@ def _get_node_name(node: etree.Element):
             name = tag
 
     if name is not None:
-        name = re.sub('[-:]', '_', name)  # Pour les RTE-FIP, RTE-BAP, rte:BAP et rte:FIP
+        name = re.sub('[-:]', '_', name)  # in to handle: RTE-FIP, RTE-BAP, rte:BAP and rte:FIP
 
     return name
 
@@ -913,6 +913,37 @@ class SCD_handler():
             ied.clear()
 
         return result
+
+    def get_Data_Type_Definition(self):
+        """
+            Create a table of all Data Types definition (LNodeType, DOType, DAType ad EnumType)
+
+            Returns
+            -------
+            `[IED]`
+                An array of the loaded IED objects
+        """
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}LNodeType'.format(SCL_NAMESPACE))
+        tLN = []
+        for _, iLN in context:
+            tLN.append(iLN) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}DOType'.format(SCL_NAMESPACE))
+        tDO = []
+        for _, iDO in context:
+            tDO.append(iDO) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}DAType'.format(SCL_NAMESPACE))
+        tDA = []
+        for _, iDA in context:
+            tDA.append(iDA) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}EnumType'.format(SCL_NAMESPACE))
+        tEnum = []
+        for _, iEnum in context:
+            tEnum.append(iEnum) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        return tLN,tDO,tDA,tEnum
 
     def _check_scd_file(self) -> tuple:
         """
