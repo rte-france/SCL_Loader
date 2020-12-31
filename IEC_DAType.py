@@ -10,6 +10,9 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
+
+dddddddddd
+
 # -*- coding: utf-8 -*-
 import xml.dom.minidom as dom
 from IEC_Trace import Trace
