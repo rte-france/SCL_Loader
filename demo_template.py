@@ -1,9 +1,5 @@
-from utest.ATL import *
 from VsUtils import variables as VS
-import time
-import sys
-from utest import IECToolKit
-from datetime import datetime
+from utest.ATL import *
 
 from IEC_ACSI_Services import ACSI
 from IEC_ACSI_Services import API_Test

@@ -18,6 +18,8 @@ import logging
 import re
 import scl_loader as SCD
 from IEC61850_XML_Class import DataTypeTemplates as DT
+
+from scl_loader import *
 from PyQt5.QtWidgets import QMainWindow
 
 IED_LD, TYPE, VALUE, DESC, DESC2 = range(5)
