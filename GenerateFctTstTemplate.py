@@ -10,7 +10,8 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-import time, sys
+import time
+import sys
 
 #@package docstring
 #This class analyse parse the configuration in order to collect, foe each function/LD:

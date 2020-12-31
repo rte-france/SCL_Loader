@@ -10,16 +10,31 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
+#@package docstring
+#This class analyse parse the configuration in order to collect, foe each function/LD:
+#    * The input data:
+#       * from GOOSE
+#       * from REPORT
+#       * from SV
+#
+#    * The output data:
+#        * as goose and the subscribers
+#        * as report and the subscribers
+#
+
+##
+# \b DataType_View   This class displays the DataType definition in ttable view and 'setters' function for each LD.
+#
+
 from PyQt5.Qt    import QStandardItemModel, QStandardItem, QTableWidgetItem, QTableView, QLabel, QFrame
 from PyQt5.Qt    import QTableWidget, QVBoxLayout, QHBoxLayout, QPushButton
 from PyQt5.QtGui import QFont, QColor
 from PyQt5.QtCore import Qt
-
-LNCLASS, DO_NAME, LN_DESC, ID = range(4)
-
 import logging
 LOGGER = logging.getLogger(__name__)
 
+
+LNCLASS, DO_NAME, LN_DESC, ID = range(4)
 LNODETYPE = "LNodeType"
 DOTYPE    = "DOType"
 DATYPE    = "DAType"
@@ -47,11 +62,21 @@ class DataType_Table:
         self.nbDAType    = 0
         self.nbEnumType  = 0
         self.currentView = LNODETYPE
+        (self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType) = ([], [], [], [])
+        (self.LNTableView, self.DOTypeView, self.DATypeView, self.EnumTypeView) = (None,None,None,None)
+        self.nameMainView = ''
+        self.DT_frame   = None      # Frame used for the Data Type.
 
-    def Initialize(self,_sclMgr):
+    def Initialize(self, _sclMgr):
         self.sclMgr     = _sclMgr
-        self.nbLNodeType, self.nbDOType,self.nbDAType,self.nbEnum =  self.countObject()
+        (self.nbLNodeType, self.nbDOType, self.nbDAType, self.nbEnum) = self.countObject()
 
+    ## \b countObject:  count the number of objects for each type: LNodeType, DOType, DAType and EnumType.
+    #
+    # This function is getting its data from SCL Manager.
+    #
+    # @param self           No Paramenter.
+    #
     def countObject(self):
         self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType = self.sclMgr.get_Data_Type_Definition()
         for iLNodeType in self.tLNodeType:
@@ -59,21 +84,21 @@ class DataType_Table:
             for iDO in iLNodeType.getchildren():
                 self.nbLNodeType = self.nbLNodeType + 1
 
-        self.LNtableView = self.CreateTableView(self.nbLNodeType,LNODETYPE,"xxx")
+        self.LNTableView = self.CreateTableView(self.nbLNodeType, LNODETYPE, "DO")
         self.SetLNodeTypeTable()
 
         for iDOType in self.tDOType:
             self.nbDOType = self.nbDOType + 1
             for iDA in iDOType.getchildren():
                 self.nbDOType = self.nbDOType + 1
-        self.DOTypeView = self.CreateTableView(self.nbDOType, DOTYPE,"DA[FC]")
+        self.DOTypeView = self.CreateTableView(self.nbDOType, DOTYPE, "DA[FC]")
         self.SetDOTypeTable()
 
         for iDAType in self.tDAType:
             self.nbDAType = self.nbDAType + 1
             for iBDA in iDAType.getchildren():
                 self.nbDAType = self.nbDAType + 1
-        self.DATypeView = self.CreateTableView(self.nbDAType, DATYPE ,"SDA/STRUCT")
+        self.DATypeView = self.CreateTableView(self.nbDAType, DATYPE, "SDA/STRUCT")
         self.SetDATypeTable()
 
         for iEnum in self.tEnumType:
@@ -81,13 +106,19 @@ class DataType_Table:
             for iVal in iEnum.getchildren():
                 self.nbEnumType = self.nbEnumType + 1
 
-        self.EnumTypeView = self.CreateTableView(self.nbEnumType, ENUMTYPE ,"ENUMTYPE")
+        self.EnumTypeView = self.CreateTableView(self.nbEnumType, ENUMTYPE, "ENUMTYPE")
         self.SetEnumTypeTable()
-        return self.nbLNodeType, self.nbDOType,self.nbDAType,self.nbEnumType
+        return self.nbLNodeType, self.nbDOType, self.nbDAType, self.nbEnumType
 
-    def CreateTableView(self,nbRow, Texte1, Texte2):
+    ## \b CreateTableView:  create an empty table view, for each data type.
+    #
+    # @param nbRow   The number of objects, used to dimensioned the table view.
+    # @param Texte1  The title for first column.
+    # @param Texte2  The title for second column.
+    #
+    def CreateTableView(self, nbRow, Texte1, Texte2):
 
-        tableView = QTableWidget(nbRow,5)
+        tableView = QTableWidget(nbRow, 5)
         tableView.setContextMenuPolicy(Qt.CustomContextMenu)
         tableView.customContextMenuRequested.connect(self.openMenu)
         tableView.clicked.connect(self.openMenu)
@@ -102,10 +133,15 @@ class DataType_Table:
         tableView.setColumnWidth(2, 50)
         tableView.setColumnWidth(3, 100)
         tableView.setColumnWidth(4, 100)
-        self.nameMainView = Texte1+ DATYPE
+        self.nameMainView = Texte1 + DATYPE
 
         return tableView
 
+    ## \b DataTypeButtons:  create an empty table view, for each data type.
+    #
+    # @param winLayout   The number of objects, used to dimensioned the table view.
+    # @param FC_frame   The widget 'frame' which contains the buttons to select which table to display.
+    #
     def DataTypeButtons(self, winLayout, FC_frame):
         self.DT_frame = QFrame()
         self.DT_frame.setLineWidth(4)
@@ -138,21 +174,7 @@ class DataType_Table:
         print('replaceWidget(self.FC_frame, self.DT_frame)')
         self.commuteView(self.winLayout, FC_frame, self.DT_frame, 'FC Frame', 'DT Frame')
 
-#        FC_frame.setVisible(False)
-
-#        self.DT_frame.setVisible(True)
-#        self.DT_frame.setUpdatesEnabled(True)
-#        self.winLayout.addWidget(self.DT_frame)
-
-#        Result = self.winLayout.replaceWidget(FC_frame, self.DT_frame,Qt.FindChildrenRecursively)
-
-#        if Result is not None:
-#            print(type(Result))
-#        print('Result_3:', Result)
-#        self.winLayout.update()
-#        self.DT_frame.repaint()
-#        self.DT_frame.show()
-        return  self.DT_frame
+        return self.DT_frame
 
     def SetLNodeTypeTable(self):
         row = 1

@@ -10,15 +10,10 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-import xml.dom.minidom as dom
 import time
-from IEC_FileListe import FileListe as FL
 
-from IEC_Trace              import Trace
-from IEC_Trace              import Level   as TL
 from IEC_TypeSimpleCheck    import Check
 
-from IEC_ParcoursDataModel import globalDataModel
 from IEC_ACSI_Services     import API_Test
 from IEC_ACSI_Services     import ACSI
 
