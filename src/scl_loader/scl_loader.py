@@ -103,15 +103,6 @@ NODES_ATTRS = {
         'fc',
         'ix'
     ],
-    'SubNetWork' : [
-        'type',
-        'name'
-    ],
-    'ConnectedAP' : [
-        'iedName',
-        'apName',
-        'redProt'
-    ],
 }
 
 
@@ -171,7 +162,7 @@ def _get_node_name(node: etree.Element):
             name = tag
 
     if name is not None:
-        name = re.sub('[-:]', '_', name)  # Pour les RTE-FIP, RTE-BAP, rte:BAP et rte:FIP
+        name = re.sub('[-:]', '_', name)  # in to handle: RTE-FIP, RTE-BAP, rte:BAP and rte:FIP
 
     return name
 
@@ -314,10 +305,6 @@ class SCDNode:
             new_node = LN(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'LN0':
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'SubNetwork':
-            new_node = SubNetwork(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'ConnectedAP':
-            new_node = ConnectedAP(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
 
@@ -810,69 +797,6 @@ class IED(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['IED'])
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-
-class SubNetwork(SCDNode):
-    """
-        Class to manage an SubNetwork
-    """
-
-    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
-        """
-            Constructor
-
-            Parameters
-            ----------
-            `datatypes`
-                Instance of the DataTypeTemplates object from the SCD/SCL file.
-
-            `node_elem` (optional)
-                etree.Element element from the SCD/SCL file to build the node object.
-
-            `fullattrs` (optional)
-                If True, all the possible attributes for the SCD objects will be created
-                even if they are not described in the SCD/SCL file.
-
-            `kwargs` (optional)
-                Dictionary of the node attributes.
-
-            /!\\ At least one of node_elem or kwargs must be provided /!\\
-        """
-        self._all_attributes = []
-        self._all_attributes.extend(NODES_ATTRS['SubNetWork'])
-        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
-
-
-class ConnectedAP(SCDNode):
-    """
-        Class to manage an IED
-    """
-
-    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
-        """
-            Constructor
-
-            Parameters
-            ----------
-            `datatypes`
-                Instance of the DataTypeTemplates object from the SCD/SCL file.
-
-            `node_elem` (optional)
-                etree.Element element from the SCD/SCL file to build the node object.
-
-            `fullattrs` (optional)
-                If True, all the possible attributes for the SCD objects will be created
-                even if they are not described in the SCD/SCL file.
-
-            `kwargs` (optional)
-                Dictionary of the node attributes.
-
-            /!\\ At least one of node_elem or kwargs must be provided /!\\
-        """
-        self._all_attributes = []
-        self._all_attributes.extend(NODES_ATTRS['ConnectedAP'])
-        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
-
-
 class SCD_handler():
     """
         Class to handle a SCD/SCL file
@@ -962,6 +886,37 @@ class SCD_handler():
             ied.clear()
 
         return result
+    
+    def get_Data_Type_Definition(self):
+        """
+            Create a table of all Data Types definition (LNodeType, DOType, DAType ad EnumType)
+
+            Returns
+            -------
+            `[IED]`
+                An array of the loaded IED objects
+        """
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}LNodeType'.format(SCL_NAMESPACE))
+        tLN = []
+        for _, iLN in context:
+            tLN.append(iLN) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}DOType'.format(SCL_NAMESPACE))
+        tDO = []
+        for _, iDO in context:
+            tDO.append(iDO) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}DAType'.format(SCL_NAMESPACE))
+        tDA = []
+        for _, iDA in context:
+            tDA.append(iDA) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}EnumType'.format(SCL_NAMESPACE))
+        tEnum = []
+        for _, iEnum in context:
+            tEnum.append(iEnum) # DataType(self.datatypes, iLN, self._fullattrs))
+
+        return tLN,tDO,tDA,tEnum
 
     def _check_scd_file(self) -> (bool, str):
         """
