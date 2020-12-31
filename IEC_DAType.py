@@ -63,7 +63,6 @@ class Parse_DAType:
     # @return the dictionary of DAType
     def GetDATypeDict(self):
         return self.dictDaType
-
     ##
     # \b Get_BDA_Attributes: retrieve the list of BDA for a DAType.
     #
@@ -76,7 +75,6 @@ class Parse_DAType:
     # 			<BDA name="Test" bType="BOOLEAN"/>
     #           ...
     def Get_BDA_Attributes(self,pBDA):
-
         tBDA = []  # Allocate the array of pDBA (global au SCL)
         pDBA = pBDA.firstChild.nextSibling
         while pDBA:
