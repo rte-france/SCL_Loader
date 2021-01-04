@@ -332,10 +332,6 @@ class SCDNode:
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'LDevice':
             new_node = LD(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'SubNetwork':
-            new_node = SubNetwork(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'ConnectedAP':
-            new_node = ConnectedAP(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
 
@@ -863,7 +859,7 @@ class SCD_handler():
             elem_name = _get_node_name(elem)
             setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
 
-    def get_all_IEDs(self) -> list[IED]:
+    def get_all_IEDs(self) -> list:
         """
             Load all the IEDs from the SCD/SCL file
 
@@ -901,7 +897,7 @@ class SCD_handler():
             else:
                 ied.clear()
 
-    def get_IED_names_list(self) -> list[str]:
+    def get_IED_names_list(self) -> list:
         """
             Load an IED from the SCD/SCL file by name
 
@@ -918,7 +914,7 @@ class SCD_handler():
 
         return result
 
-    def _check_scd_file(self) -> tuple(bool, str):
+    def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -944,7 +940,7 @@ class SCD_handler():
             LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
-    def _iter_get_SCL_elems(self) -> list[etree.Element]:
+    def _iter_get_SCL_elems(self) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -977,7 +973,7 @@ class SCD_handler():
 
         return result
 
-    def _iter_get_all_elem_by_tag(self, tag:str) -> list[etree.Element]:
+    def _iter_get_all_elem_by_tag(self, tag:str) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
