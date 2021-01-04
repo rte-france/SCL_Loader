@@ -283,13 +283,16 @@ class MainWindow(QMainWindow):
             print("Chargement all IED       :")
             self.treeView.setUpdatesEnabled(False)
             self.tIED =  self.sclMgr.get_all_IEDs()
+
+            self.tComm = self.sclMgr.Communication
+
             T2 = time.time()
 
 #            class DataType_Table:
 #                def __init__(self, _containerLayout):
 #            self.datatype.Initialize(self, self.sclMgr)
 
-            self.DataModelTree.DisplayTree(self.tIED)
+            self.DataModelTree.DisplayTree(self.tIED,self.sclMgr.Communication.RSPACE_PROCESS_NETWORK)
 
             self.treeView.expandAll()
             self.treeView.setUpdatesEnabled(True)
