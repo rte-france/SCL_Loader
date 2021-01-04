@@ -31,7 +31,7 @@ SCD_OPEN_PATH = os.path.join(HERE, 'resources', SCD_OPEN_NAME)
 SCD_OPEN_IOP_PATH = os.path.join(HERE, 'resources', SCD_OPEN_IOP_NAME)
 SCD_WRONG_PATH = os.path.join(HERE, 'resources', SCD_WRONG_NAME)
 
-def _get_node_list_by_tag(scd, tag:str)->[]:
+def _get_node_list_by_tag(scd, tag:str) -> list:
     result = []
     context = etree.iterparse(scd._scd_path, events=("end",), tag=r'{http://www.iec.ch/61850/2003/SCL}' + tag)
     for _, ied in context:
@@ -276,3 +276,13 @@ class TestSCD_OPEN():
 def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     assert scd
+
+def test_get_Data_Type_Definition():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    datatype_defs = scd.datatypes.get_Data_Type_Definitions()
+    assert datatype_defs
+    assert len(datatype_defs.keys()) == 4
+    assert len(datatype_defs['LNodeType']) == 145
+    assert len(datatype_defs['DOType']) == 89
+    assert len(datatype_defs['DAType']) == 16
+    assert len(datatype_defs['EnumType']) == 40
