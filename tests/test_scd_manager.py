@@ -25,11 +25,13 @@ from scl_loader import DataTypeTemplates
 LOGGER = logging.getLogger(__name__)
 HERE = os.path.abspath(os.path.dirname(__file__))
 SCD_OPEN_NAME = 'SCD_Test.scl'
+SCD_OPEN_IOP_NAME = 'IOP_ParserOpenSource_SCD_SITE_20201026_v2.scd'
 SCD_WRONG_NAME = 'SCD_WRONG.scd'
 SCD_OPEN_PATH = os.path.join(HERE, 'resources', SCD_OPEN_NAME)
+SCD_OPEN_IOP_PATH = os.path.join(HERE, 'resources', SCD_OPEN_IOP_NAME)
 SCD_WRONG_PATH = os.path.join(HERE, 'resources', SCD_WRONG_NAME)
 
-def _get_node_list_by_tag(scd, tag:str)->[]:
+def _get_node_list_by_tag(scd, tag:str) -> list:
     result = []
     context = etree.iterparse(scd._scd_path, events=("end",), tag=r'{http://www.iec.ch/61850/2003/SCL}' + tag)
     for _, ied in context:
@@ -38,7 +40,7 @@ def _get_node_list_by_tag(scd, tag:str)->[]:
 
 def test_safe_convert_value():
     """
-        I should be able to convert a value in 
+        I should be able to convert a value in
         string format to typed format.
         Typed formats supported : bool, int, float
     """
@@ -58,7 +60,7 @@ def test_safe_convert_value():
 def test_valid_scd():
     assert SCD_handler(SCD_OPEN_PATH)
     with pytest.raises(AttributeError):
-        SCD_handler(SCD_WRONG_PATH) 
+        SCD_handler(SCD_WRONG_PATH)
 
 def test_datatypes_get_by_id():
     """
@@ -77,7 +79,7 @@ class TestSCD_OPEN():
 
     def teardown_method(self):
         del self.scd
-     
+
     def _start_perfo_stats(self):
         self.pr = cProfile.Profile()
         self.pr.enable()
@@ -113,7 +115,7 @@ class TestSCD_OPEN():
         assert getattr(simple_da_inst,'dupd')       == False
         assert getattr(simple_da_inst,'name')       == 'q'
         assert getattr(simple_da_inst,'bType')      == 'Quality'
-        
+
         simple2_da_inst = DA(self.scd.datatypes, None, None, **simple2_da)
         assert getattr(simple2_da_inst,'fc')        == 'DC'
         assert getattr(simple2_da_inst,'dchg')      == False
@@ -123,7 +125,7 @@ class TestSCD_OPEN():
         assert getattr(simple2_da_inst,'bType')     == 'VisString255'
         assert getattr(simple2_da_inst,'valKind')   == 'RO'
         assert getattr(simple2_da_inst,'valImport') == False
-        
+
         enum_da_inst = DA(self.scd.datatypes, None, None, **enum_da)
         assert getattr(enum_da_inst,'fc')           == 'CF'
         assert getattr(enum_da_inst,'dchg')         == True
@@ -145,8 +147,8 @@ class TestSCD_OPEN():
         assert getattr(struct_da_inst,'type') == 'Originator'
         assert struct_da_inst.orCat.tag == 'BDA'             # pylint: disable=maybe-no-member
         assert struct_da_inst.orIdent.bType == 'Octet64'     # pylint: disable=maybe-no-member
-        
-    def test_create_DO_by_dtid(self): 
+
+    def test_create_DO_by_dtid(self):
         """
             I should be able to create a DO object with datatype id
         """
@@ -158,24 +160,24 @@ class TestSCD_OPEN():
         assert getattr(simple_do_inst,'parent')         == None
         assert isinstance(getattr(simple_do_inst,'ctlModel')    , DA)
         assert simple_do_inst.ctlModel.type == 'CtlModels'      # pylint: disable=maybe-no-member
-        assert isinstance(getattr(simple_do_inst,'blkEna')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'ctlNum')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'d')           , DA) 
-        assert isinstance(getattr(simple_do_inst,'dU')          , DA) 
-        assert isinstance(getattr(simple_do_inst,'dataNs')      , DA)   
-        assert isinstance(getattr(simple_do_inst,'opOk')        , DA) 
-        assert isinstance(getattr(simple_do_inst,'opRcvd')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'operTimeout') , DA) 
-        assert isinstance(getattr(simple_do_inst,'origin')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'q')           , DA) 
-        assert isinstance(getattr(simple_do_inst,'stVal')       , DA) 
-        assert isinstance(getattr(simple_do_inst,'subEna')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'subID')       , DA) 
-        assert isinstance(getattr(simple_do_inst,'subQ')        , DA) 
-        assert isinstance(getattr(simple_do_inst,'subVal')      , DA) 
-        assert isinstance(getattr(simple_do_inst,'t')           , DA) 
-        assert isinstance(getattr(simple_do_inst,'tOpOk')       , DA) 
-   
+        assert isinstance(getattr(simple_do_inst,'blkEna')      , DA)
+        assert isinstance(getattr(simple_do_inst,'ctlNum')      , DA)
+        assert isinstance(getattr(simple_do_inst,'d')           , DA)
+        assert isinstance(getattr(simple_do_inst,'dU')          , DA)
+        assert isinstance(getattr(simple_do_inst,'dataNs')      , DA)
+        assert isinstance(getattr(simple_do_inst,'opOk')        , DA)
+        assert isinstance(getattr(simple_do_inst,'opRcvd')      , DA)
+        assert isinstance(getattr(simple_do_inst,'operTimeout') , DA)
+        assert isinstance(getattr(simple_do_inst,'origin')      , DA)
+        assert isinstance(getattr(simple_do_inst,'q')           , DA)
+        assert isinstance(getattr(simple_do_inst,'stVal')       , DA)
+        assert isinstance(getattr(simple_do_inst,'subEna')      , DA)
+        assert isinstance(getattr(simple_do_inst,'subID')       , DA)
+        assert isinstance(getattr(simple_do_inst,'subQ')        , DA)
+        assert isinstance(getattr(simple_do_inst,'subVal')      , DA)
+        assert isinstance(getattr(simple_do_inst,'t')           , DA)
+        assert isinstance(getattr(simple_do_inst,'tOpOk')       , DA)
+
     def test_create_LN_by_dtid(self):
         """
             I should be able to create a LN object
@@ -193,7 +195,7 @@ class TestSCD_OPEN():
         assert isinstance(getattr(ln_inst,'ISCSO1') , DO)
         assert isinstance(getattr(ln_inst,'Ind1')   , DO)
         assert isinstance(getattr(ln_inst,'Loc')    , DO)
-        assert isinstance(getattr(ln_inst,'LocKey') , DO)        
+        assert isinstance(getattr(ln_inst,'LocKey') , DO)
         assert isinstance(getattr(ln_inst,'LocSta') , DO)
         assert isinstance(getattr(ln_inst,'Op1')    , DO)
         assert isinstance(getattr(ln_inst,'OpCntRs'), DO)
@@ -222,7 +224,7 @@ class TestSCD_OPEN():
         assert len(ln0.get_children('GSEControl')) == 157
         assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('DO')) == 8
-        assert isinstance(getattr(ln0,'Diag') , DO)   
+        assert isinstance(getattr(ln0,'Diag') , DO)
 
     def test_create_LD(self):
         """
@@ -240,7 +242,7 @@ class TestSCD_OPEN():
             I should be able to create a IED object
         """
         ieds = _get_node_list_by_tag(self.scd, 'IED')
-        self._start_perfo_stats()        
+        self._start_perfo_stats()
         ied = IED(self.scd.datatypes, ieds[0])
         assert ied.HVDC_LD_All_1.Server.LDevice.ANCR1.ADetun.blkEna.fc == 'BL'  # pylint: disable=maybe-no-member
         assert ied.name == 'LD_All'                                             # pylint: disable=maybe-no-member
@@ -270,3 +272,17 @@ class TestSCD_OPEN():
         result = self.scd.get_IED_names_list()
         assert len(result) == 1
         assert result[0] == 'LD_All'
+
+def test_open_iop():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    assert scd
+
+def test_get_Data_Type_Definition():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    datatype_defs = scd.datatypes.get_Data_Type_Definitions()
+    assert datatype_defs
+    assert len(datatype_defs.keys()) == 4
+    assert len(datatype_defs['LNodeType']) == 145
+    assert len(datatype_defs['DOType']) == 89
+    assert len(datatype_defs['DAType']) == 16
+    assert len(datatype_defs['EnumType']) == 40

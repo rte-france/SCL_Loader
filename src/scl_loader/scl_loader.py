@@ -103,15 +103,6 @@ NODES_ATTRS = {
         'fc',
         'ix'
     ],
-    'SubNetWork' : [
-        'type',
-        'name'
-    ],
-    'ConnectedAP' : [
-        'iedName',
-        'apName',
-        'redProt'
-    ],
 }
 
 
@@ -166,12 +157,12 @@ def _get_node_name(node: etree.Element):
         elif tag == 'Private':
             name = node.get('type')
         elif tag == 'ConnectedAP':
-            name = node.get('iedName')        
+            name = node.get('iedName')
         else:
             name = tag
 
     if name is not None:
-        name = re.sub('[-:]', '_', name)  # Pour les RTE-FIP, RTE-BAP, rte:BAP et rte:FIP
+        name = re.sub('[-:]', '_', name)  # in to handle: RTE-FIP, RTE-BAP, rte:BAP and rte:FIP
 
     return name
 
@@ -209,6 +200,27 @@ class DataTypeTemplates:
         item_xpath = 'child::*[@id="{}"]'.format(id)
         return self._datatypes_root.xpath(item_xpath, namespaces=NS)[0]
 
+    def get_Data_Type_Definitions(self) -> dict:
+
+        """
+            Create a table of all Data Types definitions (LNodeType, DOType, DAType ad EnumType)
+
+            Returns
+
+            -------
+
+            `dict`
+
+                A dictionnary of the DataTypes definitions grouped by tag
+        """
+        tags = {'LNodeType':[], 'DOType':[], 'DAType':[], 'EnumType':[]}
+
+        for tag_key in tags.keys():
+            item_xpath = 'child::iec61850:{}'.format(tag_key)
+            tags[tag_key] = self._datatypes_root.xpath(item_xpath, namespaces=NS)
+
+        return tags
+
 
 # TODO :
 # - Manage BAP/FIP
@@ -218,6 +230,10 @@ class SCDNode:
     """
         Basic class to compute SCD nodes
     """
+    @property
+    def children(self):
+        return self.get_children()
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -314,10 +330,8 @@ class SCDNode:
             new_node = LN(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'LN0':
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'SubNetwork':
-            new_node = SubNetwork(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'ConnectedAP':
-            new_node = ConnectedAP(self._datatypes, elem, self._fullattrs, **attributes)
+        elif elem.tag.split('}')[-1] == 'LDevice':
+            new_node = LD(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
 
@@ -332,7 +346,7 @@ class SCDNode:
 
         return new_node
 
-    def get_DA_leaf_nodes(self) -> {}:
+    def get_DA_leaf_nodes(self) -> dict:
         """
             Recursively retrieve the leaf DA nodes of the current node.
 
@@ -350,7 +364,7 @@ class SCDNode:
         self._collect_DA_leaf_nodes(self, leaves, mms)
         return leaves
 
-    def get_children(self, tag: str = None) -> []:
+    def get_children(self, tag: str = None) -> list:
         """
             Retrieve the children nodes of the current node.
             (not recursive)
@@ -448,7 +462,7 @@ class SCDNode:
 
         return len(node.get_children()) == 0 and isinstance(node, DA) and hasattr(node, 'parent')
 
-    def _collect_DA_leaf_nodes(self, node, leaves: {}, mms: bool = False) -> {}:
+    def _collect_DA_leaf_nodes(self, node, leaves: dict, mms: bool = False) -> dict:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -810,69 +824,6 @@ class IED(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['IED'])
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-
-class SubNetwork(SCDNode):
-    """
-        Class to manage an SubNetwork
-    """
-
-    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
-        """
-            Constructor
-
-            Parameters
-            ----------
-            `datatypes`
-                Instance of the DataTypeTemplates object from the SCD/SCL file.
-
-            `node_elem` (optional)
-                etree.Element element from the SCD/SCL file to build the node object.
-
-            `fullattrs` (optional)
-                If True, all the possible attributes for the SCD objects will be created
-                even if they are not described in the SCD/SCL file.
-
-            `kwargs` (optional)
-                Dictionary of the node attributes.
-
-            /!\\ At least one of node_elem or kwargs must be provided /!\\
-        """
-        self._all_attributes = []
-        self._all_attributes.extend(NODES_ATTRS['SubNetWork'])
-        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
-
-
-class ConnectedAP(SCDNode):
-    """
-        Class to manage an IED
-    """
-
-    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs=False, **kwargs: dict):
-        """
-            Constructor
-
-            Parameters
-            ----------
-            `datatypes`
-                Instance of the DataTypeTemplates object from the SCD/SCL file.
-
-            `node_elem` (optional)
-                etree.Element element from the SCD/SCL file to build the node object.
-
-            `fullattrs` (optional)
-                If True, all the possible attributes for the SCD objects will be created
-                even if they are not described in the SCD/SCL file.
-
-            `kwargs` (optional)
-                Dictionary of the node attributes.
-
-            /!\\ At least one of node_elem or kwargs must be provided /!\\
-        """
-        self._all_attributes = []
-        self._all_attributes.extend(NODES_ATTRS['ConnectedAP'])
-        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
-
-
 class SCD_handler():
     """
         Class to handle a SCD/SCL file
@@ -908,7 +859,7 @@ class SCD_handler():
             elem_name = _get_node_name(elem)
             setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
 
-    def get_all_IEDs(self) -> [IED]:
+    def get_all_IEDs(self) -> list:
         """
             Load all the IEDs from the SCD/SCL file
 
@@ -946,7 +897,7 @@ class SCD_handler():
             else:
                 ied.clear()
 
-    def get_IED_names_list(self) -> [str]:
+    def get_IED_names_list(self) -> list:
         """
             Load an IED from the SCD/SCL file by name
 
@@ -963,7 +914,7 @@ class SCD_handler():
 
         return result
 
-    def _check_scd_file(self) -> (bool, str):
+    def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -989,7 +940,7 @@ class SCD_handler():
             LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
-    def _iter_get_SCL_elems(self) -> [etree.Element]:
+    def _iter_get_SCL_elems(self) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -1022,7 +973,7 @@ class SCD_handler():
 
         return result
 
-    def _iter_get_all_elem_by_tag(self, tag:str) -> [etree.Element]:
+    def _iter_get_all_elem_by_tag(self, tag:str) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
