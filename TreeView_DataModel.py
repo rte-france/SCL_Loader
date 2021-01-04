@@ -54,12 +54,16 @@ class DataModelTree():
         self.t_AdrIP    = []
         self.line       = 0
         self.containerLayout = _containerLayout
-        self.winLayout = _winLayout
-        self.FC_frame = self.FCbuttons(self.winLayout, None)  # Functional Constraint Selection buttons
+        self.winLayout  = _winLayout
+        self.box = []
+        self.FC_frame   = self.FCbuttons(self.winLayout, None)  # Functional Constraint Selection buttons
+        self.treeView   = None
+        self.treeLayout = None
+        self.treeModel  = None
 
     def CreateTreeView(self):
 
-        self.treeLayout= QVBoxLayout()
+        self.treeLayout = QVBoxLayout()
         self.containerLayout.addLayout(self.treeLayout)         # add the Tree View
 
         self.treeView = QTreeView()
@@ -87,7 +91,7 @@ class DataModelTree():
 
         self.treeLayout.addWidget(self.treeView)
         self.rootNode = self.treeModel.invisibleRootItem()
-        return self.treeView,self.treeModel
+        return self.treeView, self.treeModel
 
     def openMenu(self, value):
         return
@@ -118,7 +122,6 @@ class DataModelTree():
                             )
         self.hLayoutButtons = QHBoxLayout(self.FC_frame)
 
-        self.box = []
         i = 0
         for fc in DT.FC.lstFC:
             chkbox = QCheckBox(fc, self.FC_frame)

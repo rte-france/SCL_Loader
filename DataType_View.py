@@ -62,8 +62,8 @@ class DataType_Table:
         self.nbDAType    = 0
         self.nbEnumType  = 0
         self.currentView = LNODETYPE
-        self.tLNodeType = self.tDOType =self.tDAType = self.tEnumType =  []
-        self.LNTableView= self.DOTypeView = self.DATypeView =self.EnumTypeView = None
+        self.tLNodeType = self.tDOType = self.tDAType = self.tEnumType = []
+        self.LNTableView = self.DOTypeView = self.DATypeView = self.EnumTypeView = None
         self.nameMainView = ''
         self.DT_frame   = None      # Frame used for the Data Type.
 
@@ -75,7 +75,7 @@ class DataType_Table:
     #
     # This function is getting its data from SCL Manager.
     #
-    # @param self           No Paramenter.
+    # @param self           No Parameter.
     #
     def countObject(self):
         self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType = self.sclMgr.get_Data_Type_Definition()
@@ -84,30 +84,30 @@ class DataType_Table:
             for iDO in iLNodeType.getchildren():
                 self.nbLNodeType = self.nbLNodeType + 1
 
-        self.LNTableView = self.CreateTableView(self.nbLNodeType, LNODETYPE, "DO")
-        self.SetLNodeTypeTable()
+        LNTableView = self.CreateTableView(self.nbLNodeType, LNODETYPE, "DO")
+        self.LNTableView = self.SetLNodeTypeTable(LNTableView)
 
         for iDOType in self.tDOType:
             self.nbDOType = self.nbDOType + 1
             for iDA in iDOType.getchildren():
                 self.nbDOType = self.nbDOType + 1
-        self.DOTypeView = self.CreateTableView(self.nbDOType, DOTYPE, "DA[FC]")
-        self.SetDOTypeTable()
+        DOTypeView = self.CreateTableView(self.nbDOType, DOTYPE, "DA[FC]")
+        self.DOTypeView = self.SetDOTypeTable(DOTypeView)
 
         for iDAType in self.tDAType:
             self.nbDAType = self.nbDAType + 1
             for iBDA in iDAType.getchildren():
                 self.nbDAType = self.nbDAType + 1
-        self.DATypeView = self.CreateTableView(self.nbDAType, DATYPE, "SDA/STRUCT")
-        self.SetDATypeTable()
+        DATypeView = self.CreateTableView(self.nbDAType, DATYPE, "SDA/STRUCT")
+        self.DATypeView = self.SetDATypeTable(DATypeView)
 
         for iEnum in self.tEnumType:
             self.nbEnumType = self.nbEnumType + 1
             for iVal in iEnum.getchildren():
                 self.nbEnumType = self.nbEnumType + 1
 
-        self.EnumTypeView = self.CreateTableView(self.nbEnumType, ENUMTYPE, "ENUMTYPE")
-        self.SetEnumTypeTable()
+        EnumTypeView = self.CreateTableView(self.nbEnumType, ENUMTYPE, "ENUMTYPE")
+        self.EnumTypeView = self.SetEnumTypeTable(EnumTypeView)
         return self.nbLNodeType, self.nbDOType, self.nbDAType, self.nbEnumType
 
     ## \b CreateTableView:  create an empty table view, for each data type.
@@ -137,7 +137,7 @@ class DataType_Table:
 
         return tableView
 
-    ## \b DataTypeButtons:  create an empty table view, for each data type.
+    ## \b DataTypeButtons:  create four buttons to select the view to display: LNodeType, DOType, DAType and enumeration.
     #
     # @param winLayout   The number of objects, used to dimensioned the table view.
     # @param FC_frame   The widget 'frame' which contains the buttons to select which table to display.
@@ -176,40 +176,48 @@ class DataType_Table:
 
         return self.DT_frame
 
-    def SetLNodeTypeTable(self):
+    ## \b SetLNodeTypeTable:  fill the LNodeTypeView with the data from the SCL file.
+    #
+    # @param LNTableView   The TableView object to be filled with data.
+    #
+    def SetLNodeTypeTable(self, LNTableView):
         row = 1
         for iLNodeType in self.tLNodeType:
             name =  iLNodeType.get('lnClass')
-            id   =  iLNodeType.get('id')
+            _id  =  iLNodeType.get('id')
             desc =  iLNodeType.get('desc')
-            self.LNTableView.setCellWidget(row, 0,  QLabel(name))
-            self.LNTableView.setCellWidget(row, 3, QLabel(id))
-            self.LNTableView.setCellWidget(row, 4, QLabel(desc))
+            LNTableView.setCellWidget(row, 0,  QLabel(name))
+            LNTableView.setCellWidget(row, 3, QLabel(_id))
+            LNTableView.setCellWidget(row, 4, QLabel(desc))
             row = row + 1
 
             for iDO in iLNodeType.getchildren():
                 doName = iDO.get('name')
                 doType = iDO.get('type')
 
-                self.LNTableView.setCellWidget(row, 1, QLabel(doName))    # Desc
-                self.LNTableView.setCellWidget(row, 3, QLabel(doType))    # DoType
+                LNTableView.setCellWidget(row, 1, QLabel(doName))    # Desc
+                LNTableView.setCellWidget(row, 3, QLabel(doType))    # DoType
                 row = row + 1
 
-        self.LNTableView.setUpdatesEnabled(True)
-        self.LNTableView.resizeColumnsToContents()
-        self.currentView= LNODETYPE
-#        print("SetLNodeTypeTable: "+ str(row) +" lines" )
+        LNTableView.setUpdatesEnabled(True)
+        LNTableView.resizeColumnsToContents()
+        self.currentView = LNODETYPE
+        return LNTableView
 
-    def SetDOTypeTable(self):
-        row =1
+    ## \b SetDOTypeTable:  fill the DOTypeView with the data from the SCL file.
+    #
+    # @param DOTypeView   The DOTypeView object to be filled with data.
+    #
+    def SetDOTypeTable(self,DOTypeView):
+        row = 1
         for iDOType in self.tDOType:
             name = iDOType.get('cdc')
             id   = iDOType.get('id')
             desc = iDOType.get('desc')
 
-            self.DOTypeView.setCellWidget(row, 0, QLabel(name))
-            self.DOTypeView.setCellWidget(row, 3, QLabel(id))
-            self.DOTypeView.setCellWidget(row, 4, QLabel(desc))
+            DOTypeView.setCellWidget(row, 0, QLabel(name))
+            DOTypeView.setCellWidget(row, 3, QLabel(id))
+            DOTypeView.setCellWidget(row, 4, QLabel(desc))
             row = row + 1
             for iDA in iDOType.getchildren():
                 SDO=''
@@ -227,24 +235,27 @@ class DataType_Table:
                 except:
                     pass
 
-                self.DOTypeView.setCellWidget(row, 1, QLabel(daName))  # Desc
-                self.DOTypeView.setCellWidget(row, 3, QLabel(bType))  # DoType
-                self.DOTypeView.resizeColumnsToContents()
+                DOTypeView.setCellWidget(row, 1, QLabel(daName))  # Desc
+                DOTypeView.setCellWidget(row, 3, QLabel(bType))  # DoType
+                DOTypeView.resizeColumnsToContents()
                 row = row + 1
-                self.DOTypeView.resizeColumnsToContents()
 
-        self.DOTypeView.setUpdatesEnabled(True)
-        self.DOTypeView.resizeColumnsToContents()
-#        print("SetDOTypeTable: "+ str(row) +" lines" )
+        DOTypeView.setUpdatesEnabled(True)
+        DOTypeView.resizeColumnsToContents()
+        return DOTypeView
 
-    def SetDATypeTable(self):
+    ## \b SetDATypeTable:  fill the DOTypeView with the data from the SCL file.
+    #
+    # @param DATypeView   The DATypeView object to be filled with data.
+    #
+    def SetDATypeTable(self, DATypeView):
         row = 1
         for iDAType in self.tDAType:
             id   = iDAType.get('id')
             desc = iDAType.get('desc')
 
-            self.DATypeView.setCellWidget(row, 0, QLabel(id))
-            self.DATypeView.setCellWidget(row, 3, QLabel(desc))
+            DATypeView.setCellWidget(row, 0, QLabel(id))
+            DATypeView.setCellWidget(row, 3, QLabel(desc))
             row = row + 1
             for iBDA in iDAType.getchildren():
                 _tag = iBDA.tag.split('}')
@@ -257,99 +268,113 @@ class DataType_Table:
                 if type is not None:
                     bType = bType + ' (' + type + ')'
 
-                self.DATypeView.setCellWidget(row, 1, QLabel(daName))  # Desc
-                self.DATypeView.setCellWidget(row, 3, QLabel(bType))  # DoType
-                self.DATypeView.resizeColumnsToContents()
+                DATypeView.setCellWidget(row, 1, QLabel(daName))  # Desc
+                DATypeView.setCellWidget(row, 3, QLabel(bType))  # DoType
+                DATypeView.resizeColumnsToContents()
                 row = row + 1
-                self.DATypeView.resizeColumnsToContents()
 
-        self.DATypeView.setUpdatesEnabled(True)
-        self.DATypeView.resizeColumnsToContents()
-#        print("SetDATypeTable: "+ str(row) +" lines" )
+        DATypeView.setUpdatesEnabled(True)
+        DATypeView.resizeColumnsToContents()
+        return DATypeView
 
-    def SetEnumTypeTable(self):
+    ## \b SetEnumTypeTable:  fill the DOTypeView with the data from the SCL file.
+    #
+    # @param EnumTypeView   The EnumTypeView object to be filled with data.
+    #
+    def SetEnumTypeTable(self, EnumTypeView):
         row = 1
         for iEnumType in self.tEnumType:
             id   = iEnumType.get('id')
             desc = iEnumType.get('desc')
 
-            self.EnumTypeView.setCellWidget(row, 0, QLabel(id))
-            self.EnumTypeView.setCellWidget(row, 3, QLabel(desc))
+            EnumTypeView.setCellWidget(row, 0, QLabel(id))
+            EnumTypeView.setCellWidget(row, 3, QLabel(desc))
             row = row + 1
-#            print(id , desc)
             for iEnumVal in iEnumType.getchildren():
                 _ord = str(iEnumVal.get('ord'))
                 _ordName = str(iEnumVal.text)
-#                print('    ' + _ord + ':' + _ordName)
-                self.EnumTypeView.setCellWidget(row, 1, QLabel(_ord))
-                self.EnumTypeView.setCellWidget(row, 2, QLabel(_ordName))
+                EnumTypeView.setCellWidget(row, 1, QLabel(_ord))
+                EnumTypeView.setCellWidget(row, 2, QLabel(_ordName))
 
-                self.EnumTypeView.resizeColumnsToContents()
+                EnumTypeView.resizeColumnsToContents()
                 row = row + 1
-                self.EnumTypeView.resizeColumnsToContents()
 
-        self.EnumTypeView.setUpdatesEnabled(True)
-        self.EnumTypeView.resizeColumnsToContents()
-        print("Set EnumTypeView: "+ str(row) +" lines" )
+        EnumTypeView.setUpdatesEnabled(True)
+        EnumTypeView.resizeColumnsToContents()
+        return EnumTypeView
 
-    def DisplayTableLNODE(self,):
-        if self.currentView=='None':
+
+    ## \b DisplayTableLNODE:  switch from current view to LNodeType View
+    #
+    def DisplayTableLNODE(self):
+        if self.currentView is None:
             self.LNTableView.setVisible(True)
             self.LNTableView.setUpdatesEnabled(True)
             return
-        elif self.currentView== LNODETYPE:
+        elif self.currentView == LNODETYPE:
             return
         elif self.currentView == DOTYPE:
             self.commuteView(self.containerLayout, self.DOTypeView, self.LNTableView, DOTYPE, LNODETYPE)
             return
         elif self.currentView == DATYPE:
-            self.commuteView(self.containerLayout, self.DATypeView, self.LNTableView, DATYPE, LNODETYPE)
+            self.commuteView(self.containerLayout, self.DATypeView,  self.LNTableView, DATYPE, LNODETYPE)
             return
         elif self.currentView == ENUMTYPE:
             self.commuteView(self.containerLayout, self.EnumTypeView, self.LNTableView, DATYPE, LNODETYPE)
 
-
+    ## \b DisplayTableDOType:  switch from current view to DOType View
+    #
     def DisplayTableDOType(self):
-        if self.currentView==DOTYPE:
+        if self.currentView == DOTYPE:
             return
         elif self.currentView == LNODETYPE:
             self.commuteView(self.containerLayout, self.LNTableView, self.DOTypeView, LNODETYPE, DOTYPE)
             return
         elif self.currentView == DATYPE:
             self.commuteView(self.containerLayout, self.DATypeView,  self.DOTypeView,  DATYPE, DOTYPE)
-        return
-        if self.currentView == ENUMTYPE:
-            self.commuteView(self.containerLayout, self.EnumTypeView, self.DOTypeView,  DATYPE, DOTYPE)
-
-
-    def DisplayTableDAType(self):
-        if self.currentView==DATYPE:
-            return
-        if self.currentView == LNODETYPE:
-            self.commuteView(self.containerLayout, self.LNTableView, self.DATypeView, LNODETYPE, DATYPE)
-            return
-        elif self.currentView == DOTYPE:
-            self.commuteView(self.containerLayout, self.DOTypeView, self.DATypeView,   DOTYPE, DATYPE)
             return
         elif self.currentView == ENUMTYPE:
-            self.commuteView(self.containerLayout, self.EnumTypeView, self.DATypeView,   DOTYPE, DATYPE)
+            self.commuteView(self.containerLayout, self.EnumTypeView, self.DOTypeView,  DATYPE, DOTYPE)
 
-    def DisplayTableEnumType(self):
-        if self.currentView==ENUMTYPE:
+    ## \b DisplayTableDAType:  switch from current view to DAType View
+    #
+    def DisplayTableDAType(self):
+        if self.currentView == DATYPE:
             return
-        elif self.currentView == LNODETYPE:
-            self.commuteView(self.containerLayout, self.LNTableView, self.EnumTypeView,LNODETYPE, ENUMTYPE)
+        if self.currentView == LNODETYPE:
+            self.commuteView(self.containerLayout, self.LNTableView,  self.DATypeView, LNODETYPE, DATYPE)
             return
         elif self.currentView == DOTYPE:
-            self.commuteView(self.containerLayout, self.DOTypeView, self.EnumTypeView, DOTYPE, ENUMTYPE)
+            self.commuteView(self.containerLayout, self.DOTypeView,   self.DATypeView,  DOTYPE, DATYPE)
+            return
+        elif self.currentView == ENUMTYPE:
+            self.commuteView(self.containerLayout, self.EnumTypeView, self.DATypeView, ENUMTYPE, DATYPE)
+
+    ## \b DisplayTableEnumType:  switch from current view to EnumType View
+    #
+    def DisplayTableEnumType(self):
+        if self.currentView == ENUMTYPE:
+            return
+        elif self.currentView == LNODETYPE:
+            self.commuteView(self.containerLayout, self.LNTableView, self.EnumTypeView, LNODETYPE, ENUMTYPE)
+            return
+        elif self.currentView == DOTYPE:
+            self.commuteView(self.containerLayout, self.DOTypeView,  self.EnumTypeView, DOTYPE, ENUMTYPE)
             return
         elif self.currentView == DATYPE:
-            self.commuteView(self.containerLayout, self.DATypeView, self.EnumTypeView, DOTYPE, ENUMTYPE)
+            self.commuteView(self.containerLayout, self.DATypeView,  self.EnumTypeView, DATYPE, ENUMTYPE)
             return
 
-
+    ## \b DisplayTableEnumType:  switch from current view to EnumType View
+    #
+    # @param Layout   The layout where the widget need to be replaced.
+    # @param ViewFrom Current widget active
+    # @param ViewTo   Widget to replace the current one
+    # @param NameFrom Name of the 'from' view (for debugging only)
+    # @param NameTo   Name of the new view
     def commuteView(self, Layout, ViewFrom, ViewTo, NameFrom, NameTo):
-##        print ("Replace view:" + NameFrom + " by view to" + NameTo)
+
+        print("Replace view:" + NameFrom + " by view to" + NameTo)
 
         ViewFrom.setVisible(False)
         ViewTo.setVisible(True)
@@ -364,7 +389,8 @@ class DataType_Table:
         ViewTo.show()
         self.currentView = NameTo
 
-
+    ## \b openMenu:  not used yet
+    #
     def openMenu(self, value):
         return
         x=value.x()

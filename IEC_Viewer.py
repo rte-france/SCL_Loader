@@ -277,17 +277,17 @@ class MainWindow(QMainWindow):
             self.fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_View\SCL_files\*.*',
                                          " IEC61850 files")
 
-            with LoadSCL(self.fname) as (sclMgr,delta):   #, self.T_LoadSCL):
+            with LoadSCL(self.fname) as (self.sclMgr, delta):   #, self.T_LoadSCL):
                 print("Chargement SCL initial:")         # str(self.T_LoadSCL))
 
             print("Chargement all IED       :")
             self.treeView.setUpdatesEnabled(False)
-            self.tIED =  sclMgr.get_all_IEDs()
+            self.tIED =  self.sclMgr.get_all_IEDs()
             T2 = time.time()
 
 #            class DataType_Table:
 #                def __init__(self, _containerLayout):
-            self.datatype.Initialize(sclMgr)
+#            self.datatype.Initialize(self, self.sclMgr)
 
             self.DataModelTree.DisplayTree(self.tIED)
 
