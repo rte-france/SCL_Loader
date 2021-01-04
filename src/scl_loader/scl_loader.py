@@ -166,7 +166,7 @@ def _get_node_name(node: etree.Element):
         elif tag == 'Private':
             name = node.get('type')
         elif tag == 'ConnectedAP':
-            name = node.get('iedName')        
+            name = node.get('iedName')
         else:
             name = tag
 
@@ -218,6 +218,10 @@ class SCDNode:
     """
         Basic class to compute SCD nodes
     """
+    @property
+    def children(self):
+        return self.get_children()
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -314,6 +318,8 @@ class SCDNode:
             new_node = LN(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'LN0':
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
+        elif elem.tag.split('}')[-1] == 'LDevice':
+            new_node = LD(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'SubNetwork':
             new_node = SubNetwork(self._datatypes, elem, self._fullattrs, **attributes)
         elif elem.tag.split('}')[-1] == 'ConnectedAP':
@@ -332,7 +338,7 @@ class SCDNode:
 
         return new_node
 
-    def get_DA_leaf_nodes(self) -> {}:
+    def get_DA_leaf_nodes(self) -> dict:
         """
             Recursively retrieve the leaf DA nodes of the current node.
 
@@ -350,7 +356,7 @@ class SCDNode:
         self._collect_DA_leaf_nodes(self, leaves, mms)
         return leaves
 
-    def get_children(self, tag: str = None) -> []:
+    def get_children(self, tag: str = None) -> list:
         """
             Retrieve the children nodes of the current node.
             (not recursive)
@@ -908,7 +914,7 @@ class SCD_handler():
             elem_name = _get_node_name(elem)
             setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
 
-    def get_all_IEDs(self) -> [IED]:
+    def get_all_IEDs(self) -> list[IED]:
         """
             Load all the IEDs from the SCD/SCL file
 
@@ -946,7 +952,7 @@ class SCD_handler():
             else:
                 ied.clear()
 
-    def get_IED_names_list(self) -> [str]:
+    def get_IED_names_list(self) -> list[str]:
         """
             Load an IED from the SCD/SCL file by name
 
@@ -963,7 +969,7 @@ class SCD_handler():
 
         return result
 
-    def _check_scd_file(self) -> (bool, str):
+    def _check_scd_file(self) -> tuple(bool, str):
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -989,7 +995,7 @@ class SCD_handler():
             LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
-    def _iter_get_SCL_elems(self) -> [etree.Element]:
+    def _iter_get_SCL_elems(self) -> list[etree.Element]:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -1022,7 +1028,7 @@ class SCD_handler():
 
         return result
 
-    def _iter_get_all_elem_by_tag(self, tag:str) -> [etree.Element]:
+    def _iter_get_all_elem_by_tag(self, tag:str) -> list[etree.Element]:
         """
             /!\\ PRIVATE : do not use /!\\
 
