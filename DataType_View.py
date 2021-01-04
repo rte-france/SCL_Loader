@@ -62,8 +62,8 @@ class DataType_Table:
         self.nbDAType    = 0
         self.nbEnumType  = 0
         self.currentView = LNODETYPE
-        (self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType) = ([], [], [], [])
-        (self.LNTableView, self.DOTypeView, self.DATypeView, self.EnumTypeView) = (None,None,None,None)
+        self.tLNodeType = self.tDOType =self.tDAType = self.tEnumType =  []
+        self.LNTableView= self.DOTypeView = self.DATypeView =self.EnumTypeView = None
         self.nameMainView = ''
         self.DT_frame   = None      # Frame used for the Data Type.
 
@@ -171,7 +171,7 @@ class DataType_Table:
         EnumTypeButton.clicked.connect(self.DisplayTableEnumType)
         self.hLayoutButtons.addWidget(EnumTypeButton)
 
-        print('replaceWidget(self.FC_frame, self.DT_frame)')
+#        print('replaceWidget(self.FC_frame, self.DT_frame)')
         self.commuteView(self.winLayout, FC_frame, self.DT_frame, 'FC Frame', 'DT Frame')
 
         return self.DT_frame
@@ -182,23 +182,23 @@ class DataType_Table:
             name =  iLNodeType.get('lnClass')
             id   =  iLNodeType.get('id')
             desc =  iLNodeType.get('desc')
-            self.LNtableView.setCellWidget(row, 0,  QLabel(name))
-            self.LNtableView.setCellWidget(row, 3, QLabel(id))
-            self.LNtableView.setCellWidget(row, 4, QLabel(desc))
+            self.LNTableView.setCellWidget(row, 0,  QLabel(name))
+            self.LNTableView.setCellWidget(row, 3, QLabel(id))
+            self.LNTableView.setCellWidget(row, 4, QLabel(desc))
             row = row + 1
 
             for iDO in iLNodeType.getchildren():
                 doName = iDO.get('name')
                 doType = iDO.get('type')
 
-                self.LNtableView.setCellWidget(row, 1, QLabel(doName))    # Desc
-                self.LNtableView.setCellWidget(row, 3, QLabel(doType))    # DoType
+                self.LNTableView.setCellWidget(row, 1, QLabel(doName))    # Desc
+                self.LNTableView.setCellWidget(row, 3, QLabel(doType))    # DoType
                 row = row + 1
 
-        self.LNtableView.setUpdatesEnabled(True)
-        self.LNtableView.resizeColumnsToContents()
+        self.LNTableView.setUpdatesEnabled(True)
+        self.LNTableView.resizeColumnsToContents()
         self.currentView= LNODETYPE
-        print("SetLNodeTypeTable: "+ str(row) +" lines" )
+#        print("SetLNodeTypeTable: "+ str(row) +" lines" )
 
     def SetDOTypeTable(self):
         row =1
@@ -235,7 +235,7 @@ class DataType_Table:
 
         self.DOTypeView.setUpdatesEnabled(True)
         self.DOTypeView.resizeColumnsToContents()
-        print("SetDOTypeTable: "+ str(row) +" lines" )
+#        print("SetDOTypeTable: "+ str(row) +" lines" )
 
     def SetDATypeTable(self):
         row = 1
@@ -265,7 +265,7 @@ class DataType_Table:
 
         self.DATypeView.setUpdatesEnabled(True)
         self.DATypeView.resizeColumnsToContents()
-        print("SetDATypeTable: "+ str(row) +" lines" )
+#        print("SetDATypeTable: "+ str(row) +" lines" )
 
     def SetEnumTypeTable(self):
         row = 1
@@ -276,11 +276,11 @@ class DataType_Table:
             self.EnumTypeView.setCellWidget(row, 0, QLabel(id))
             self.EnumTypeView.setCellWidget(row, 3, QLabel(desc))
             row = row + 1
-            print(id , desc)
+#            print(id , desc)
             for iEnumVal in iEnumType.getchildren():
                 _ord = str(iEnumVal.get('ord'))
                 _ordName = str(iEnumVal.text)
-                print('    ' + _ord + ':' + _ordName)
+#                print('    ' + _ord + ':' + _ordName)
                 self.EnumTypeView.setCellWidget(row, 1, QLabel(_ord))
                 self.EnumTypeView.setCellWidget(row, 2, QLabel(_ordName))
 
@@ -294,26 +294,26 @@ class DataType_Table:
 
     def DisplayTableLNODE(self,):
         if self.currentView=='None':
-            self.LNtableView.setVisible(True)
-            self.LNtableView.setUpdatesEnabled(True)
+            self.LNTableView.setVisible(True)
+            self.LNTableView.setUpdatesEnabled(True)
             return
         elif self.currentView== LNODETYPE:
             return
         elif self.currentView == DOTYPE:
-            self.commuteView(self.containerLayout, self.DOTypeView, self.LNtableView, DOTYPE, LNODETYPE)
+            self.commuteView(self.containerLayout, self.DOTypeView, self.LNTableView, DOTYPE, LNODETYPE)
             return
         elif self.currentView == DATYPE:
-            self.commuteView(self.containerLayout, self.DATypeView, self.LNtableView, DATYPE, LNODETYPE)
+            self.commuteView(self.containerLayout, self.DATypeView, self.LNTableView, DATYPE, LNODETYPE)
             return
         elif self.currentView == ENUMTYPE:
-            self.commuteView(self.containerLayout, self.EnumTypeView, self.LNtableView, DATYPE, LNODETYPE)
+            self.commuteView(self.containerLayout, self.EnumTypeView, self.LNTableView, DATYPE, LNODETYPE)
 
 
     def DisplayTableDOType(self):
         if self.currentView==DOTYPE:
             return
         elif self.currentView == LNODETYPE:
-            self.commuteView(self.containerLayout, self.LNtableView, self.DOTypeView, LNODETYPE, DOTYPE)
+            self.commuteView(self.containerLayout, self.LNTableView, self.DOTypeView, LNODETYPE, DOTYPE)
             return
         elif self.currentView == DATYPE:
             self.commuteView(self.containerLayout, self.DATypeView,  self.DOTypeView,  DATYPE, DOTYPE)
@@ -326,7 +326,7 @@ class DataType_Table:
         if self.currentView==DATYPE:
             return
         if self.currentView == LNODETYPE:
-            self.commuteView(self.containerLayout, self.LNtableView, self.DATypeView, LNODETYPE, DATYPE)
+            self.commuteView(self.containerLayout, self.LNTableView, self.DATypeView, LNODETYPE, DATYPE)
             return
         elif self.currentView == DOTYPE:
             self.commuteView(self.containerLayout, self.DOTypeView, self.DATypeView,   DOTYPE, DATYPE)
@@ -338,7 +338,7 @@ class DataType_Table:
         if self.currentView==ENUMTYPE:
             return
         elif self.currentView == LNODETYPE:
-            self.commuteView(self.containerLayout, self.LNtableView, self.EnumTypeView,LNODETYPE, ENUMTYPE)
+            self.commuteView(self.containerLayout, self.LNTableView, self.EnumTypeView,LNODETYPE, ENUMTYPE)
             return
         elif self.currentView == DOTYPE:
             self.commuteView(self.containerLayout, self.DOTypeView, self.EnumTypeView, DOTYPE, ENUMTYPE)
@@ -349,16 +349,16 @@ class DataType_Table:
 
 
     def commuteView(self, Layout, ViewFrom, ViewTo, NameFrom, NameTo):
-        print ("Replace view:" + NameFrom + " by view to" + NameTo)
+##        print ("Replace view:" + NameFrom + " by view to" + NameTo)
 
         ViewFrom.setVisible(False)
         ViewTo.setVisible(True)
         ViewTo.setUpdatesEnabled(True)
         Layout.addWidget(ViewTo)
         Result = Layout.replaceWidget(ViewFrom, ViewTo, Qt.FindChildrenRecursively)
-        if Result is not None:
-            print(type(Result))
-        print('Result_3:', Result)
+#        if Result is not None:
+#            print(type(Result))
+#        print('Result_3:', Result)
         Layout.update()
         ViewTo.repaint()
         ViewTo.show()

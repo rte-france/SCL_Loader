@@ -150,9 +150,9 @@ class DataModelTree():
 
         Result = self.winLayout.replaceWidget(DT_frame, self.FC_frame, Qt.FindChildrenRecursively)
 
-        if Result is not None:
-            print(type(Result))
-        print('Result_3:', Result)
+#        if Result is not None:
+#            print(type(Result))
+#        print('Result_3:', Result)
         self.FC_frame.repaint()
         self.FC_frame.show()
         return  self.FC_frame
@@ -285,14 +285,14 @@ class DataModelTree():
 
         if iLN.lnClass == 'LLN0':
             inputs = iLN.get_children('Inputs')
-            try:
-                tExtRefs = inputs[0] #.get_children('ExtRef')
-                _ExtRef = tExtRefs.ExtRef
-                for iExtRef in _ExtRef:
-                    print (iExtRef.iedName, iExtRef.doName)
-            except:
-                print("xx")
-                pass
+#            try:
+#                tExtRefs = inputs[0] #.get_children('ExtRef')
+#                _ExtRef = tExtRefs.ExtRef
+#                for iExtRef in _ExtRef:
+#                    print (iExtRef.iedName, iExtRef.doName)
+#            except:
+#                print("xx")
+#                pass
 
 
         for iDO in iLN.get_children('DO'):

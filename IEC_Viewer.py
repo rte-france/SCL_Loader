@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
             self.commuteView(self.winLayout,      self.FC_frame, self.FT_frame,"Function Constraint", "Data Type")
 
             if self.datatype.currentView == LNODETYPE:
-                self.commuteView(self.containerLayout,self.treeView, self.datatype.LNtableView,"TreeView",LNODETYPE)
+                self.commuteView(self.containerLayout,self.treeView, self.datatype.LNTableView,"TreeView",LNODETYPE)
             elif self.datatype.currentView == DOTYPE:
                 self.commuteView(self.containerLayout,self.treeView, self.datatype.DOTypeView,"TreeView",DOTYPE)
             elif self.datatype.currentView == DATYPE:
