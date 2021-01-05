@@ -204,49 +204,47 @@ class DataModelTree():
                 x = chkBox.isChecked()
                 return x
 #
-    def DisplayTree(self, tIED, ProcessAP):
+    def DisplayTree(self, tIED, Communication):
         self.tIED = tIED    ## Required for buttons.
         for iIED in tIED:
-            T_IED = self.add_IED(iIED ,ProcessAP)  # Return the column head
+            T_IED = self.add_IED(iIED ,Communication)  # Return the column head
 
     def check_DO_SDO(self, tag):
         return re.fullmatch(REG_DO, tag)
 ##        return tag in DOmatch
 
+    def getIPadr(self, Communication, iedName, apNAme):
+        for iComm in Communication.get_children('SubNetwork'):
+            if iComm.type == "8-MMS":
+                for iCnxAP in iComm.get_children('ConnectedAP'):
+                    if iCnxAP.iedName == iedName and iCnxAP.apName == apNAme:
+                        for iAdr in iCnxAP.get_children('Address'):
+                            for iP in iAdr.P:
+                                if iP.type == "IP":
+                                    return iP.Val
+        return('0.0.0.0')
+
     def check_DA_SDA_DAI(self, tag):
         return re.fullmatch(REG_DA, tag)
-##        return tag in DAmatch
- ##      re.fullmatch(REG_DA, tag)
 
-    def add_IED(self, iIED: SCD.SCDNode, ProcessAP):
+    def add_IED(self, iIED: SCD.SCDNode, Communication):
         self.dataKey = iIED.name
         self.line = self.line + 1
         _ied = StandardItem(iIED.name, 12, set_bold=True)
         _desc = StandardItem(iIED.type, 11, set_bold=False)
         _vide1 = StandardItem('.', 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)
+        self.rootNode.appendRow((_ied, _vide1, _vide2, _desc))
+###Look for the ConnectedAP related to this IED.
+
         for iAP in iIED.get_children('AccessPoint'):
-            IPadr = 'TbD'
-            try:
-                tP = eval('ProcessAP' + '.' + iIED.name + '.Address.P')
-                for iP in tP:
-                    if iP.type == 'IP':
-                        IPadr = '[' + iP.Val + ']'
-                        self.rootNode.appendRow((_ied, _vide1, _vide2, _desc))
-                        self.add_AP(_ied, iAP, iIED.name, IPadr)
-                        print('IP:'+iP.Val)
-                        break
-    #            IP_Adr = IED_IP(iedName, apName, ip)
-    #            self.t_AdrIP.append(IP_Adr)
+            IP_Adresse = self.getIPadr(Communication,iIED.name,iAP.name)
+            self.add_AP(_ied, iAP, iIED.name, IP_Adresse)
 
-            except Exception as e:
-                print("Pas d'adresse IP", e)
-
-
-    def add_AP(self, T_IED: StandardItem, iAP: SCD.SCDNode, iedName: str, ipAdr: str):
+    def add_AP(self, T_IED: StandardItem, iAP: SCD.SCDNode, iedName: str, IP_Adresse):
         _ap = StandardItem(iAP.name, 8, set_bold=False)
         _txt = StandardItem(iAP.desc, 8, set_bold=False)
-        _ip  = StandardItem(ipAdr, 11, set_bold=False)
+        _ip = StandardItem( IP_Adresse, 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)
         T_IED.appendRow((_ap, _ip, _vide2, _txt))
 

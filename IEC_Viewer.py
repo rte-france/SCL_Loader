@@ -292,7 +292,7 @@ class MainWindow(QMainWindow):
 #                def __init__(self, _containerLayout):
 #            self.datatype.Initialize(self, self.sclMgr)
 
-            self.DataModelTree.DisplayTree(self.tIED,self.sclMgr.Communication.RSPACE_PROCESS_NETWORK)
+            self.DataModelTree.DisplayTree(self.tIED,self.sclMgr.Communication)
 
             self.treeView.expandAll()
             self.treeView.setUpdatesEnabled(True)
