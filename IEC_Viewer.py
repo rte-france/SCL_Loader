@@ -17,7 +17,7 @@ from TreeView_DataModel import DataModelTree
 from DataType_View      import DataType_Table
 from DataType_View      import LNODETYPE, DOTYPE, DATYPE, ENUMTYPE
 
-from scl_loader import SCD_handler
+from scl_loader import SCD_handler, DataTypeTemplates
 
 import sys
 import os
@@ -43,9 +43,10 @@ class LoadSCL(object):
         HERE = os.path.abspath(os.path.dirname(__file__))
         filepath = os.path.join(HERE, self.fname[0])
         self.sclMgr = SCD_handler(filepath, True)
+        self.data   = DataTypeTemplates(filepath)
         self.T1  = time.time()
         self.delta = self.T1-self.T0
-        return (self.sclMgr,self.delta)
+        return (self.sclMgr,self.data,self.delta)
 
     def __exit__(self,  exc_type, exc_val, exc_tb):
         print("SCL loaded with success")
@@ -277,7 +278,7 @@ class MainWindow(QMainWindow):
             self.fname = QFileDialog.getOpenFileName(self, 'Open file', 'D:\OneDrive\SCL_View\SCL_files\*.*',
                                          " IEC61850 files")
 
-            with LoadSCL(self.fname) as (self.sclMgr, delta):   #, self.T_LoadSCL):
+            with LoadSCL(self.fname) as (self.sclMgr, self.DataTypes, delta):   #, self.T_LoadSCL):
                 print("Chargement SCL initial:")         # str(self.T_LoadSCL))
 
             print("Chargement all IED       :")
@@ -288,9 +289,7 @@ class MainWindow(QMainWindow):
 
             T2 = time.time()
 
-#            class DataType_Table:
-#                def __init__(self, _containerLayout):
-#            self.datatype.Initialize(self, self.sclMgr)
+            self.datatype.Initialize(self.sclMgr, self.DataTypes)
 
             self.DataModelTree.DisplayTree(self.tIED,self.sclMgr.Communication)
 

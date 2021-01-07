@@ -52,24 +52,37 @@ class StandardItem(QStandardItem):
         self.setFont(fnt)
         self.setText(txt)
 
+## \b DataType_Table:  class to handle the view on the IEC61850 model.
+#
+# This function is getting its data from SCL Manager.
+#
+# @param _winLayout         : layout used for the Function Buttons
+# @param _containerLayout   : layout used for the data model
+#
 class DataType_Table:
     def __init__(self, _winLayout,  _containerLayout):
         self.row       = 0
-        self.containerLayout  = _containerLayout
-        self.winLayout        = _winLayout
-        self.nbLNodeType = 0
-        self.nbDOType    = 0
-        self.nbDAType    = 0
-        self.nbEnumType  = 0
-        self.currentView = LNODETYPE
-        self.tLNodeType = self.tDOType = self.tDAType = self.tEnumType = []
-        self.LNTableView = self.DOTypeView = self.DATypeView = self.EnumTypeView = None
+        self.containerLayout = _containerLayout
+        self.winLayout       = _winLayout
+        self.currentView     = LNODETYPE
+        self.nbLNodeType     = 0
+        self.nbDOType        = 0
+        self.nbDAType        = 0
+        self.nbEnumType      = 0
+        self.tLNodeType      = self.tDOType = self.tDAType = self.tEnumType = []
+        self.LNTableView     = self.DOTypeView = self.DATypeView = self.EnumTypeView = None
         self.nameMainView = ''
         self.DT_frame   = None      # Frame used for the Data Type.
 
-    def Initialize(self, _sclMgr):
+    ## \b Initialize:  collect from the _sclMgr the details of all Data Type definition: LNodeType,
+    # DOType, DAType and EnumType.    # and create the empty View for it
+    #     #
+    # @param _sclMgr    _sclMgr is used for the DataTypeTemplate setion.
+    #
+    def Initialize(self, _sclMgr, _dataTypes):
         self.sclMgr     = _sclMgr
-        (self.nbLNodeType, self.nbDOType, self.nbDAType, self.nbEnum) = self.countObject()
+        TypeDef  = _dataTypes.get_Data_Type_Definitions( )
+        (self.nbLNodeType, self.nbDOType, self.nbDAType, self.nbEnum) = self.countObject(TypeDef)
 
     ## \b countObject:  count the number of objects for each type: LNodeType, DOType, DAType and EnumType.
     #
@@ -77,8 +90,10 @@ class DataType_Table:
     #
     # @param self           No Parameter.
     #
-    def countObject(self):
-        self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType = self.sclMgr.get_Data_Type_Definition()
+    def countObject(self, TypeDef):
+
+        (self.tLNodeType, self.tDOType, self.tDAType, self.tEnumType) = tuple ( TypeDef.values ( ) )
+
         for iLNodeType in self.tLNodeType:
             self.nbLNodeType = self.nbLNodeType + 1
             for iDO in iLNodeType.getchildren():

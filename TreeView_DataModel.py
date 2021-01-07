@@ -49,6 +49,13 @@ class StandardItem(QStandardItem):
         self.setFont(fnt)
         self.setText(txt)
 
+## \b DataModelTree:  class to handle the view on the IEC61850 model.
+#
+# This function is getting its data from SCL Manager.
+#
+# @param _winLayout         : layout used for the Function Buttons
+# @param _containerLayout   : layout used for the data model
+#
 class DataModelTree():
     def __init__(self, _winLayout, _containerLayout, parent=None) :
         self.t_AdrIP    = []
@@ -60,7 +67,11 @@ class DataModelTree():
         self.treeView   = None
         self.treeLayout = None
         self.treeModel  = None
+        self.Communication = None
 
+    ## \b CreateTableView:  create an empty tree  view.
+    #
+    #
     def CreateTreeView(self):
 
         self.treeLayout = QVBoxLayout()
@@ -93,11 +104,17 @@ class DataModelTree():
         self.rootNode = self.treeModel.invisibleRootItem()
         return self.treeView, self.treeModel
 
+    ## \b openMenu:  pop up menu (TODO)
+    #
+    #
     def openMenu(self, value):
         return
         x=value.x()
         y=value.y()
 
+    ## \b openMenu:  pop up menu (TODO)
+    #
+    #
     def getValue(self, val):
         indexes = self.treeView.selectedIndexes()
 
@@ -109,7 +126,8 @@ class DataModelTree():
         print(val.row())
         print(val.column())
 
-    ## Functional selection buttons
+    ## \b openMenu:  FC buttons: creation a radio button for each Functional Constraint as well
+    #  as a 'None' and 'all' buttons. This
     def FCbuttons(self, winLayout, DT_frame):
         self.FC_frame = QFrame()
         self.FC_frame.setLineWidth(4)
@@ -175,7 +193,7 @@ class DataModelTree():
         self.treeView.expandAll()
         self.rootNode.removeRows(0,self.rootNode.rowCount())
 
-        self.DisplayTree(self.tIED)
+        self.DisplayTree(self.tIED, self.Communication)
         self.treeView.expandAll()
         self.treeView.update()
         self.treeView.repaint()
@@ -205,16 +223,17 @@ class DataModelTree():
                 return x
 #
     def DisplayTree(self, tIED, Communication):
+        self.Communication  = Communication
         self.tIED = tIED    ## Required for buttons.
         for iIED in tIED:
-            T_IED = self.add_IED(iIED ,Communication)  # Return the column head
+            T_IED = self.add_IED(iIED)  # Return the column head
 
     def check_DO_SDO(self, tag):
         return re.fullmatch(REG_DO, tag)
 ##        return tag in DOmatch
 
-    def getIPadr(self, Communication, iedName, apNAme):
-        for iComm in Communication.get_children('SubNetwork'):
+    def getIPadr(self, iedName, apNAme):
+        for iComm in self.Communication.get_children('SubNetwork'):
             if iComm.type == "8-MMS":
                 for iCnxAP in iComm.get_children('ConnectedAP'):
                     if iCnxAP.iedName == iedName and iCnxAP.apName == apNAme:
@@ -227,7 +246,7 @@ class DataModelTree():
     def check_DA_SDA_DAI(self, tag):
         return re.fullmatch(REG_DA, tag)
 
-    def add_IED(self, iIED: SCD.SCDNode, Communication):
+    def add_IED(self, iIED: SCD.SCDNode):
         self.dataKey = iIED.name
         self.line = self.line + 1
         _ied = StandardItem(iIED.name, 12, set_bold=True)
@@ -235,23 +254,22 @@ class DataModelTree():
         _vide1 = StandardItem('.', 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)
         self.rootNode.appendRow((_ied, _vide1, _vide2, _desc))
-###Look for the ConnectedAP related to this IED.
 
         for iAP in iIED.get_children('AccessPoint'):
-            IP_Adresse = self.getIPadr(Communication,iIED.name,iAP.name)
+            IP_Adresse = self.getIPadr(iIED.name,iAP.name)
             self.add_AP(_ied, iAP, iIED.name, IP_Adresse)
 
     def add_AP(self, T_IED: StandardItem, iAP: SCD.SCDNode, iedName: str, IP_Adresse):
-        _ap = StandardItem(iAP.name, 8, set_bold=False)
-        _txt = StandardItem(iAP.desc, 8, set_bold=False)
+        _ap = StandardItem(iAP.name, 11, set_bold=False)
+        _txt = StandardItem(iAP.desc, 11, set_bold=False)
         _ip = StandardItem( IP_Adresse, 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)
         T_IED.appendRow((_ap, _ip, _vide2, _txt))
 
         for iSRV in iAP.get_children('Server'):
-            self.add_SRV(_ap, iSRV, iedName, iAP.name)
+            self.add_SRV(_ap, iSRV)
 
-    def add_SRV(self, T_AP: StandardItem, iSRV: SCD.SCDNode, iedName: str, apName: str):
+    def add_SRV(self, T_AP: StandardItem, iSRV: SCD.SCDNode):
 
         if hasattr(iSRV, 'timeout'):
             _srv1 = StandardItem(('Server, ' + str(iSRV.timeout)), 10, set_bold=True)
