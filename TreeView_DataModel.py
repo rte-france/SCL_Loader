@@ -10,9 +10,9 @@
 # This file is part of [R#SPACE], [IEC61850 Digital Contronl System testing.
 #
 
-from PyQt5.Qt     import QStandardItemModel, QStandardItem,QFrame,QCheckBox,QPushButton, QHBoxLayout, QVBoxLayout, QTreeView
+from PyQt5.Qt     import QStandardItemModel,QFrame, QStandardItem,QTreeWidgetItem,QCheckBox,QPushButton, QHBoxLayout, QVBoxLayout, QTreeView
 from PyQt5.QtGui  import QFont, QColor
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import * # QCheckBox Qt.ItemIsUserCheckabl, Qt.e
 
 import logging
 import re
@@ -49,6 +49,22 @@ class StandardItem(QStandardItem):
         self.setFont(fnt)
         self.setText(txt)
 
+
+class CheckedItem(QStandardItem):
+    def __init__(self, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
+        super().__init__()
+
+        fnt = QFont('Open Sans', font_size)
+        fnt.setBold(set_bold)
+#        self.setData(Qt.Checked, role=Qt.CheckStateRole)
+#        self.setCheckable(True)
+#        self.setData(role=Qt.UserRole)
+        self.setEditable(False)  # Permet l'édition de la cellule.
+        self.setForeground(color)
+        self.setFont(fnt)
+        self.setText(txt)
+
+
 ## \b DataModelTree:  class to handle the view on the IEC61850 model.
 #
 # This function is getting its data from SCL Manager.
@@ -74,6 +90,13 @@ class DataModelTree():
     #
     def CreateTreeView(self):
 
+
+        _ied = CheckedItem("TOTO", 12, set_bold=True)
+        _ied.setFlags(Qt.ItemIsUserCheckable)
+        _ied.setCheckState(Qt.Unchecked)
+        _ied.setEditable(True)
+        _ied.setTristate(True)
+
         self.treeLayout = QVBoxLayout()
         self.containerLayout.addLayout(self.treeLayout)         # add the Tree View
 
@@ -83,6 +106,9 @@ class DataModelTree():
         self.treeView.customContextMenuRequested.connect(self.openMenu)
         self.treeView.clicked.connect(self.openMenu)
 
+
+
+
         self.treeModel = QStandardItemModel(self.treeView)
         self.treeModel.setColumnCount(6)
         self.treeModel.setHeaderData(IED_LD, Qt.Horizontal, "IED/AP/SRV/LD")         # 0
@@ -91,7 +117,7 @@ class DataModelTree():
         self.treeModel.setHeaderData(DESC,   Qt.Horizontal, "Object 'desc'")         # Object 'desc'
         self.treeModel.setHeaderData(DESC2,  Qt.Horizontal, "Type 'desc'")           # Data Type Desction
 
-        self.treeView.doubleClicked.connect(self.getValue)
+#        self.treeView.doubleClicked.connect(self.getValue)
 
         self.treeView.setModel(self.treeModel)
         self.treeView.expandAll()
@@ -125,7 +151,6 @@ class DataModelTree():
         print(val.data())
         print(val.row())
         print(val.column())
-
     ## \b openMenu:  FC buttons: creation a radio button for each Functional Constraint as well
     #  as a 'None' and 'all' buttons. This
     def FCbuttons(self, winLayout, DT_frame):
@@ -249,12 +274,16 @@ class DataModelTree():
     def add_IED(self, iIED: SCD.SCDNode):
         self.dataKey = iIED.name
         self.line = self.line + 1
-        _ied = StandardItem(iIED.name, 12, set_bold=True)
+
+        _ied = CheckedItem(iIED.name, 12, set_bold=True)
+        _ied.setFlags(Qt.ItemIsUserCheckable)
+        _ied.setCheckState(Qt.Unchecked)
         _desc = StandardItem(iIED.type, 11, set_bold=False)
         _vide1 = StandardItem('.', 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)
         self.rootNode.appendRow((_ied, _vide1, _vide2, _desc))
-
+        _ied.setFlags(Qt.ItemIsUserCheckable)
+        _ied.setCheckState(Qt.Unchecked)
         for iAP in iIED.get_children('AccessPoint'):
             IP_Adresse = self.getIPadr(iIED.name,iAP.name)
             self.add_AP(_ied, iAP, iIED.name, IP_Adresse)
@@ -285,8 +314,14 @@ class DataModelTree():
             self.add_LD(_srv1, iLD)
 
     def add_LD(self, T_SRV: StandardItem, iLD: SCD.SCDNode):
+
+
         ldName = iLD.inst + ', ' + iLD.ldName
         _ldName = StandardItem(ldName, 11, set_bold=False)
+
+        _ldName.setFlags(Qt.ItemIsUserCheckable)
+        _ldName.setCheckState(Qt.Unchecked)
+        _ldName.setCheckable(True)
         _desc = StandardItem(iLD.desc, 11, set_bold=False)
         _vide1 = StandardItem('.', 11, set_bold=False)
         _vide2 = StandardItem('.', 11, set_bold=False)

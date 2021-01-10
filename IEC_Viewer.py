@@ -39,6 +39,7 @@ class LoadSCL(object):
         print("init")
         self.fname=fname
         self.T0 = time.time()
+
     def __enter__(self):
         HERE = os.path.abspath(os.path.dirname(__file__))
         filepath = os.path.join(HERE, self.fname[0])
@@ -82,8 +83,6 @@ class MainWindow(QMainWindow):
             self.dataKey = ''
             self.fname = None
             self.tIED = []
-
-            self.fname = []
 
             qr = self.frameGeometry()  # geometry of the main window
             cp = QDesktopWidget().availableGeometry().center()  # center point of screen
@@ -379,11 +378,6 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
-
-    #    TX = Trace.Console(TL.GENERAL)
-    tIEDfull = []
-
-    myCpt = 0
 
     app = QApplication(sys.argv)
     Win = MainWindow()
