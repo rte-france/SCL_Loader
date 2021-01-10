@@ -24,8 +24,8 @@ import os
 import time
 import textwrap
 
-from PyQt5.QtWidgets import QMainWindow,QApplication,QDesktopWidget,QVBoxLayout,QHBoxLayout, QTableWidget, QTableWidgetItem
-from PyQt5.QtWidgets import QFileDialog,QTableView,QWidget,QPushButton,QFrame,QCheckBox,QTreeView,QMessageBox
+from PyQt5.QtWidgets import QMainWindow,QApplication,QDesktopWidget,QVBoxLayout,QHBoxLayout, QTableWidget, QTreeWidgetItem
+from PyQt5.QtWidgets import QFileDialog,QTableView,QWidget,QTreeWidget, QPushButton,QFrame,QCheckBox,QTreeView,QMessageBox
 from PyQt5.Qt        import QStandardItemModel, QStandardItem, QThread, Qt
 from PyQt5.QtGui import QFont, QColor
 
@@ -53,7 +53,7 @@ class LoadSCL(object):
         print("SCL loaded with success")
 #        return(self.T1 - self.T0)
 
-class StandardItem(QStandardItem):
+class QTreeWidgetItem(QTreeWidgetItem):
 
     def __init__(self, txt='', font_size=12, set_bold=False, color=QColor(0, 0, 0)):
         super().__init__()
@@ -61,10 +61,10 @@ class StandardItem(QStandardItem):
         fnt = QFont('Open Sans', font_size)
         fnt.setBold(set_bold)
 
-        self.setEditable(False)  # Permet l'édition de la cellule.
-        self.setForeground(color)
-        self.setFont(fnt)
-        self.setText(txt)
+#        self.setEditable(False)  # Permet l'édition de la cellule.
+#        self.setForeground(color)
+#        self.setFont(fnt)
+        self.setText(0, txt)
         self.layoutMainView = None
         self.nameMainView   = 'DataModel'
 
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self,  parent)
         self.setWindowTitle('Création Campagne de Test')
 
-    class AppDemo(QWidget):
+    class AppDemo(QTreeWidget):
         def __init__(self, _fname):
             super().__init__()
 
@@ -113,13 +113,13 @@ class MainWindow(QMainWindow):
 
             self.setLayout(self.winLayout)
             ## Creation of all widgets
+            self.treeView = self.CreateTreeView()
 
             ## Initial View is Data Model
             self.datatype = DataType_Table(self.winLayout, self.containerLayout)
 
             ## Initial View is Data Model
 
-            self.treeView = self.CreateTreeView()
 #            self.tIED = tIED  ## Required for buttons.
             for iIED in self.tIED:
                 self.add_IED(iIED)  # Return the column head
@@ -133,44 +133,55 @@ class MainWindow(QMainWindow):
         #
         #
         def CreateTreeView(self):
-            _ied = StandardItem("TOTO", 12, set_bold=True)
+            _ied = QTreeWidgetItem("TOTO", 12, set_bold=True)
             _ied.setFlags(Qt.ItemIsUserCheckable)
-            _ied.setCheckState(Qt.Unchecked)
-            _ied.setEditable(True)
-            _ied.setTristate(True)
+#            _ied.setCheckState(Qt.Unchecked)
+#            _ied.setEditable(True)
+#            _ied.setTristate(True)
 
             self.treeLayout = QVBoxLayout()
             self.containerLayout.addLayout(self.treeLayout)         # add the Tree View
 
-            self.treeView = QTreeView()
+            self.treeView = QTreeWidget()
             self.treeView.setHeaderHidden(False)
             self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
             self.treeView.customContextMenuRequested.connect(self.openMenu)
             self.treeView.clicked.connect(self.openMenu)
 
+            self.treeView.headerItem().setText(0, "BAY")
+            self.treeView.headerItem().setText(1, "IED")
+            self.treeView.headerItem().setText(2, "AccessPoint")
+            self.treeView.headerItem().setText(3, "IP")
+            self.treeView.headerItem().setText(4, "Logical Device")
 
+#            A.setText(1, "AcessPoint")
 
-
-            self.treeModel = QStandardItemModel(self.treeView)
-            self.treeModel.setColumnCount(6)
-            self.treeModel.setHeaderData(IED_LD, Qt.Horizontal, "IED/AP/SRV/LD")         # 0
-            self.treeModel.setHeaderData(TYPE,   Qt.Horizontal, "Type")                  # 1
-            self.treeModel.setHeaderData(VALUE,  Qt.Horizontal, "Value")                 # 2 ==> Read / Write data
-            self.treeModel.setHeaderData(DESC,   Qt.Horizontal, "Object 'desc'")         # Object 'desc'
-            self.treeModel.setHeaderData(DESC2,  Qt.Horizontal, "Type 'desc'")           # Data Type Desction
-
-    #        self.treeView.doubleClicked.connect(self.getValue)
-
-            self.treeView.setModel(self.treeModel)
-            self.treeView.expandAll()
-            self.treeView.setColumnWidth(0, 300)
-            self.treeView.setColumnWidth(1, 200)
+            self.treeView.setColumnWidth(1, 100)
             self.treeView.setColumnWidth(2, 100)
             self.treeView.setColumnWidth(3, 100)
 
+#            self.treeModel = QStandardItemModel(self.treeView)
+#            self.treeModel.setColumnCount(6)
+#            self.treeModel.setHeaderData(IED_LD, Qt.Horizontal, "IED/AP/SRV/LD")         # 0
+#            self.treeModel.setHeaderData(TYPE,   Qt.Horizontal, "Type")                  # 1
+#            self.treeModel.setHeaderData(VALUE,  Qt.Horizontal, "Value")                 # 2 ==> Read / Write data
+#            self.treeModel.setHeaderData(DESC,   Qt.Horizontal, "Object 'desc'")         # Object 'desc'
+#            self.treeModel.setHeaderData(DESC2,  Qt.Horizontal, "Type 'desc'")           # Data Type Desction
+
+    #        self.treeView.doubleClicked.connect(self.getValue)
+
+#            self.treeView.setModel(self.treeModel)
+            self.treeView.expandAll()
+            self.treeView.setColumnWidth(0, 200)
+            self.treeView.setColumnWidth(1, 100)
+            self.treeView.setColumnWidth(2, 100)
+            self.treeView.setColumnWidth(3, 100)
+            self.treeView.setColumnWidth(4, 100)
+            self.treeView.setColumnWidth(5, 100)
+
             self.treeLayout.addWidget(self.treeView)
-            self.rootNode = self.treeModel.invisibleRootItem()
-            return self.treeView, self.treeModel
+#            self.rootNode = self.treeModel.invisibleRootItem()
+            return self.treeView #, self.treeModel
 
         ## \b openMenu:  pop up menu (TODO)
         #
@@ -200,10 +211,6 @@ class MainWindow(QMainWindow):
             for iIED in tIED:
                 T_IED = self.add_IED(iIED)  # Return the column head
 
-        def check_DO_SDO(self, tag):
-            return re.fullmatch(REG_DO, tag)
-    ##        return tag in DOmatch
-
         def getIPadr(self, iedName, apNAme):
             for iComm in self.Communication.get_children('SubNetwork'):
                 if iComm.type == "8-MMS":
@@ -215,91 +222,63 @@ class MainWindow(QMainWindow):
                                         return iP.Val
             return('0.0.0.0')
 
-        def check_DA_SDA_DAI(self, tag):
-            return re.fullmatch(REG_DA, tag)
-
         def add_IED(self, iIED: SCD.SCDNode):
             self.dataKey = iIED.name
             self.line = self.line + 1
 
-            _ied = StandardItem(iIED.name, 12, set_bold=True)
+            _ied = QTreeWidgetItem(iIED.name, 12, set_bold=True)
             _ied.setFlags(Qt.ItemIsUserCheckable)
-            _ied.setCheckState(Qt.Unchecked)
-            _desc = StandardItem(iIED.type, 11, set_bold=False)
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            self.rootNode.appendRow((_ied, _vide1, _vide2, _desc))
+            _ied.setCheckState(0,True)
+            _desc = QTreeWidgetItem(iIED.type+"WW", 11, set_bold=False)
+
+            self.treeView.addTopLevelItem(_ied) #, _desc, _toto))
             _ied.setFlags(Qt.ItemIsUserCheckable)
-            _ied.setCheckState(Qt.Unchecked)
+
             for iAP in iIED.get_children('AccessPoint'):
-                IP_Adresse = self.getIPadr(iIED.name,iAP.name)
+                if iAP.name == "ADMINISTRATION_AP":
+                    continue
+                IP_Adresse = self.getIPadr(iIED.name, iAP.name)
                 self.add_AP(_ied, iAP, iIED.name, IP_Adresse)
 
-        def add_AP(self, T_IED: StandardItem, iAP: SCD.SCDNode, iedName: str, IP_Adresse):
-            _ap = StandardItem(iAP.name, 11, set_bold=False)
-            _txt = StandardItem(iAP.desc, 11, set_bold=False)
-            _ip = StandardItem( IP_Adresse, 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            T_IED.appendRow((_ap, _ip, _vide2, _txt))
+        def add_AP(self, T_IED: QTreeWidgetItem, iAP: SCD.SCDNode, iedName: str, IP_Adresse):
 
+            _vide =QTreeWidgetItem(" ", 11, set_bold=True)
+            _ap  = QTreeWidgetItem(iAP.name, 11, set_bold=True)
+            _txt = QTreeWidgetItem(iAP.desc, 11, set_bold=False)
+            _ip  = QTreeWidgetItem( IP_Adresse, 11, set_bold=False)
+            T_IED.addChild((_ap)) #,_txt,_ip))
+
+#            self.treeView.addTopLevelItems((_ap,_ip)) #, _txt, _ip))
             for iSRV in iAP.get_children('Server'):
                 self.add_SRV(_ap, iSRV)
 
-        def add_SRV(self, T_AP: StandardItem, iSRV: SCD.SCDNode):
+        def add_SRV(self, T_AP: QTreeWidgetItem, iSRV: SCD.SCDNode):
 
             if hasattr(iSRV, 'timeout'):
-                _srv1 = StandardItem(('Server, ' + str(iSRV.timeout)), 10, set_bold=True)
+                _srv1 = QTreeWidgetItem(('Server, ' + str(iSRV.timeout)), 10, set_bold=True)
             else:
-                _srv1 = StandardItem('Server,', 10, set_bold=True)
-
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            _desc = StandardItem(iSRV.desc, 10, set_bold=False)
-            T_AP.appendRow((_srv1, _vide1, _vide2, _desc))
+                _srv1 = QTreeWidgetItem('Server', 10, set_bold=True)
+            _txt2=  QTreeWidgetItem('Server', 10, set_bold=True)
+            T_AP.setText(1, ("DESCRIPTION")) # addTopLevelItems((_ap, _ip, _vide2, _txt))
+            T_AP.setText(2, ("XXXXXX"))
+            T_AP.addChild(_srv1)  # ,_txt,_ip))
+#            self.treeView.addTopLevelItems((_srv1, _txt2))
 
             for iLD in iSRV.get_children('LDevice'):
                 self.add_LD(_srv1, iLD)
 
-        def add_LD(self, T_SRV: StandardItem, iLD: SCD.SCDNode):
-
-
+        def add_LD(self, T_SRV: QTreeWidgetItem, iLD: SCD.SCDNode):
             ldName = iLD.inst + ', ' + iLD.ldName
-            _ldName = StandardItem(ldName, 11, set_bold=False)
+            _ldName = QTreeWidgetItem(ldName, 11, set_bold=False)
 
             _ldName.setFlags(Qt.ItemIsUserCheckable)
-            _ldName.setCheckState(Qt.Unchecked)
-            _ldName.setCheckable(True)
-            _desc = StandardItem(iLD.desc, 11, set_bold=False)
-            _vide1 = StandardItem('.', 11, set_bold=False)
-            _vide2 = StandardItem('.', 11, set_bold=False)
-            T_SRV.appendRow((_ldName, _vide1, _vide2, _desc))
+            _ldName.setFlags(Qt.ItemIsUserCheckable)
+            _ldName.setCheckState(0,True)
 
-            if hasattr(iLD, 'LLN0'):
-                self.add_LN(_ldName, iLD.LLN0)
-            elif hasattr(iLD, 'LN0'):
-                self.add_LN(_ldName, iLD.LN0)
-            for iLN in iLD.get_children('LN'):
-                self.add_LN(_ldName, iLN)
+            _desc = QTreeWidgetItem(iLD.desc, 11, set_bold=False)
+            T_SRV.addChild(_ldName)
 
-        def add_LN(self, T_LD: StandardItem, iLN: SCD.SCDNode):
-            txtLN = (iLN.lnPrefix or '') + (iLN.lnClass or '') + str(iLN.inst or '')  # ' + iLD.inst
-            _ln = StandardItem(txtLN, 10, set_bold=True)
-            _lnClass = StandardItem(iLN.lnClass, 10, set_bold=True)
-            _lnDesc = StandardItem(iLN.lnDesc, 10, set_bold=False)
-            _vide1 = StandardItem('.', 10, set_bold=False)
-            _vide2 = StandardItem('.', 10, set_bold=False)
-            T_LD.appendRow((_ln, _lnClass, _vide1, _vide2, _lnDesc))
 
-            if iLN.lnClass == 'LLN0':
-                inputs = iLN.get_children('Inputs')
-    #            try:
-    #                tExtRefs = inputs[0] #.get_children('ExtRef')
-    #                _ExtRef = tExtRefs.ExtRef
-    #                for iExtRef in _ExtRef:
-    #                    print (iExtRef.iedName, iExtRef.doName)
-    #            except:
-    #                print("xx")
-    #                pass
 
 if __name__ == '__main__':
 
@@ -310,5 +289,5 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
     Win = MainWindow()
-    demo = Win.AppDemo('SCL_files\LD_all_V1_modified.scd')
+    demo = Win.AppDemo('SCL_files\SCD_SITE_20200928.scd')
     sys.exit(app.exec_())
