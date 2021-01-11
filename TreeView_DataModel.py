@@ -78,7 +78,6 @@ class DataModelTree():
         self.line       = 0
         self.containerLayout = _containerLayout
         self.winLayout  = _winLayout
-        self.box = []
         self.FC_frame   = self.FCbuttons(self.winLayout, None)  # Functional Constraint Selection buttons
         self.treeView   = None
         self.treeLayout = None
@@ -165,7 +164,9 @@ class DataModelTree():
                             )
         self.hLayoutButtons = QHBoxLayout(self.FC_frame)
 
+        self.box =[]
         i = 0
+
         for fc in DT.FC.lstFC:
             chkbox = QCheckBox(fc, self.FC_frame)
             chkbox.setChecked(True)
