@@ -44,10 +44,33 @@ class LoadSCL(object):
         HERE = os.path.abspath(os.path.dirname(__file__))
         filepath = os.path.join(HERE, self.fname)
         self.sclMgr = SCD_handler(filepath, True)
+
+        for iSection in dir(self.sclMgr):
+            if iSection.startswith('__'):
+                continue
+            if iSection.startswith('get'):
+                continue
+            if iSection.startswith('datatype'):
+                continue
+            if iSection == "Communication":
+                continue
+            if iSection =="Header":
+                continue
+            break               # Found the section 'Substation'
+        try:
+            self.Poste = eval("self.sclMgr."+iSection)
+            if self.Poste.tag != 'Substation':
+                print("Error with substation section")
+                exit(-1)
+            print("Le nom du poste est:" , self.Poste.name)
+
+        except Exception as e:
+            print(e)
+
         self.data   = DataTypeTemplates(filepath)
         self.T1  = time.time()
         self.delta = self.T1-self.T0
-        return (self.sclMgr,self.data,self.delta)
+        return (self.sclMgr, self.data, self.Poste, self.delta)
 
     def __exit__(self,  exc_type, exc_val, exc_tb):
         print("SCL loaded with success")
@@ -98,11 +121,12 @@ class MainWindow(QMainWindow):
             self.winLayout = QVBoxLayout()  ## Most the HMI is vertical
             self.winLayout.setSpacing(10)
 
-            with LoadSCL(self.fname) as (self.sclMgr, self.DataTypes, delta):   #, self.T_LoadSCL):
-                print("Chargement SCL initial:")         # str(self.T_LoadSCL))
+            with LoadSCL(self.fname) as (self.sclMgr, self.DataTypes, self.Poste, delta):   #, self.T_LoadSCL):
+                print("Chargement SCL initial:", delta)         # str(self.T_LoadSCL))
 
+            self.createBay_IED_list(self.Poste)
             self.tIED  = self.sclMgr.get_all_IEDs()
-            self.Communication = self.sclMgr.Communication
+
 
             ## MAIN VIEW, start with treeView
 
@@ -133,12 +157,6 @@ class MainWindow(QMainWindow):
         #
         #
         def CreateTreeView(self):
-            _ied = QTreeWidgetItem("TOTO", 12, set_bold=True)
-            _ied.setFlags(Qt.ItemIsUserCheckable)
-#            _ied.setCheckState(Qt.Unchecked)
-#            _ied.setEditable(True)
-#            _ied.setTristate(True)
-
             self.treeLayout = QVBoxLayout()
             self.containerLayout.addLayout(self.treeLayout)         # add the Tree View
 
@@ -154,23 +172,6 @@ class MainWindow(QMainWindow):
             self.treeView.headerItem().setText(3, "IP")
             self.treeView.headerItem().setText(4, "Logical Device")
 
-#            A.setText(1, "AcessPoint")
-
-            self.treeView.setColumnWidth(1, 100)
-            self.treeView.setColumnWidth(2, 100)
-            self.treeView.setColumnWidth(3, 100)
-
-#            self.treeModel = QStandardItemModel(self.treeView)
-#            self.treeModel.setColumnCount(6)
-#            self.treeModel.setHeaderData(IED_LD, Qt.Horizontal, "IED/AP/SRV/LD")         # 0
-#            self.treeModel.setHeaderData(TYPE,   Qt.Horizontal, "Type")                  # 1
-#            self.treeModel.setHeaderData(VALUE,  Qt.Horizontal, "Value")                 # 2 ==> Read / Write data
-#            self.treeModel.setHeaderData(DESC,   Qt.Horizontal, "Object 'desc'")         # Object 'desc'
-#            self.treeModel.setHeaderData(DESC2,  Qt.Horizontal, "Type 'desc'")           # Data Type Desction
-
-    #        self.treeView.doubleClicked.connect(self.getValue)
-
-#            self.treeView.setModel(self.treeModel)
             self.treeView.expandAll()
             self.treeView.setColumnWidth(0, 200)
             self.treeView.setColumnWidth(1, 100)
@@ -212,7 +213,7 @@ class MainWindow(QMainWindow):
                 T_IED = self.add_IED(iIED)  # Return the column head
 
         def getIPadr(self, iedName, apNAme):
-            for iComm in self.Communication.get_children('SubNetwork'):
+            for iComm in self.sclMgr.Communication.get_children('SubNetwork'):
                 if iComm.type == "8-MMS":
                     for iCnxAP in iComm.get_children('ConnectedAP'):
                         if iCnxAP.iedName == iedName and iCnxAP.apName == apNAme:
@@ -222,13 +223,32 @@ class MainWindow(QMainWindow):
                                         return iP.Val
             return('0.0.0.0')
 
+        def createBay_IED_list(self, Poste):
+
+            tBay = []
+            for iStation in Poste.get_children():
+                for iBay in iStation.get_children():
+                    print(iBay.name)
+                    iBay.tIED=[]
+                    tBay.append(iBay)
+                    for iIED in iBay.get_children():
+                        if iIED.tag =="Function":
+                            X = iIED.name.split('_')
+                            IEDname = X[1] + '_' + X[2] + '_' + X[3]
+                            FCname  = X[4] + '_' + X[5]
+                            iBay.tIED.append((iIED.name,FCname))
+                            print('       '+iIED.name)
+
+            print('xx')
+
         def add_IED(self, iIED: SCD.SCDNode):
             self.dataKey = iIED.name
             self.line = self.line + 1
 
             _ied = QTreeWidgetItem(iIED.name, 12, set_bold=True)
             _ied.setFlags(Qt.ItemIsUserCheckable)
-            _ied.setCheckState(0,True)
+            _ied.statusTip(0)
+            _ied.setCheckState(0, True)
             _desc = QTreeWidgetItem(iIED.type+"WW", 11, set_bold=False)
 
             self.treeView.addTopLevelItem(_ied) #, _desc, _toto))
