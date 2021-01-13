@@ -232,7 +232,7 @@ class TestSCD_OPEN():
         """
         lds = _get_node_list_by_tag(self.scd, 'LDevice')
         ld = LD(self.scd.datatypes, lds[0])
-        assert ld.name == 'LDevice'                     # pylint: disable=maybe-no-member
+        assert ld.name == 'LD_all'                      # pylint: disable=maybe-no-member
         assert ld.inst == 'LD_all'                      # pylint: disable=maybe-no-member
         assert ld.LLN0                                  # pylint: disable=maybe-no-member
         assert len(ld.get_children('LN')) == 157
@@ -244,7 +244,7 @@ class TestSCD_OPEN():
         ieds = _get_node_list_by_tag(self.scd, 'IED')
         self._start_perfo_stats()
         ied = IED(self.scd.datatypes, ieds[0])
-        assert ied.HVDC_LD_All_1.Server.LDevice.ANCR1.ADetun.blkEna.fc == 'BL'  # pylint: disable=maybe-no-member
+        assert ied.HVDC_LD_All_1.Server.LD_all.ANCR1.ADetun.blkEna.fc == 'BL'  # pylint: disable=maybe-no-member
         assert ied.name == 'LD_All'                                             # pylint: disable=maybe-no-member
         self._end_perfo_stats()
 
@@ -262,7 +262,7 @@ class TestSCD_OPEN():
             assert hasattr(da, 'mmsAdr')
             assert hasattr(da, 'u_mmsAdr')
             assert hasattr(da, 'IntAdr')
-        assert da_list['LDevice.LLN0.OpTmh.blkEna'].name == 'blkEna'
+        assert da_list['LD_all.LLN0.OpTmh.blkEna'].name == 'blkEna'
         self._end_perfo_stats()
 
     def test_get_ied_names_list(self):
@@ -276,6 +276,9 @@ class TestSCD_OPEN():
 def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     assert scd
+    assert scd.Header.toolID == 'PVR GEN TOOL' # pylint: disable=maybe-no-member
+    assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE.Address.P[0].type == 'VLAN-PRIORITY' # pylint: disable=maybe-no-member
+    assert scd.Substation[0].SITEP41.name == 'SITEP41' # pylint: disable=maybe-no-member
 
 def test_get_Data_Type_Definition():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)

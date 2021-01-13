@@ -153,7 +153,7 @@ def _get_node_name(node: etree.Element):
             inst = node.get('inst')
             name = lnClass + str(inst)
         elif tag == 'LDevice':
-            name = node.get('ldName')
+            name = node.get('inst')
         elif tag == 'Private':
             name = node.get('type')
         elif tag == 'ConnectedAP':
@@ -712,9 +712,7 @@ class LN(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['LN'])
 
         if node_elem is not None:
-            lnClass = node_elem.get('lnClass')
-            inst = node_elem.get('inst')
-            kwargs['name'] = lnClass + str(inst)
+            kwargs['name'] = _get_node_name(node_elem)
         else:
             lnClass = kwargs.get('lnClass')
             inst = kwargs.get('inst')
@@ -786,11 +784,10 @@ class LD(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['LD'])
 
         if node_elem is not None:
-            ldName = node_elem.get('ldName')
-            kwargs['name'] = ldName
+            kwargs['name'] = _get_node_name(node_elem)
         else:
-            ldName = kwargs.get('ldName')
-            kwargs.update({'name': ldName})
+            inst = kwargs.get('inst')
+            kwargs.update({'name': inst})
 
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
@@ -824,6 +821,7 @@ class IED(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['IED'])
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
+
 class SCD_handler():
     """
         Class to handle a SCD/SCL file
@@ -853,11 +851,14 @@ class SCD_handler():
             raise AttributeError(err)
 
         self.datatypes = DataTypeTemplates(self._scd_path)
-
+        self.Substation = []
         scl_children = self._iter_get_SCL_elems()
         for elem in scl_children:
-            elem_name = _get_node_name(elem)
-            setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
+            if elem.tag.split('}')[-1] == 'Substation':
+                self.Substation.append(SCDNode(self.datatypes, elem, self._fullattrs))
+            else:
+                elem_name = _get_node_name(elem)
+                setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
 
     def get_all_IEDs(self) -> list:
         """
