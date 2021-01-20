@@ -7767,13 +7767,11 @@
 			<DA name="cdcName" fc="EX" bType="VisString255"/>
 			<DA name="dataNs" fc="EX" bType="VisString255"/>
 		</DOType>
-		<DAType id="AnalogueValue" desc="DA
-">
+		<DAType id="AnalogueValue" desc="DA">
 			<BDA name="i" bType="INT32"/>
 			<BDA name="f" bType="FLOAT32"/>
 		</DAType>
-		<DAType id="CalendarTime" desc="DA
-">
+		<DAType id="CalendarTime" desc="DA">
 			<BDA name="occ" bType="INT16U"/>
 			<BDA name="occType" bType="Enum" type="occType"/>
 			<BDA name="occPer" bType="Enum" type="occPer"/>
@@ -7783,22 +7781,19 @@
 			<BDA name="hr" bType="INT8U"/>
 			<BDA name="mn" bType="INT8U"/>
 		</DAType>
-		<DAType id="Cell" desc="DA
-">
+		<DAType id="Cell" desc="DA">
 			<BDA name="xStart" bType="FLOAT32"/>
 			<BDA name="xEnd" bType="FLOAT32"/>
 			<BDA name="yStart" bType="FLOAT32"/>
 			<BDA name="yEnd" bType="FLOAT32"/>
 		</DAType>
-		<DAType id="DPCCancel" desc="DA
-">
+		<DAType id="DPCCancel" desc="DA">
 			<BDA name="ctlVal" bType="BOOLEAN"/>
 			<BDA name="ctlNum" bType="INT8U"/>
 			<BDA name="t" bType="Timestamp"/>
 			<BDA name="Test" bType="BOOLEAN"/>
 		</DAType>
-		<DAType id="DPCOperate" desc="DA
-">
+		<DAType id="DPCOperate" desc="DA">
 			<BDA name="ctlVal" bType="BOOLEAN"/>
 			<BDA name="operTm" bType="Timestamp"/>
 			<BDA name="origin" bType="Struct" type="Originator"/>
@@ -7816,26 +7811,22 @@
 			<BDA name="Test" bType="BOOLEAN"/>
 			<BDA name="Check" bType="BOOLEAN"/>
 		</DAType>
-		<DAType id="Originator" desc="DA
-">
+		<DAType id="Originator" desc="DA">
 			<BDA name="orCat" bType="Enum" type="orCategory"/>
 			<BDA name="orIdent" bType="Octet64"/>
 		</DAType>
-		<DAType id="Point" desc="DA
-">
+		<DAType id="Point" desc="DA">
 			<BDA name="xVal" bType="FLOAT32"/>
 			<BDA name="yVal" bType="FLOAT32"/>
 			<BDA name="zVal" bType="FLOAT32"/>
 		</DAType>
-		<DAType id="PulseConfig" desc="DA
-">
+		<DAType id="PulseConfig" desc="DA">
 			<BDA name="cmdQual" bType="Enum" type="cmdQualEnum"/>
 			<BDA name="onDur" bType="INT32U"/>
 			<BDA name="offDur" bType="INT32U"/>
 			<BDA name="numPIs" bType="INT32U"/>
 		</DAType>
-		<DAType id="RangeConfig" desc="DA
-">
+		<DAType id="RangeConfig" desc="DA">
 			<BDA name="hhLim" bType="Struct" type="AnalogueValue"/>
 			<BDA name="hLim" bType="Struct" type="AnalogueValue"/>
 			<BDA name="iLim" bType="Struct" type="AnalogueValue"/>
@@ -7844,23 +7835,19 @@
 			<BDA name="max" bType="Struct" type="AnalogueValue"/>
 			<BDA name="limDB" bType="INT32U"/>
 		</DAType>
-		<DAType id="ScaledValueConfig" desc="DA
-">
+		<DAType id="ScaledValueConfig" desc="DA">
 			<BDA name="scaleFactor" bType="FLOAT32"/>
 			<BDA name="offset" bType="FLOAT32"/>
 		</DAType>
-		<DAType id="Unit" desc="DA
-">
+		<DAType id="Unit" desc="DA">
 			<BDA name="SIUnit" bType="Enum" type="SI_Unit"/>
 			<BDA name="mutiplier" bType="Enum" type="F_multiplier"/>
 		</DAType>
-		<DAType id="ValWithTrans" desc="DA
-">
+		<DAType id="ValWithTrans" desc="DA">
 			<BDA name="posVal" bType="INT8"/>
 			<BDA name="transInd" bType="BOOLEAN"/>
 		</DAType>
-		<DAType id="Vector" desc="DA
-">
+		<DAType id="Vector" desc="DA">
 			<BDA name="mag" bType="Struct" type="AnalogueValue"/>
 			<BDA name="ang" bType="Struct" type="AnalogueValue"/>
 		</DAType>

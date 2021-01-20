@@ -271,7 +271,16 @@ class TestSCD_OPEN():
         """
         result = self.scd.get_IED_names_list()
         assert len(result) == 1
-        assert result[0] == 'LD_All'
+        assert result[0] == 'LD_All'  
+
+    def test_get_ied_by_name(self):
+        ied = self.scd.get_IED_by_name('LD_All')
+        assert isinstance(ied, IED)
+    
+    def test_get_all_ied(self):
+        ieds = self.scd.get_all_IEDs()
+        assert len(ieds) == 1
+        assert isinstance(ieds[0], IED)
 
 def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
@@ -279,6 +288,7 @@ def test_open_iop():
     assert scd.Header.toolID == 'PVR GEN TOOL' # pylint: disable=maybe-no-member
     assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE.Address.P[0].type == 'VLAN-PRIORITY' # pylint: disable=maybe-no-member
     assert scd.Substation[0].SITEP41.name == 'SITEP41' # pylint: disable=maybe-no-member
+    del scd
 
 def test_get_Data_Type_Definition():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
@@ -289,3 +299,15 @@ def test_get_Data_Type_Definition():
     assert len(datatype_defs['DOType']) == 89
     assert len(datatype_defs['DAType']) == 16
     assert len(datatype_defs['EnumType']) == 40
+
+def test_extract_sub_SCD():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    ied_list = ['AUT1A_SITE_1', 'IEDTEST_SITE_1']
+    
+    dest_path = scd.extract_sub_SCD(ied_list)
+    
+    assert os.path.exists(dest_path)
+    scd2 = SCD_handler(dest_path)
+    result = scd2.get_IED_names_list()
+    result.sort()
+    assert result == ied_list
