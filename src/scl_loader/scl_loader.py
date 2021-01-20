@@ -6,6 +6,7 @@ import logging
 import re
 import weakref
 from lxml import etree
+from xml.etree import ElementTree as XmlET
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 XSD_PATH = os.path.join(HERE, 'resources', 'SCL_Schema', 'SCL.xsd')
@@ -21,6 +22,8 @@ REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 SEP1 = '$'          # Standard MMS separator.
 SEP2 = '/'          # MMS Separator for system testing
+
+FORCE_ITER_MODE = False
 
 NODES_ATTRS = {
     'IED': [
@@ -839,6 +842,7 @@ class SCD_handler():
                 If True, all the possible attributes for the SCD objects will be created
                 even if they are not described in the SCD/SCL file.
         """
+        self._scl_root = None
         self._scd_path = scd_path
         schema_doc = etree.parse(XSD_PATH)
         self._schema = etree.XMLSchema(schema_doc)
@@ -852,13 +856,57 @@ class SCD_handler():
 
         self.datatypes = DataTypeTemplates(self._scd_path)
         self.Substation = []
-        scl_children = self._iter_get_SCL_elems()
+        scl_children = self._get_SCL_elems()
         for elem in scl_children:
             if elem.tag.split('}')[-1] == 'Substation':
                 self.Substation.append(SCDNode(self.datatypes, elem, self._fullattrs))
             else:
                 elem_name = _get_node_name(elem)
                 setattr(self, elem_name, SCDNode(self.datatypes, elem, self._fullattrs))
+
+    def extract_sub_SCD(self, ied_name_list: list) -> str:
+        """
+            Extract a smaller SCD containing only the IED from the IED_list
+
+            Parameters
+            ----------
+            `ied_name_list`
+                List of the ied names to keep
+
+            Returns
+            -------
+            `str`
+                The full path of the new reduced scd file
+        """
+        newroot = None
+        path, ext = os.path.splitext(self._scd_path)
+        dest_path = '{}-reduced{}'.format(path, ext)
+
+        ctx = etree.iterparse(self._scd_path, events=("start",), tag='{}SCL'.format(SCL_NAMESPACE))
+        for _, root in ctx:
+            newroot = etree.Element(root.tag, nsmap=root.nsmap, attrib=root.attrib)
+            break
+
+        scl_children = self._get_SCL_elems()
+        for child in scl_children:
+            newroot.append(child)
+
+        #Clean not needed ConnectedAP
+        connected_aps = newroot.xpath('child::iec61850:Communication/*/iec61850:ConnectedAP', namespaces=NS)
+        connected_aps = [itm for itm in connected_aps if itm.get('iedName') not in ied_name_list]
+        for c_ap in connected_aps:
+            c_ap.getparent().remove(c_ap)
+
+        ieds = self._get_IED_elems_by_names(ied_name_list)
+        for ied in ieds:
+            newroot.append(ied)
+
+        newroot.append(self.datatypes._datatypes_root)
+
+        et = etree.ElementTree(newroot)
+        et.write(dest_path, encoding="utf-8", xml_declaration=True)
+        
+        return dest_path
 
     def get_all_IEDs(self) -> list:
         """
@@ -869,9 +917,14 @@ class SCD_handler():
             `[IED]`
                 An array of the loaded IED objects
         """
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        ieds = []
+        if self._scl_root is not None:
+            ieds = self._scl_root.xpath('child::iec61850:IED', namespaces=NS)
+        else:
+            ieds = self._iter_get_all_IEDs()
+
         tIED = []
-        for _, ied in context:
+        for ied in ieds:
             tIED.append(IED(self.datatypes, ied, self._fullattrs))
 
         return tIED
@@ -890,13 +943,9 @@ class SCD_handler():
             `IED`
                 The loaded IED object
         """
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
-        for _, ied in context:
-            item_name = ied.get('name')
-            if item_name == ied_name:
-                return IED(self.datatypes, ied, self._fullattrs)
-            else:
-                ied.clear()
+        ied_elems = self._get_IED_elems_by_names([ied_name])
+        if len(ied_elems) > 0:
+            return IED(self.datatypes, ied_elems[0], self._fullattrs)
 
     def get_IED_names_list(self) -> list:
         """
@@ -908,13 +957,15 @@ class SCD_handler():
                 The found IED names
         """
         result = []
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
-        for _, ied in context:
-            result.append(ied.get('name'))
-            ied.clear()
+        if self._scl_root is not None:
+            ieds = self._scl_root.xpath('child::iec61850:IED', namespaces=NS)
+            for ied in ieds:
+                result.append(ied.get('name'))
+        else:
+            result = self._iter_get_IED_names_list()
 
         return result
-
+    
     def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
@@ -935,13 +986,39 @@ class SCD_handler():
         if file_size < MAX_VALIDATION_SIZE:
             tree = etree.parse(self._scd_path)
             is_valid = self._schema.validate(tree)
-            tree = None
+            if not FORCE_ITER_MODE:
+                self._scl_root = tree.getroot()
             return (is_valid, self._schema.error_log.last_error)
         else:
             LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
-    def _iter_get_SCL_elems(self) -> list:
+    def _get_IED_elems_by_names(self, ied_names_list: list) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the IED elements by name
+
+            Parameters
+            ----------
+            `ied_names_list`
+                List of ied names to retrieve
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        result = []
+        if self._scl_root is not None:
+            result = self._scl_root.xpath('child::iec61850:IED', namespaces=NS)
+            result = [ied for ied in result if ied.get('name') in ied_names_list]
+        else:
+            result = self._iter_get_IED_elems_by_names(ied_names_list)
+
+        return result
+
+    def _get_SCL_elems(self) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -953,26 +1030,45 @@ class SCD_handler():
             `[etree.Element]`
                 Array of found etree.Element elements
         """
-        tags = [
-            '{}Header'.format(SCL_NAMESPACE),
-            '{}Communication'.format(SCL_NAMESPACE),
-            '{}Substation'.format(SCL_NAMESPACE),
-            '{}Private'.format(SCL_NAMESPACE)
-        ]
-        context = etree.iterparse(self._scd_path, events=("end",), tag=tags)
-        result = []
-        for _, elem in context:
+        tags = ['Header', 'Communication', 'Substation', 'Private']
 
-            if elem.tag.split('}')[-1] != 'Private':
-                result.append(elem)
-            elif elem.tag.split('}')[-1] == 'Private' \
-                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS)
-                                            or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
-                result.append(elem)
-            else:
-                elem.clear()
+        xpath_tags = ''
+        for tag in tags:
+            xpath_tags = '{} or self::iec61850:{}'.format(xpath_tags, tag)
+        
+        xpath_tags = xpath_tags[3:]
+
+        result = []
+        if self._scl_root is not None:
+            result = self._scl_root.xpath('child::*[{}]'.format(xpath_tags), namespaces=NS)
+        else:
+            result = self._iter_get_SCL_elems(tags)
 
         return result
+
+    def _get_all_elem_by_tag(self, tag:str) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the SCL elements by tag
+
+            Parameters
+            ----------
+            `tag`
+                the elements tag to search
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        elem_list = []
+        if self._scl_root is not None:
+            elem_list = self._scl_root.xpath('iec61850:{}'.format(tag), namespaces=NS)
+        else:
+            elem_list = self._iter_get_all_elem_by_tag(tag)
+
+        return elem_list
 
     def _iter_get_all_elem_by_tag(self, tag:str) -> list:
         """
@@ -999,3 +1095,98 @@ class SCD_handler():
             _, elem = next(context)
 
         return elem_list
+
+    def _iter_get_SCL_elems(self, tags: list) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the SCL node direct children
+            Header, Communication, Substation, Private nodes
+
+            Parameters
+            ----------
+            `tags`
+                List of tags to consider
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        for idx, tag in enumerate(tags):
+            tags[idx] = '{}{}'.format(SCL_NAMESPACE, tag)
+
+        context = etree.iterparse(self._scd_path, events=("end",), tag=tags)
+        result = []
+        for _, elem in context:
+
+            if elem.tag.split('}')[-1] != 'Private':
+                result.append(elem)
+            elif elem.tag.split('}')[-1] == 'Private' \
+                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS)
+                                            or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
+                result.append(elem)
+            else:
+                elem.clear()
+
+        return result
+
+    def _iter_get_IED_elems_by_names(self, ied_names_list: list) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the IED elements by name
+
+            Parameters
+            ----------
+            `ied_names_list`
+                List of ied names to retrieve
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        result = []
+        for _, ied in context:
+            item_name = ied.get('name')
+            if item_name in ied_names_list:
+                result.append(ied)
+            else:
+                ied.clear()
+
+        return result
+
+    def _iter_get_IED_names_list(self) -> list:
+        """
+            Load an IED from the SCD/SCL file by name
+
+            Returns
+            -------
+            `[str]`
+                The found IED names
+        """
+        result = []
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        for _, ied in context:
+            result.append(ied.get('name'))
+            ied.clear()
+
+        return result
+
+    def _iter_get_all_IEDs(self) -> list:    
+        """
+            Load all the IEDs from the SCD/SCL file
+
+            Returns
+            -------
+            `[IED]`
+                An array of the loaded IED objects
+        """
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        tIED = []
+        for _, ied in context:
+            tIED.append(ied)
+
+        return tIED
