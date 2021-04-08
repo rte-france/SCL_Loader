@@ -7,6 +7,7 @@ Module de test du module scd_loader
 import os
 import logging
 import pytest
+import hashlib
 import cProfile, pstats, io
 from pstats import SortKey
 from lxml import etree
@@ -30,6 +31,45 @@ SCD_WRONG_NAME = 'SCD_WRONG.scd'
 SCD_OPEN_PATH = os.path.join(HERE, 'resources', SCD_OPEN_NAME)
 SCD_OPEN_IOP_PATH = os.path.join(HERE, 'resources', SCD_OPEN_IOP_NAME)
 SCD_WRONG_PATH = os.path.join(HERE, 'resources', SCD_WRONG_NAME)
+
+def hashfile(file):
+
+    # A arbitrary (but fixed) buffer
+    # size (change accordingly)
+    # 65536 = 65536 bytes = 64 kilobytes
+    BUF_SIZE = 65536
+
+    # Initializing the sha256() method
+    sha256 = hashlib.sha256()
+
+    # Opening the file provided as
+    # the first commandline arguement
+    with open(file, 'rb') as f:
+
+        while True:
+
+            # reading data = BUF_SIZE from
+            # the file and saving it in a
+            # variable
+            data = f.read(BUF_SIZE)
+
+            # True if eof = 1
+            if not data:
+                break
+
+            # Passing that data to that sh256 hash
+            # function (updating the function with
+            # that data)
+            sha256.update(data)
+
+
+    # sha256.hexdigest() hashes all the input
+    # data passed to the sha256() via sha256.update()
+    # Acts as a finalize method, after which
+    # all the input data gets hashed hexdigest()
+    # hashes the data, and returns the output
+    # in hexadecimal format
+    return sha256.hexdigest()
 
 def _get_node_list_by_tag(scd, tag:str) -> list:
     result = []
@@ -301,16 +341,14 @@ def test_get_Data_Type_Definition():
     assert len(datatype_defs['EnumType']) == 40
 
 def test_extract_sub_SCD():
+    ref_scd2_hash = '517e42b4be8a4e23e51621a4248418182ff4097cfb4d8f8177e5e1b90c8f3057'
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     ied_list = ['AUT1A_SITE_1', 'IEDTEST_SITE_1']
 
     dest_path = scd.extract_sub_SCD(ied_list)
-
+    assert 'AUT1A_SITE_1' in scd._iter_get_IED_names_list()
     assert os.path.exists(dest_path)
-    scd2 = SCD_handler(dest_path)
-    result = scd2.get_IED_names_list()
-    result.sort()
-    assert result == ied_list
+    assert ref_scd2_hash == hashfile(dest_path)
 
 def test_get_ied_extrefs():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
