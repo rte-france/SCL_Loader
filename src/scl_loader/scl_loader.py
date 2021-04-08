@@ -154,7 +154,8 @@ def _get_node_name(node: etree.Element):
         if tag in ['LN', 'LN0']:
             lnClass = node.get('lnClass')
             inst = node.get('inst')
-            name = lnClass + str(inst)
+            prefix = node.get('prefix') or ''
+            name = prefix + lnClass + str(inst)
         elif tag == 'LDevice':
             name = node.get('inst')
         elif tag == 'Private':
