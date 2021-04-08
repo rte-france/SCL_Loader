@@ -316,7 +316,7 @@ def test_get_ied_extrefs():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     ied = scd.get_IED_by_name('AUT1A_SITE_1')
 
-    result = ied.get_inputs_extrefs()
+    result = ied.get_inputs_goose_extrefs()
 
     assert len(result) == 526
     assert result[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT'}

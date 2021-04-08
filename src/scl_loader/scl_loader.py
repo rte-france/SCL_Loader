@@ -824,7 +824,7 @@ class IED(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['IED'])
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-    def get_inputs_extrefs(self) -> list:
+    def get_inputs_goose_extrefs(self) -> list:
         XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
         extrefs = []
 
