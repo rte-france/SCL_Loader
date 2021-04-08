@@ -5,6 +5,7 @@ import os
 import logging
 import re
 import weakref
+from copy import deepcopy
 from lxml import etree
 from xml.etree import ElementTree as XmlET
 
@@ -910,7 +911,7 @@ class SCD_handler():
 
         scl_children = self._get_SCL_elems()
         for child in scl_children:
-            newroot.append(child)
+            newroot.append(deepcopy(child))
 
         #Clean not needed ConnectedAP
         connected_aps = newroot.xpath('child::iec61850:Communication/*/iec61850:ConnectedAP', namespaces=NS)
@@ -920,9 +921,9 @@ class SCD_handler():
 
         ieds = self._get_IED_elems_by_names(ied_name_list)
         for ied in ieds:
-            newroot.append(ied)
+            newroot.append(deepcopy(ied))
 
-        newroot.append(self.datatypes._datatypes_root)
+        newroot.append(deepcopy(self.datatypes._datatypes_root))
 
         et = etree.ElementTree(newroot)
         et.write(dest_path, encoding="utf-8", xml_declaration=True)
