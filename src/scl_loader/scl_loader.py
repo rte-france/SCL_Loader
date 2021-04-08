@@ -824,6 +824,18 @@ class IED(SCDNode):
         self._all_attributes.extend(NODES_ATTRS['IED'])
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
+    def get_inputs_extrefs(self) -> list:
+        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
+        extrefs = []
+
+        xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
+
+        for item in xpath_result:
+            extrefs.append({'iedName': item.attrib['iedName'],
+                            'ldInst': item.attrib['ldInst'],
+                            'srcCBName': item.attrib['srcCBName']})
+
+        return extrefs
 
 class SCD_handler():
     """
@@ -905,7 +917,7 @@ class SCD_handler():
 
         et = etree.ElementTree(newroot)
         et.write(dest_path, encoding="utf-8", xml_declaration=True)
-        
+
         return dest_path
 
     def get_all_IEDs(self) -> list:
@@ -965,7 +977,7 @@ class SCD_handler():
             result = self._iter_get_IED_names_list()
 
         return result
-    
+
     def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
@@ -1035,7 +1047,7 @@ class SCD_handler():
         xpath_tags = ''
         for tag in tags:
             xpath_tags = '{} or self::iec61850:{}'.format(xpath_tags, tag)
-        
+
         xpath_tags = xpath_tags[3:]
 
         result = []
@@ -1175,7 +1187,7 @@ class SCD_handler():
 
         return result
 
-    def _iter_get_all_IEDs(self) -> list:    
+    def _iter_get_all_IEDs(self) -> list:
         """
             Load all the IEDs from the SCD/SCL file
 

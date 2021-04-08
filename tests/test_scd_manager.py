@@ -271,12 +271,12 @@ class TestSCD_OPEN():
         """
         result = self.scd.get_IED_names_list()
         assert len(result) == 1
-        assert result[0] == 'LD_All'  
+        assert result[0] == 'LD_All'
 
     def test_get_ied_by_name(self):
         ied = self.scd.get_IED_by_name('LD_All')
         assert isinstance(ied, IED)
-    
+
     def test_get_all_ied(self):
         ieds = self.scd.get_all_IEDs()
         assert len(ieds) == 1
@@ -303,11 +303,21 @@ def test_get_Data_Type_Definition():
 def test_extract_sub_SCD():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     ied_list = ['AUT1A_SITE_1', 'IEDTEST_SITE_1']
-    
+
     dest_path = scd.extract_sub_SCD(ied_list)
-    
+
     assert os.path.exists(dest_path)
     scd2 = SCD_handler(dest_path)
     result = scd2.get_IED_names_list()
     result.sort()
     assert result == ied_list
+
+def test_get_ied_extrefs():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    ied = scd.get_IED_by_name('AUT1A_SITE_1')
+
+    result = ied.get_inputs_extrefs()
+
+    assert len(result) == 526
+    assert result[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT'}
+    assert result[525] == {'iedName': 'SCU1A_SITE_1', 'ldInst': 'LDITFUA', 'srcCBName': 'PVR_LLN0_CB_GSE_INT'}
