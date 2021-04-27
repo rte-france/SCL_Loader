@@ -832,8 +832,8 @@ class IED(SCDNode):
 
             Returns
             -------
-            `[{iedName, ldInst, srcCBName}]`
-                An array of objects containing extRefs useful data
+            `[]`
+                An array of objects containing the extRefs attributes
         """
         XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
         extrefs = []
@@ -841,9 +841,8 @@ class IED(SCDNode):
         xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
 
         for item in xpath_result:
-            extrefs.append({'iedName': item.attrib['iedName'],
-                            'ldInst': item.attrib['ldInst'],
-                            'srcCBName': item.attrib['srcCBName']})
+            itm = deepcopy(item.attrib)
+            extrefs.append(itm)
 
         return extrefs
 
