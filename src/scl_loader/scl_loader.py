@@ -796,6 +796,25 @@ class LD(SCDNode):
 
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
+    def get_inputs_goose_extrefs(self) -> list:
+        """
+            Get the input GOOSE extRefs list
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the extRefs attributes
+        """
+        XPATH_INPUTS_EXTREFS = './iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
+        extrefs = []
+
+        xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
+
+        for item in xpath_result:
+            itm = deepcopy(item.attrib)
+            extrefs.append(itm)
+
+        return extrefs
 
 class IED(SCDNode):
     """
@@ -845,6 +864,9 @@ class IED(SCDNode):
             extrefs.append(itm)
 
         return extrefs
+
+    def get_children_LDs(self) -> list:
+        return self.PROCESS_AP.Server.get_children('LDevice')
 
 class SCD_handler():
     """
