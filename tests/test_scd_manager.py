@@ -322,6 +322,7 @@ class TestSCD_OPEN():
         assert len(ieds) == 1
         assert isinstance(ieds[0], IED)
 
+
 def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     assert scd
@@ -350,12 +351,35 @@ def test_extract_sub_SCD():
     assert os.path.exists(dest_path)
     assert ref_scd2_hash == hashfile(dest_path)
 
-def test_get_ied_extrefs():
-    scd = SCD_handler(SCD_OPEN_IOP_PATH)
-    ied = scd.get_IED_by_name('AUT1A_SITE_1')
 
-    result = ied.get_inputs_goose_extrefs()
+class TestSCD_IOP():
 
-    assert len(result) == 526
-    assert result[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT'}
-    assert result[525] == {'iedName': 'SCU1A_SITE_1', 'ldInst': 'LDITFUA', 'srcCBName': 'PVR_LLN0_CB_GSE_INT'}
+    def setup_method(self):
+        self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
+
+    def teardown_method(self):
+        del self.scd
+
+    def test_get_ied_extrefs(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+
+        result = ied.get_inputs_goose_extrefs()
+
+        assert len(result) == 526
+        assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
+        assert result[525] == {'desc': 'DYN_LDTGSEC_U anormal_3_BehaviourModeKind_1_stVal_1', 'doName': 'EEHealth', 'iedName': 'SCU1A_SITE_1', 'intAddr': 'VDF', 'ldInst': 'LDITFUA', 'lnClass': 'ZBAT', 'lnInst': '3', 'pDO': 'EEHealth', 'pLN': 'ZBAT', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'srcLDInst': 'LDITFUA'}
+
+    def test_get_ied_lds(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+
+        result = ied.get_children_LDs()
+        assert len(result) == 11
+        assert isinstance(result[0], LD)
+
+    def test_get_ld_extrefs(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_inputs_goose_extrefs()
+        assert len(result) == 42
+        assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
