@@ -890,7 +890,8 @@ class SCD_handler():
         schema_doc = etree.parse(XSD_PATH)
         self._schema = etree.XMLSchema(schema_doc)
         self._fullattrs = fullattrs
-
+        self.tIED = []                  ## copie locale du tableau des IEDs
+        self.dict_LD_LN = {}
         is_valid, error = self._check_scd_file()
         if not is_valid:
             err = 'SCL/SCD not valid at line {}: {}'.format(error.line, error.message)
@@ -966,11 +967,13 @@ class SCD_handler():
         else:
             ieds = self._iter_get_all_IEDs()
 
-        tIED = []
         for ied in ieds:
-            tIED.append(IED(self.datatypes, ied, self._fullattrs))
+            self.tIED.append(IED(self.datatypes, ied, self._fullattrs))
 
-        return tIED
+        for iIED in self.tIED:
+            self.create_LD_LN_dictionary(iIED, self.dict_LD_LN)        ## GGU
+
+        return self.tIED
 
     def get_IED_by_name(self, ied_name: str) -> IED:
         """
@@ -1009,6 +1012,25 @@ class SCD_handler():
 
         return result
 
+    def get_IED_by_name(self, ied_name:str, ap_name='PROCESS_AP') -> IED:
+        for ied in self.tIED:
+            if ied.name == ied_name:
+                for iAP in ied.get_children('AccessPoint'):
+                    if iAP.name == ap_name:
+                        return ied
+##              for iServer in ied.get_children('ServerAT')
+        return None
+
+    def get_LD_by_inst(self, ied_name:str, ld_inst: str, ap_name='PROCESS_AP') -> (LD, []) :
+        key = ied_name + ap_name + SEP2 + ld_inst
+        (LD, tLN) = self.dict_LD_LN.get(key)
+        return (LD, tLN)
+
+    def get_LN_by_name(self, ied_name:str, ld_inst: str, ln_Name: str, ap_name='PROCESS_AP') -> LN:
+        key = ied_name + ap_name + SEP2 + ld_inst + SEP1 + ln_Name
+        iLN = self.dict_LD_LN.get(key)
+        return iLN
+
     def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
@@ -1033,7 +1055,7 @@ class SCD_handler():
                 self._scl_root = tree.getroot()
             return (is_valid, self._schema.error_log.last_error)
         else:
-            LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
+            LOGGER.warning('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
     def _get_IED_elems_by_names(self, ied_names_list: list) -> list:
@@ -1218,6 +1240,37 @@ class SCD_handler():
 
         return result
 
+    def create_LD_LN_dictionary(self, ied, dict_LD_LN: {} ):    ## GGU
+
+        tAP = ied.get_children('AccessPoint')
+        for  iAP in tAP:
+            tServer = iAP.get_children('Server')    ## Les différents Server ne concernent que les adresses résaux pas le modèle.
+            for iServer in tServer:                 ## Il n'y a pas de 'name' pour server
+                for iLD in iServer.get_children('LDevice'):
+                    keyLD = ied.name + iAP.name + '/' + iLD.inst
+
+                    tLNName = []
+                    for iLN in iLD.get_children('LN'):
+                        if hasattr(iLN,'lnPrefix'):
+                            prefix = iLN.prefix
+                        else:
+                            prefix =''
+
+                        if hasattr(iLN,'lnInst'):
+                            inst = iLN.inst
+                        else:
+                            inst = ''
+
+                        lnName = prefix + iLN.name + inst
+                        keyLN = keyLD + '$' + lnName
+                        tLNName.append(lnName)
+                        dict_LD_LN[keyLN] = iLN
+                    try:
+                        dict_LD_LN[keyLD] = (iLD,tLNName)
+                    except KeyError:
+                        print('Duplicated LNName', keyLN )
+        return dict_LD_LN
+
     def _iter_get_all_IEDs(self) -> list:
         """
             Load all the IEDs from the SCD/SCL file
@@ -1231,5 +1284,4 @@ class SCD_handler():
         tIED = []
         for _, ied in context:
             tIED.append(ied)
-
         return tIED

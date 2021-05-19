@@ -112,6 +112,7 @@ def test_datatypes_get_by_id():
     do_type = datatypes.get_type_by_id('ENC')
     assert do_type.get('cdc') == 'ENC'
 
+
 class TestSCD_OPEN():
 
     def setup_method(self):
@@ -313,14 +314,16 @@ class TestSCD_OPEN():
         assert len(result) == 1
         assert result[0] == 'LD_All'
 
-    def test_get_ied_by_name(self):
-        ied = self.scd.get_IED_by_name('LD_All')
-        assert isinstance(ied, IED)
-
     def test_get_all_ied(self):
         ieds = self.scd.get_all_IEDs()
         assert len(ieds) == 1
         assert isinstance(ieds[0], IED)
+
+    def test_get_ied_by_name(self):
+        ieds = self.scd.get_all_IEDs()
+        ied = self.scd.get_IED_by_name('LD_All','HVDC_LD_All_1')
+        assert isinstance(ied, IED)
+
 
 
 def test_open_iop():
@@ -351,14 +354,44 @@ def test_extract_sub_SCD():
     assert os.path.exists(dest_path)
     assert ref_scd2_hash == hashfile(dest_path)
 
-
-class TestSCD_IOP():
-
+class TestSCD_ALL():
     def setup_method(self):
-        self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
+        self.scd = SCD_handler(SCD_OPEN_PATH)
+        self.tIED = self.scd.get_all_IEDs()         ## GGU
 
     def teardown_method(self):
         del self.scd
+
+    def test_get_ied_by_name(self):
+        #    def test_get_ied_by_name(self):
+        ied = self.scd.get_IED_by_name('LD_All', 'HVDC_LD_All_1')
+        assert ied is not None
+
+    def test_get_ld_by_inst(self):
+        LOGGER.debug("test_get_ld_by_inst")
+        (ld1, tLN1) = self.scd.get_LD_by_inst('LD_All', 'LD_all','HVDC_LD_All_1')
+        assert ld1 is not None
+
+    def test_get_ln_by_inst(self):
+        LOGGER.info("test_get_ln_by_inst")
+        iLN1  = self.scd.get_LN_by_name('LD_All', 'LD_all', 'MMXU1' ,'HVDC_LD_All_1')
+        assert iLN1 is not None
+
+        iLN2 = self.scd.get_LN_by_name('LD_All', 'LD_all', 'FXUT1', 'HVDC_LD_All_1')
+        assert iLN2 is not None
+
+
+
+class TestSCD_IOP():
+    def setup_method(self):
+        self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
+        self.tIED = self.scd.get_all_IEDs()         ## GGU
+
+    def teardown_method(self):
+        del self.scd
+
+
+#    def test_get_ied_extrefs(self):
 
     def test_get_ied_extrefs(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
@@ -369,17 +402,23 @@ class TestSCD_IOP():
         assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
         assert result[525] == {'desc': 'DYN_LDTGSEC_U anormal_3_BehaviourModeKind_1_stVal_1', 'doName': 'EEHealth', 'iedName': 'SCU1A_SITE_1', 'intAddr': 'VDF', 'ldInst': 'LDITFUA', 'lnClass': 'ZBAT', 'lnInst': '3', 'pDO': 'EEHealth', 'pLN': 'ZBAT', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'srcLDInst': 'LDITFUA'}
 
+        LOGGER.debug("test_get_ied_lds")
     def test_get_ied_lds(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
-
+        assert ied is not None
         result = ied.get_children_LDs()
         assert len(result) == 11
         assert isinstance(result[0], LD)
 
+
     def test_get_ld_extrefs(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        assert ied is not None
         ld = ied.get_children_LDs()[0]
 
         result = ld.get_inputs_goose_extrefs()
+
         assert len(result) == 42
         assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
+
+
