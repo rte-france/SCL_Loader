@@ -1031,6 +1031,19 @@ class SCD_handler():
         iLN = self.dict_LD_LN.get(key)
         return iLN
 
+    def get_IP_Adr(self, ied_name:str):
+        for iComm in self.Communication.get_children('SubNetwork'):  # parcours les sous réseau de l'iED
+            if iComm.type != "8-MMS":  # On ne considère que l'access Point 'MMS'.
+                continue
+            for iCnxAP in iComm.get_children('ConnectedAP'):  # browse the Access Point(s) of the iED
+                if iCnxAP.iedName == ied_name:  # and iCnxAP.apName == apNAme:
+                    for iAdr in iCnxAP.get_children('Address'):
+
+                        for iP in iAdr.P:
+                            if iP.type == "IP":  ## le TAG IP est trouvé
+                                if iP.Val is not None:
+                                    return iP.Val, iCnxAP.apName
+
     def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
