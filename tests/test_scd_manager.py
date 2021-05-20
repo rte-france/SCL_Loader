@@ -116,9 +116,11 @@ class TestSCD_OPEN():
 
     def setup_method(self):
         self.scd = SCD_handler(SCD_OPEN_PATH)
+        self.tIED = self.scd.get_all_IEDs()
 
     def teardown_method(self):
         del self.scd
+        del self.tIED
 
     def _start_perfo_stats(self):
         self.pr = cProfile.Profile()
@@ -314,7 +316,7 @@ class TestSCD_OPEN():
         assert result[0] == 'LD_All'
 
     def test_get_ied_by_name(self):
-        ied = self.scd.get_IED_by_name('LD_All')
+        ied = self.scd.get_IED_by_name('LD_All','HVDC_LD_All_1')
         assert isinstance(ied, IED)
 
     def test_get_all_ied(self):
@@ -362,40 +364,14 @@ def test_get_IP_Adr():
     assert apName2 == "PROCESS_AP"
     return True
 
-class TestSCD_ALL():
-    def setup_method(self):
-        self.scd = SCD_handler(SCD_OPEN_PATH)
-        self.tIED = self.scd.get_all_IEDs()         ## GGU
-
-    def teardown_method(self):
-        del self.scd
-
-    def test_get_ied_by_name(self):
-        #    def test_get_ied_by_name(self):
-        ied = self.scd.get_IED_by_name('LD_All', 'HVDC_LD_All_1')
-        assert ied is not None
-
-    def test_get_ld_by_inst(self):
-        LOGGER.debug("test_get_ld_by_inst")
-        (ld1, tLN1) = self.scd.get_LD_by_inst('LD_All', 'LD_all','HVDC_LD_All_1')
-        assert ld1 is not None
-
-    def test_get_ln_by_inst(self):
-        LOGGER.info("test_get_ln_by_inst")
-        iLN1  = self.scd.get_LN_by_name('LD_All', 'LD_all', 'MMXU1' ,'HVDC_LD_All_1')
-        assert iLN1 is not None
-
-        iLN2 = self.scd.get_LN_by_name('LD_All', 'LD_all', 'FXUT1', 'HVDC_LD_All_1')
-        assert iLN2 is not None
-
-
-
 class TestSCD_IOP():
     def setup_method(self):
         self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
+        self.tIED = self.scd.get_all_IEDs()
 
     def teardown_method(self):
         del self.scd
+        del self.tIED
 
     def test_get_ied_extrefs(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
@@ -420,3 +396,30 @@ class TestSCD_IOP():
         result = ld.get_inputs_goose_extrefs()
         assert len(result) == 42
         assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
+
+class TestSCD_ALL():
+    def setup_method(self):
+        self.scd = SCD_handler(SCD_OPEN_PATH)
+        self.tIED = self.scd.get_all_IEDs()         ## GGU
+
+    def teardown_method(self):
+        del self.scd
+
+    def test_get_ied_by_name(self):
+        #    def test_get_ied_by_name(self):
+        ied = self.scd.get_IED_by_name('LD_All', 'HVDC_LD_All_1')
+        assert ied is not None
+        return True
+
+    def test_get_ld_by_inst(self):
+        LOGGER.debug("test_get_ld_by_inst")
+        (ld1, tLN1) = self.scd.get_LD_by_inst('LD_All', 'LD_all','HVDC_LD_All_1')
+        assert ld1 is not None
+
+    def test_get_ln_by_inst(self):
+        LOGGER.info("test_get_ln_by_inst")
+        iLN1  = self.scd.get_LN_by_name('LD_All', 'LD_all', 'MMXU1' ,'HVDC_LD_All_1')
+        assert iLN1 is not None
+
+        iLN2 = self.scd.get_LN_by_name('LD_All', 'LD_all', 'FXUT1', 'HVDC_LD_All_1')
+        assert iLN2 is not None

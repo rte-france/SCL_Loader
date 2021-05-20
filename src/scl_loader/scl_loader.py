@@ -967,6 +967,7 @@ class SCD_handler():
         else:
             ieds = self._iter_get_all_IEDs()
 
+        self.tIED=[]
         for ied in ieds:
             self.tIED.append(IED(self.datatypes, ied, self._fullattrs))
 
