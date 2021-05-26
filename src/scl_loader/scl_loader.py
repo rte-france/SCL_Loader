@@ -1002,7 +1002,7 @@ class SCD_handler():
             ied_name = new_ied.name
             if not hasattr(self._IEDs, ied_name):
                 self._IEDs[ied_name] = ied_name
-            tIED.append(new_ied)
+            tIED.append(self._IEDs[ied_name])
 
         return tIED
 
