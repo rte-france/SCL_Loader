@@ -9,9 +9,8 @@ https://github.com/pypa/sampleproject
 """
 
 # Always prefer setuptools over distutils
-import setuptools
 from os import path
-from setuptools import setup, find_packages
+from setuptools import setup
 
 HERE = path.abspath(path.dirname(__file__))
 

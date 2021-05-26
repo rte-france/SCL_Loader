@@ -8,7 +8,9 @@ import os
 import logging
 import pytest
 import hashlib
-import cProfile, pstats, io
+import cProfile
+import pstats
+import io
 from pstats import SortKey
 from lxml import etree
 
@@ -31,6 +33,7 @@ SCD_WRONG_NAME = 'SCD_WRONG.scd'
 SCD_OPEN_PATH = os.path.join(HERE, 'resources', SCD_OPEN_NAME)
 SCD_OPEN_IOP_PATH = os.path.join(HERE, 'resources', SCD_OPEN_IOP_NAME)
 SCD_WRONG_PATH = os.path.join(HERE, 'resources', SCD_WRONG_NAME)
+
 
 def hashfile(file):
 
@@ -62,7 +65,6 @@ def hashfile(file):
             # that data)
             sha256.update(data)
 
-
     # sha256.hexdigest() hashes all the input
     # data passed to the sha256() via sha256.update()
     # Acts as a finalize method, after which
@@ -71,12 +73,14 @@ def hashfile(file):
     # in hexadecimal format
     return sha256.hexdigest()
 
-def _get_node_list_by_tag(scd, tag:str) -> list:
+
+def _get_node_list_by_tag(scd, tag: str) -> list:
     result = []
     context = etree.iterparse(scd._scd_path, events=("end",), tag=r'{http://www.iec.ch/61850/2003/SCL}' + tag)
     for _, ied in context:
         result.append(ied)
     return result
+
 
 def test_safe_convert_value():
     """
@@ -85,22 +89,24 @@ def test_safe_convert_value():
         Typed formats supported : bool, int, float
     """
     assert scdl._safe_convert_value('abc123') == 'abc123'
-    assert scdl._safe_convert_value('false')  == False
-    assert scdl._safe_convert_value('False')  == False
-    assert scdl._safe_convert_value('true')   == True
-    assert scdl._safe_convert_value('TRUE')   == True
-    assert scdl._safe_convert_value('123')    == 123
-    assert scdl._safe_convert_value('-123')   == -123
-    assert scdl._safe_convert_value('.123')   == '.123'
-    assert scdl._safe_convert_value('01.23')  == 1.23
-    assert scdl._safe_convert_value('-1.23')  == -1.23
-    assert scdl._safe_convert_value('01b23')  == '01b23'
-    assert scdl._safe_convert_value('#{~[~]{@^|`@`~\\/')   == '#{~[~]{@^|`@`~\\/'
+    assert scdl._safe_convert_value('false') is False
+    assert scdl._safe_convert_value('False') is False
+    assert scdl._safe_convert_value('true') is True
+    assert scdl._safe_convert_value('TRUE') is True
+    assert scdl._safe_convert_value('123') == 123
+    assert scdl._safe_convert_value('-123') == -123
+    assert scdl._safe_convert_value('.123') == '.123'
+    assert scdl._safe_convert_value('01.23') == 1.23
+    assert scdl._safe_convert_value('-1.23') == -1.23
+    assert scdl._safe_convert_value('01b23') == '01b23'
+    assert scdl._safe_convert_value('#{~[~]{@^|`@`~\\/') == '#{~[~]{@^|`@`~\\/'
+
 
 def test_valid_scd():
     assert SCD_handler(SCD_OPEN_PATH)
     with pytest.raises(AttributeError):
         SCD_handler(SCD_WRONG_PATH)
+
 
 def test_datatypes_get_by_id():
     """
@@ -111,6 +117,7 @@ def test_datatypes_get_by_id():
     assert ln_type.get('lnClass') == 'GAPC'
     do_type = datatypes.get_type_by_id('ENC')
     assert do_type.get('cdc') == 'ENC'
+
 
 class TestSCD_OPEN():
 
@@ -135,56 +142,56 @@ class TestSCD_OPEN():
         """
             I Should be able to create a SCL object with its children (except IEDs and Datatype)
         """
-        assert self.scd.Header.toolID == 'ggu' # pylint: disable=maybe-no-member
-        assert self.scd.Communication.Net1.LD_All.GSE.Address.P[0].type == 'VLAN-ID' # pylint: disable=maybe-no-member
+        assert self.scd.Header.toolID == 'ggu'  # pylint: disable=maybe-no-member
+        assert self.scd.Communication.Net1.LD_All.GSE.Address.P[0].type == 'VLAN-ID'  # pylint: disable=maybe-no-member
 
     def test_create_DA_by_kwargs(self):
         """
             I should be able to create a DA object with kwargs
         """
-        simple_da =  {'fc':'ST', 'dchg':'false', 'qchg':'true', 'dupd':'false', 'name':'q', 'bType':'Quality'}
-        simple2_da = {'fc':'DC', 'dchg':'false', 'qchg':'false', 'dupd':'false', 'name':'d', 'bType':'VisString255', 'valKind':'RO', 'valImport':'false'}
-        enum_da =    {'fc':'CF', 'dchg':'true', 'qchg':'false', 'dupd':'false', 'name':'ctlModel', 'bType':'Enum', 'valKind':'RO', 'type':'CtlModelKind', 'valImport':'false'}
+        simple_da = {'fc': 'ST', 'dchg': 'false', 'qchg': 'true', 'dupd': 'false', 'name': 'q', 'bType': 'Quality'}
+        simple2_da = {'fc': 'DC', 'dchg': 'false', 'qchg': 'false', 'dupd': 'false', 'name': 'd', 'bType': 'VisString255', 'valKind': 'RO', 'valImport': 'false'}
+        enum_da = {'fc': 'CF', 'dchg': 'true', 'qchg': 'false', 'dupd': 'false', 'name': 'ctlModel', 'bType': 'Enum', 'valKind': 'RO', 'type': 'CtlModelKind', 'valImport': 'false'}
 
         with pytest.raises(AttributeError):
             DA(self.scd.datatypes)
         simple_da_inst = DA(self.scd.datatypes, None, None, **simple_da)
-        assert getattr(simple_da_inst,'fc')         == 'ST'
-        assert getattr(simple_da_inst,'dchg')       == False
-        assert getattr(simple_da_inst,'qchg')       == True
-        assert getattr(simple_da_inst,'dupd')       == False
-        assert getattr(simple_da_inst,'name')       == 'q'
-        assert getattr(simple_da_inst,'bType')      == 'Quality'
+        assert getattr(simple_da_inst, 'fc') == 'ST'
+        assert getattr(simple_da_inst, 'dchg') is False
+        assert getattr(simple_da_inst, 'qchg') is True
+        assert getattr(simple_da_inst, 'dupd') is False
+        assert getattr(simple_da_inst, 'name') == 'q'
+        assert getattr(simple_da_inst, 'bType') == 'Quality'
 
         simple2_da_inst = DA(self.scd.datatypes, None, None, **simple2_da)
-        assert getattr(simple2_da_inst,'fc')        == 'DC'
-        assert getattr(simple2_da_inst,'dchg')      == False
-        assert getattr(simple2_da_inst,'qchg')      == False
-        assert getattr(simple2_da_inst,'dupd')      == False
-        assert getattr(simple2_da_inst,'name')      == 'd'
-        assert getattr(simple2_da_inst,'bType')     == 'VisString255'
-        assert getattr(simple2_da_inst,'valKind')   == 'RO'
-        assert getattr(simple2_da_inst,'valImport') == False
+        assert getattr(simple2_da_inst, 'fc') == 'DC'
+        assert getattr(simple2_da_inst, 'dchg') is False
+        assert getattr(simple2_da_inst, 'qchg') is False
+        assert getattr(simple2_da_inst, 'dupd') is False
+        assert getattr(simple2_da_inst, 'name') == 'd'
+        assert getattr(simple2_da_inst, 'bType') == 'VisString255'
+        assert getattr(simple2_da_inst, 'valKind') == 'RO'
+        assert getattr(simple2_da_inst, 'valImport') is False
 
         enum_da_inst = DA(self.scd.datatypes, None, None, **enum_da)
-        assert getattr(enum_da_inst,'fc')           == 'CF'
-        assert getattr(enum_da_inst,'dchg')         == True
-        assert getattr(enum_da_inst,'qchg')         == False
-        assert getattr(enum_da_inst,'dupd')         == False
-        assert getattr(enum_da_inst,'name')         == 'ctlModel'
-        assert getattr(enum_da_inst,'bType')        == 'Enum'
-        assert getattr(enum_da_inst,'valKind')      == 'RO'
-        assert getattr(enum_da_inst,'type')         == 'CtlModelKind'
-        assert getattr(enum_da_inst,'valImport')    == False
+        assert getattr(enum_da_inst, 'fc') == 'CF'
+        assert getattr(enum_da_inst, 'dchg') is True
+        assert getattr(enum_da_inst, 'qchg') is False
+        assert getattr(enum_da_inst, 'dupd') is False
+        assert getattr(enum_da_inst, 'name') == 'ctlModel'
+        assert getattr(enum_da_inst, 'bType') == 'Enum'
+        assert getattr(enum_da_inst, 'valKind') == 'RO'
+        assert getattr(enum_da_inst, 'type') == 'CtlModelKind'
+        assert getattr(enum_da_inst, 'valImport') is False
 
     def test_create_struct_DA_by_kwargs(self):
-        struct_da =  {'name':'originSrc', 'fc':'ST', 'bType':'Struct', 'type':'Originator'}
+        struct_da = {'name': 'originSrc', 'fc': 'ST', 'bType': 'Struct', 'type': 'Originator'}
 
         struct_da_inst = DA(self.scd.datatypes, None, **struct_da)
-        assert getattr(struct_da_inst,'fc') == 'ST'
-        assert getattr(struct_da_inst,'name') == 'originSrc'
-        assert getattr(struct_da_inst,'bType') == 'Struct'
-        assert getattr(struct_da_inst,'type') == 'Originator'
+        assert getattr(struct_da_inst, 'fc') == 'ST'
+        assert getattr(struct_da_inst, 'name') == 'originSrc'
+        assert getattr(struct_da_inst, 'bType') == 'Struct'
+        assert getattr(struct_da_inst, 'type') == 'Originator'
         assert struct_da_inst.orCat.tag == 'BDA'             # pylint: disable=maybe-no-member
         assert struct_da_inst.orIdent.bType == 'Octet64'     # pylint: disable=maybe-no-member
 
@@ -194,55 +201,55 @@ class TestSCD_OPEN():
         """
         input_node = etree.Element('DO')
         input_node.attrib['id'] = 'ENC'
-        simple_do_inst = DO(self.scd.datatypes, input_node, **{'name':'DO_RTE_1'})
-        assert getattr(simple_do_inst,'id')             == 'ENC'
-        assert getattr(simple_do_inst,'cdc')            == 'ENC'
-        assert getattr(simple_do_inst,'parent')         == None
-        assert isinstance(getattr(simple_do_inst,'ctlModel')    , DA)
+        simple_do_inst = DO(self.scd.datatypes, input_node, **{'name': 'DO_RTE_1'})
+        assert getattr(simple_do_inst, 'id') == 'ENC'
+        assert getattr(simple_do_inst, 'cdc') == 'ENC'
+        assert getattr(simple_do_inst, 'parent') is None
+        assert isinstance(getattr(simple_do_inst, 'ctlModel'), DA)
         assert simple_do_inst.ctlModel.type == 'CtlModels'      # pylint: disable=maybe-no-member
-        assert isinstance(getattr(simple_do_inst,'blkEna')      , DA)
-        assert isinstance(getattr(simple_do_inst,'ctlNum')      , DA)
-        assert isinstance(getattr(simple_do_inst,'d')           , DA)
-        assert isinstance(getattr(simple_do_inst,'dU')          , DA)
-        assert isinstance(getattr(simple_do_inst,'dataNs')      , DA)
-        assert isinstance(getattr(simple_do_inst,'opOk')        , DA)
-        assert isinstance(getattr(simple_do_inst,'opRcvd')      , DA)
-        assert isinstance(getattr(simple_do_inst,'operTimeout') , DA)
-        assert isinstance(getattr(simple_do_inst,'origin')      , DA)
-        assert isinstance(getattr(simple_do_inst,'q')           , DA)
-        assert isinstance(getattr(simple_do_inst,'stVal')       , DA)
-        assert isinstance(getattr(simple_do_inst,'subEna')      , DA)
-        assert isinstance(getattr(simple_do_inst,'subID')       , DA)
-        assert isinstance(getattr(simple_do_inst,'subQ')        , DA)
-        assert isinstance(getattr(simple_do_inst,'subVal')      , DA)
-        assert isinstance(getattr(simple_do_inst,'t')           , DA)
-        assert isinstance(getattr(simple_do_inst,'tOpOk')       , DA)
+        assert isinstance(getattr(simple_do_inst, 'blkEna'), DA)
+        assert isinstance(getattr(simple_do_inst, 'ctlNum'), DA)
+        assert isinstance(getattr(simple_do_inst, 'd'), DA)
+        assert isinstance(getattr(simple_do_inst, 'dU'), DA)
+        assert isinstance(getattr(simple_do_inst, 'dataNs'), DA)
+        assert isinstance(getattr(simple_do_inst, 'opOk'), DA)
+        assert isinstance(getattr(simple_do_inst, 'opRcvd'), DA)
+        assert isinstance(getattr(simple_do_inst, 'operTimeout'), DA)
+        assert isinstance(getattr(simple_do_inst, 'origin'), DA)
+        assert isinstance(getattr(simple_do_inst, 'q'), DA)
+        assert isinstance(getattr(simple_do_inst, 'stVal'), DA)
+        assert isinstance(getattr(simple_do_inst, 'subEna'), DA)
+        assert isinstance(getattr(simple_do_inst, 'subID'), DA)
+        assert isinstance(getattr(simple_do_inst, 'subQ'), DA)
+        assert isinstance(getattr(simple_do_inst, 'subVal'), DA)
+        assert isinstance(getattr(simple_do_inst, 't'), DA)
+        assert isinstance(getattr(simple_do_inst, 'tOpOk'), DA)
 
     def test_create_LN_by_dtid(self):
         """
             I should be able to create a LN object
         """
-        kwargs = {'lnClass':'GAPC', 'inst':'0', 'lnType':'GAPC', 'desc':'This is a GAPC'}
+        kwargs = {'lnClass': 'GAPC', 'inst': '0', 'lnType': 'GAPC', 'desc': 'This is a GAPC'}
         ln_inst = LN(self.scd.datatypes, None, **kwargs)
-        assert getattr(ln_inst,'lnType')    == 'GAPC'
-        assert getattr(ln_inst,'lnClass')   == 'GAPC'
-        assert getattr(ln_inst,'inst')      == 0
-        assert getattr(ln_inst,'name')      == 'GAPC0'
-        assert getattr(ln_inst,'desc')      == 'This is a GAPC'
-        assert isinstance(getattr(ln_inst,'Alm1')   , DO)
-        assert isinstance(getattr(ln_inst,'Auto')   , DO)
-        assert isinstance(getattr(ln_inst,'DPCSO1') , DO)
-        assert isinstance(getattr(ln_inst,'ISCSO1') , DO)
-        assert isinstance(getattr(ln_inst,'Ind1')   , DO)
-        assert isinstance(getattr(ln_inst,'Loc')    , DO)
-        assert isinstance(getattr(ln_inst,'LocKey') , DO)
-        assert isinstance(getattr(ln_inst,'LocSta') , DO)
-        assert isinstance(getattr(ln_inst,'Op1')    , DO)
-        assert isinstance(getattr(ln_inst,'OpCntRs'), DO)
-        assert isinstance(getattr(ln_inst,'SPCSO1') , DO)
-        assert isinstance(getattr(ln_inst,'Str1')   , DO)
-        assert isinstance(getattr(ln_inst,'StrVal1'), DO)
-        assert isinstance(getattr(ln_inst,'Wrn1')   , DO)                                         # pylint: disable=maybe-no-member
+        assert getattr(ln_inst, 'lnType') == 'GAPC'
+        assert getattr(ln_inst, 'lnClass') == 'GAPC'
+        assert getattr(ln_inst, 'inst') == 0
+        assert getattr(ln_inst, 'name') == 'GAPC0'
+        assert getattr(ln_inst, 'desc') == 'This is a GAPC'
+        assert isinstance(getattr(ln_inst, 'Alm1'), DO)
+        assert isinstance(getattr(ln_inst, 'Auto'), DO)
+        assert isinstance(getattr(ln_inst, 'DPCSO1'), DO)
+        assert isinstance(getattr(ln_inst, 'ISCSO1'), DO)
+        assert isinstance(getattr(ln_inst, 'Ind1'), DO)
+        assert isinstance(getattr(ln_inst, 'Loc'), DO)
+        assert isinstance(getattr(ln_inst, 'LocKey'), DO)
+        assert isinstance(getattr(ln_inst, 'LocSta'), DO)
+        assert isinstance(getattr(ln_inst, 'Op1'), DO)
+        assert isinstance(getattr(ln_inst, 'OpCntRs'), DO)
+        assert isinstance(getattr(ln_inst, 'SPCSO1'), DO)
+        assert isinstance(getattr(ln_inst, 'Str1'), DO)
+        assert isinstance(getattr(ln_inst, 'StrVal1'), DO)
+        assert isinstance(getattr(ln_inst, 'Wrn1'), DO)                                         # pylint: disable=maybe-no-member
         assert ln_inst.LocKey.dU.bType == 'Unicode255'                          # pylint: disable=maybe-no-member
         assert ln_inst.DPCSO1.ctlModel.fc == 'CF'   # pylint: disable=maybe-no-member
 
@@ -253,18 +260,18 @@ class TestSCD_OPEN():
         ln0s = _get_node_list_by_tag(self.scd, 'LN0')
         assert len(ln0s) > 0
         ln0 = LN0(self.scd.datatypes, ln0s[0])
-        assert getattr(ln0,'lnClass') == 'LLN0'
-        assert getattr(ln0,'name') == 'LLN0'
+        assert getattr(ln0, 'lnClass') == 'LLN0'
+        assert getattr(ln0, 'name') == 'LLN0'
         datasets = ln0.get_children('DataSet')
         assert len(datasets) == 157
         assert datasets[0]
-        assert getattr(datasets[0],'name') == 'DS_LPHD'
-        assert isinstance(datasets[0] , SCDNode)
+        assert getattr(datasets[0], 'name') == 'DS_LPHD'
+        assert isinstance(datasets[0], SCDNode)
         assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('GSEControl')) == 157
         assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('DO')) == 8
-        assert isinstance(getattr(ln0,'Diag') , DO)
+        assert isinstance(getattr(ln0, 'Diag'), DO)
 
     def test_create_LD(self):
         """
@@ -326,10 +333,11 @@ class TestSCD_OPEN():
 def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     assert scd
-    assert scd.Header.toolID == 'PVR GEN TOOL' # pylint: disable=maybe-no-member
-    assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE.Address.P[0].type == 'VLAN-PRIORITY' # pylint: disable=maybe-no-member
-    assert scd.Substation[0].SITEP41.name == 'SITEP41' # pylint: disable=maybe-no-member
+    assert scd.Header.toolID == 'PVR GEN TOOL'  # pylint: disable=maybe-no-member
+    assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE.Address.P[0].type == 'VLAN-PRIORITY'  # pylint: disable=maybe-no-member
+    assert scd.Substation[0].SITEP41.name == 'SITEP41'  # pylint: disable=maybe-no-member
     del scd
+
 
 def test_get_Data_Type_Definition():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
@@ -340,6 +348,7 @@ def test_get_Data_Type_Definition():
     assert len(datatype_defs['DOType']) == 89
     assert len(datatype_defs['DAType']) == 16
     assert len(datatype_defs['EnumType']) == 40
+
 
 def test_extract_sub_SCD():
     ref_scd2_hash = '517e42b4be8a4e23e51621a4248418182ff4097cfb4d8f8177e5e1b90c8f3057'
@@ -383,3 +392,29 @@ class TestSCD_IOP():
         result = ld.get_inputs_goose_extrefs()
         assert len(result) == 42
         assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
+
+    def test_LD_get_LN_by_name(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.get_children_LDs()[0]
+        ln_name = 'PTRC1'
+
+        result = ld.get_LN_by_name(ln_name)
+        assert isinstance(result, LN)
+        assert result.name == ln_name
+
+    def test_IED_get_LN_by_name(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ld_inst = 'LDASLD'
+        ln_name = 'PTRC1'
+
+        result = ied.get_LN_by_name(ld_inst, ln_name)
+        assert isinstance(result, LN)
+        assert result.name == ln_name
+
+    def test_IED_get_LD_by_inst(self):
+        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ld_inst = 'LDASLD'
+
+        result = ied.get_LD_by_inst(ld_inst)
+        assert isinstance(result, LD)
+        assert result.name == ld_inst

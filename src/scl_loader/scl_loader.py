@@ -7,7 +7,6 @@ import re
 import weakref
 from copy import deepcopy
 from lxml import etree
-from xml.etree import ElementTree as XmlET
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 XSD_PATH = os.path.join(HERE, 'resources', 'SCL_Schema', 'SCL.xsd')
@@ -218,7 +217,7 @@ class DataTypeTemplates:
 
                 A dictionnary of the DataTypes definitions grouped by tag
         """
-        tags = {'LNodeType':[], 'DOType':[], 'DAType':[], 'EnumType':[]}
+        tags = {'LNodeType': [], 'DOType': [], 'DAType': [], 'EnumType': []}
 
         for tag_key in tags.keys():
             item_xpath = 'child::iec61850:{}'.format(tag_key)
@@ -816,10 +815,17 @@ class LD(SCDNode):
 
         return extrefs
 
+    def get_LN_by_name(self, ln_Name: str) -> LN:
+        if hasattr(self, ln_Name):
+            return getattr(self, ln_Name)
+
+
 class IED(SCDNode):
     """
         Class to manage an IED
     """
+    DEFAULT_AP = 'PROCESS_AP'
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -843,6 +849,7 @@ class IED(SCDNode):
         """
         self._all_attributes = []
         self._all_attributes.extend(NODES_ATTRS['IED'])
+        self._LDs = {}
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
     def get_inputs_goose_extrefs(self) -> list:
@@ -865,8 +872,30 @@ class IED(SCDNode):
 
         return extrefs
 
-    def get_children_LDs(self) -> list:
-        return self.PROCESS_AP.Server.get_children('LDevice')
+    def get_children_LDs(self, ap_name: str = DEFAULT_AP) -> list:
+        ap = self._get_ap_by_name(ap_name)
+        if ap:
+            return ap.Server.get_children('LDevice')
+
+    def get_LD_by_inst(self, ld_inst: str, ap_name: str = DEFAULT_AP) -> LD:
+        if hasattr(self._LDs, ld_inst):
+            return self._LDs[ld_inst]
+
+        ap = self._get_ap_by_name(ap_name)
+        if ap and hasattr(ap.Server, ld_inst):
+            result = getattr(ap.Server, ld_inst)
+            self._LDs[ld_inst] = result
+            return self._LDs[ld_inst]
+
+    def get_LN_by_name(self, ld_inst: str, ln_Name: str, ap_name: str = DEFAULT_AP) -> LN:
+        ld = self.get_LD_by_inst(ld_inst, ap_name)
+        ln = ld.get_LN_by_name(ln_Name)
+        return ln
+
+    def _get_ap_by_name(self, ap_name):
+        if hasattr(self, ap_name):
+            return getattr(self, ap_name)
+
 
 class SCD_handler():
     """
@@ -890,6 +919,7 @@ class SCD_handler():
         schema_doc = etree.parse(XSD_PATH)
         self._schema = etree.XMLSchema(schema_doc)
         self._fullattrs = fullattrs
+        self._IEDs = {}
 
         is_valid, error = self._check_scd_file()
         if not is_valid:
@@ -934,7 +964,7 @@ class SCD_handler():
         for child in scl_children:
             newroot.append(deepcopy(child))
 
-        #Clean not needed ConnectedAP
+        # Clean not needed ConnectedAP
         connected_aps = newroot.xpath('child::iec61850:Communication/*/iec61850:ConnectedAP', namespaces=NS)
         connected_aps = [itm for itm in connected_aps if itm.get('iedName') not in ied_name_list]
         for c_ap in connected_aps:
@@ -968,7 +998,11 @@ class SCD_handler():
 
         tIED = []
         for ied in ieds:
-            tIED.append(IED(self.datatypes, ied, self._fullattrs))
+            new_ied = IED(self.datatypes, ied, self._fullattrs)
+            ied_name = new_ied.name
+            if not hasattr(self._IEDs, ied_name):
+                self._IEDs[ied_name] = ied_name
+            tIED.append(new_ied)
 
         return tIED
 
@@ -986,9 +1020,13 @@ class SCD_handler():
             `IED`
                 The loaded IED object
         """
+        if hasattr(self._IEDs, ied_name):
+            return self._IEDs[ied_name]
+
         ied_elems = self._get_IED_elems_by_names([ied_name])
         if len(ied_elems) > 0:
-            return IED(self.datatypes, ied_elems[0], self._fullattrs)
+            self._IEDs[ied_name] = IED(self.datatypes, ied_elems[0], self._fullattrs)
+            return self._IEDs[ied_name]
 
     def get_IED_names_list(self) -> list:
         """
@@ -1025,7 +1063,7 @@ class SCD_handler():
                 The boolean is True if the xml is valid
                 If the xml is not valid the str is the error message
         """
-        file_size = os.path.getsize(self._scd_path) // (1024*1024)
+        file_size = os.path.getsize(self._scd_path) // (1024 * 1024)
         if file_size < MAX_VALIDATION_SIZE:
             tree = etree.parse(self._scd_path)
             is_valid = self._schema.validate(tree)
@@ -1089,7 +1127,7 @@ class SCD_handler():
 
         return result
 
-    def _get_all_elem_by_tag(self, tag:str) -> list:
+    def _get_all_elem_by_tag(self, tag: str) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -1113,7 +1151,7 @@ class SCD_handler():
 
         return elem_list
 
-    def _iter_get_all_elem_by_tag(self, tag:str) -> list:
+    def _iter_get_all_elem_by_tag(self, tag: str) -> list:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -1167,7 +1205,7 @@ class SCD_handler():
                 result.append(elem)
             elif elem.tag.split('}')[-1] == 'Private' \
                                             and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS)
-                                            or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
+                                                 or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
                 result.append(elem)
             else:
                 elem.clear()
