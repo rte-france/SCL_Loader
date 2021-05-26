@@ -20,6 +20,7 @@ REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
+DEFAULT_AP  = 'PROCESS_AP'
 SEP1 = '$'          # Standard MMS separator.
 SEP2 = '/'          # MMS Separator for system testing
 
@@ -1047,6 +1048,39 @@ class SCD_handler():
 
         return result
 
+    def get_IED_by_name(self, ied_name:str, ap_name=DEFAULT_AP) -> IED:
+        for ied in self.tIED:
+            if ied.name == ied_name:
+                for iAP in ied.get_children('AccessPoint'):
+                    if iAP.name == ap_name:
+                        return ied
+##              for iServer in ied.get_children('ServerAT')
+        return None
+
+    def get_LD_by_inst(self, ied_name:str, ld_inst: str, ap_name=DEFAULT_AP) -> (LD, []) :
+        key = ied_name + ap_name + SEP2 + ld_inst
+        (LD, tLN) = self.dict_LD_LN.get(key)
+        return (LD, tLN)
+
+    def get_LN_by_name(self, ied_name:str, ld_inst: str, ln_Name: str, ap_name=DEFAULT_AP) -> LN:
+        key = ied_name + ap_name + SEP2 + ld_inst + SEP1 + ln_Name
+        iLN = self.dict_LD_LN.get(key)
+        return iLN
+
+    def get_IP_Adr(self, ied_name:str):
+        for iComm in self.Communication.get_children('SubNetwork'):  # browse all iED SubNetWork
+            if iComm.type != "8-MMS":  # IP can be found only in MMS access point '.
+                continue
+            for iCnxAP in iComm.get_children('ConnectedAP'):  # browse all Access Point(s) of the iED
+                if iCnxAP.iedName == ied_name:  # and iCnxAP.apName == apNAme:
+                    for iAdr in iCnxAP.get_children('Address'):
+
+                        for iP in iAdr.P:
+                            if iP.type == "IP":  # Look for IP address
+                                if iP.Val is not None:
+                                    return iP.Val, iCnxAP.apName
+            return None,None    # Not found
+
     def _check_scd_file(self) -> tuple:
         """
             /!\\ PRIVATE : do not use /!\\
@@ -1071,7 +1105,7 @@ class SCD_handler():
                 self._scl_root = tree.getroot()
             return (is_valid, self._schema.error_log.last_error)
         else:
-            LOGGER.warn('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
+            LOGGER.warning('XSD validation skipped due to file size over {} Mo' % MAX_VALIDATION_SIZE)
             return True
 
     def _get_IED_elems_by_names(self, ied_names_list: list) -> list:
@@ -1256,6 +1290,37 @@ class SCD_handler():
 
         return result
 
+    def create_LD_LN_dictionary(self, ied:SCDNode, dict_LD_LN: {} ):
+
+        tAP = ied.get_children('AccessPoint')
+        for  iAP in tAP:
+            tServer = iAP.get_children('Server')    ## Les différents Server ne concernent que les adresses résaux pas le modèle.
+            for iServer in tServer:                 ## Il n'y a pas de 'name' pour server
+                for iLD in iServer.get_children('LDevice'):
+                    keyLD = ied.name + iAP.name + '/' + iLD.inst
+
+                    tLNName = []
+                    for iLN in iLD.get_children('LN'):
+                        if hasattr(iLN,'lnPrefix'):
+                            prefix = iLN.prefix
+                        else:
+                            prefix =''
+
+                        if hasattr(iLN,'lnInst'):
+                            inst = iLN.inst
+                        else:
+                            inst = ''
+
+                        lnName = prefix + iLN.name + inst
+                        keyLN = keyLD + '$' + lnName
+                        tLNName.append(lnName)
+                        dict_LD_LN[keyLN] = iLN
+                    try:
+                        dict_LD_LN[keyLD] = (iLD,tLNName)
+                    except KeyError:
+                        print('Duplicated LNName', keyLN )
+        return dict_LD_LN
+
     def _iter_get_all_IEDs(self) -> list:
         """
             Load all the IEDs from the SCD/SCL file
@@ -1269,5 +1334,4 @@ class SCD_handler():
         tIED = []
         for _, ied in context:
             tIED.append(ied)
-
         return tIED

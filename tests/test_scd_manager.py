@@ -123,9 +123,11 @@ class TestSCD_OPEN():
 
     def setup_method(self):
         self.scd = SCD_handler(SCD_OPEN_PATH)
+        self.tIED = self.scd.get_all_IEDs()
 
     def teardown_method(self):
         del self.scd
+        del self.tIED
 
     def _start_perfo_stats(self):
         self.pr = cProfile.Profile()
@@ -321,7 +323,7 @@ class TestSCD_OPEN():
         assert result[0] == 'LD_All'
 
     def test_get_ied_by_name(self):
-        ied = self.scd.get_IED_by_name('LD_All')
+        ied = self.scd.get_IED_by_name('LD_All','HVDC_LD_All_1')
         assert isinstance(ied, IED)
 
     def test_get_all_ied(self):
@@ -360,14 +362,25 @@ def test_extract_sub_SCD():
     assert os.path.exists(dest_path)
     assert ref_scd2_hash == hashfile(dest_path)
 
+def test_get_IP_Adr():
+    scd = SCD_handler(SCD_OPEN_IOP_PATH)
+    (ip1,apName1) = scd.get_IP_Adr('AUT1A_SITE_1')
+    assert ip1 == '127.0.0.1'
+    assert apName1 == "PROCESS_AP"
+
+    (ip2,apName2) = scd.get_IP_Adr('IEDTEST_SITE_1')
+    assert ip2 == '127.0.0.1'
+    assert apName2 == "PROCESS_AP"
+    return True
 
 class TestSCD_IOP():
-
     def setup_method(self):
         self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
+        self.tIED = self.scd.get_all_IEDs()
 
     def teardown_method(self):
         del self.scd
+        del self.tIED
 
     def test_get_ied_extrefs(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
