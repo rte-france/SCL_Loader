@@ -21,6 +21,7 @@ REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
+DEFAULT_AP  = 'PROCESS_AP'
 SEP1 = '$'          # Standard MMS separator.
 SEP2 = '/'          # MMS Separator for system testing
 
@@ -890,8 +891,8 @@ class SCD_handler():
         schema_doc = etree.parse(XSD_PATH)
         self._schema = etree.XMLSchema(schema_doc)
         self._fullattrs = fullattrs
-        self.tIED = []                  ## copie locale du tableau des IEDs
-        self.dict_LD_LN = {}
+        self.tIED = []                  ## local copy of IEDs list
+        self.dict_LD_LN = {}            ## Dictionar specific to IED-LD-LN.
         is_valid, error = self._check_scd_file()
         if not is_valid:
             err = 'SCL/SCD not valid at line {}: {}'.format(error.line, error.message)
@@ -972,7 +973,7 @@ class SCD_handler():
             self.tIED.append(IED(self.datatypes, ied, self._fullattrs))
 
         for iIED in self.tIED:
-            self.create_LD_LN_dictionary(iIED, self.dict_LD_LN)        ## GGU
+            self.create_LD_LN_dictionary(iIED, self.dict_LD_LN)     # IED+ApName/LDinst$LnName$DO$DA...
 
         return self.tIED
 
@@ -1013,7 +1014,7 @@ class SCD_handler():
 
         return result
 
-    def get_IED_by_name(self, ied_name:str, ap_name='PROCESS_AP') -> IED:
+    def get_IED_by_name(self, ied_name:str, ap_name=DEFAULT_AP) -> IED:
         for ied in self.tIED:
             if ied.name == ied_name:
                 for iAP in ied.get_children('AccessPoint'):
@@ -1022,28 +1023,29 @@ class SCD_handler():
 ##              for iServer in ied.get_children('ServerAT')
         return None
 
-    def get_LD_by_inst(self, ied_name:str, ld_inst: str, ap_name='PROCESS_AP') -> (LD, []) :
+    def get_LD_by_inst(self, ied_name:str, ld_inst: str, ap_name=DEFAULT_AP) -> (LD, []) :
         key = ied_name + ap_name + SEP2 + ld_inst
         (LD, tLN) = self.dict_LD_LN.get(key)
         return (LD, tLN)
 
-    def get_LN_by_name(self, ied_name:str, ld_inst: str, ln_Name: str, ap_name='PROCESS_AP') -> LN:
+    def get_LN_by_name(self, ied_name:str, ld_inst: str, ln_Name: str, ap_name=DEFAULT_AP) -> LN:
         key = ied_name + ap_name + SEP2 + ld_inst + SEP1 + ln_Name
         iLN = self.dict_LD_LN.get(key)
         return iLN
 
     def get_IP_Adr(self, ied_name:str):
-        for iComm in self.Communication.get_children('SubNetwork'):  # parcours les sous réseau de l'iED
-            if iComm.type != "8-MMS":  # On ne considère que l'access Point 'MMS'.
+        for iComm in self.Communication.get_children('SubNetwork'):  # browse all iED SubNetWork
+            if iComm.type != "8-MMS":  # IP can be found only in MMS access point '.
                 continue
-            for iCnxAP in iComm.get_children('ConnectedAP'):  # browse the Access Point(s) of the iED
+            for iCnxAP in iComm.get_children('ConnectedAP'):  # browse all Access Point(s) of the iED
                 if iCnxAP.iedName == ied_name:  # and iCnxAP.apName == apNAme:
                     for iAdr in iCnxAP.get_children('Address'):
 
                         for iP in iAdr.P:
-                            if iP.type == "IP":  ## le TAG IP est trouvé
+                            if iP.type == "IP":  # Look for IP address
                                 if iP.Val is not None:
                                     return iP.Val, iCnxAP.apName
+            return None,None    # Not found
 
     def _check_scd_file(self) -> tuple:
         """
@@ -1254,7 +1256,7 @@ class SCD_handler():
 
         return result
 
-    def create_LD_LN_dictionary(self, ied, dict_LD_LN: {} ):    ## GGU
+    def create_LD_LN_dictionary(self, ied:SCDNode, dict_LD_LN: {} ):
 
         tAP = ied.get_children('AccessPoint')
         for  iAP in tAP:
