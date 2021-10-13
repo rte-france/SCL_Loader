@@ -1214,8 +1214,8 @@ class SCD_handler():
             if elem.tag.split('}')[-1] != 'Private':
                 result.append(elem)
             elif elem.tag.split('}')[-1] == 'Private' \
-                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS)
-                                                 or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
+                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS) or
+                                                 elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
                 result.append(elem)
             else:
                 elem.clear()
