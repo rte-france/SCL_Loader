@@ -862,7 +862,7 @@ class IED(SCDNode):
             `[]`
                 An array of objects containing the extRefs attributes
         """
-        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
+        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef'  # [@serviceType="GOOSE"]
         extrefs = []
 
         xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
@@ -1214,8 +1214,8 @@ class SCD_handler():
             if elem.tag.split('}')[-1] != 'Private':
                 result.append(elem)
             elif elem.tag.split('}')[-1] == 'Private' \
-                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS)
-                                                 or elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
+                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS) or
+                                                 elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
                 result.append(elem)
             else:
                 elem.clear()
