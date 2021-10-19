@@ -25,17 +25,17 @@ with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 setup(
     name='scl_loader',  # Required
-    version='1.9.0',  # Required
+    version='1.9.1',  # Required
     description='Outil de manipulation de SCD',  # Required
     long_description=LONG_DESCRIPTION,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
     package_dir={'': 'src'},  # Optional
     packages=["scl_loader"],  # Required
-    python_requires='>=3.8, <4',
+    python_requires='>=3.6, <4',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.6",
     ],
 
     # If there are data files included in your packages that need to be
