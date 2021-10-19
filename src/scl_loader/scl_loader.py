@@ -862,7 +862,7 @@ class IED(SCDNode):
             `[]`
                 An array of objects containing the extRefs attributes
         """
-        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef[@serviceType="GOOSE"]'
+        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef'  # [@serviceType="GOOSE"]
         extrefs = []
 
         xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
