@@ -31,7 +31,7 @@ setup(
     long_description_content_type='text/markdown',  # Optional (see note above)
     package_dir={'': 'src'},  # Optional
     packages=["scl_loader"],  # Required
-    python_requires='>=3.8, <4',
+    python_requires='>=3.6, <4',
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python :: 3",
