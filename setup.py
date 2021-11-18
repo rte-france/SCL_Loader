@@ -25,7 +25,7 @@ with open(path.join(HERE, 'requirements.txt'), encoding='utf-8') as f:
 # Fields marked as "Optional" may be commented out.
 setup(
     name='scl_loader',  # Required
-    version='1.9.2',  # Required
+    version='1.9.3',  # Required
     description='Outil de manipulation de SCD',  # Required
     long_description=LONG_DESCRIPTION,  # Optional
     long_description_content_type='text/markdown',  # Optional (see note above)
