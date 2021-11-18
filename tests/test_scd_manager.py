@@ -264,14 +264,13 @@ class TestSCD_OPEN():
         ln0 = LN0(self.scd.datatypes, ln0s[0])
         assert getattr(ln0, 'lnClass') == 'LLN0'
         assert getattr(ln0, 'name') == 'LLN0'
-        datasets = ln0.get_children('DataSet')
+        datasets = ln0.DataSet
         assert len(datasets) == 157
         assert datasets[0]
         assert getattr(datasets[0], 'name') == 'DS_LPHD'
         assert isinstance(datasets[0], SCDNode)
         assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('GSEControl')) == 157
-        assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('DO')) == 8
         assert isinstance(getattr(ln0, 'Diag'), DO)
 
