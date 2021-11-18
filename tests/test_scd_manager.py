@@ -433,3 +433,8 @@ class TestSCD_IOP():
         result = ied.get_LD_by_inst(ld_inst)
         assert isinstance(result, LD)
         assert result.name == ld_inst
+
+    def test_get_ieds_by_type(self):
+        ieds = self.scd.get_IED_by_type('TYPE1')
+        assert len(ieds) == 2
+        assert isinstance(ieds[0], IED)

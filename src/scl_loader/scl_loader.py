@@ -1024,6 +1024,36 @@ class SCD_handler():
             self._IEDs[ied_name] = IED(self.datatypes, ied_elems[0], self._fullattrs)
             return self._IEDs[ied_name]
 
+    def get_IED_by_type(self, ied_type: str) -> list:
+        """
+            Load an IED from the SCD/SCL file by type
+
+            Parameters
+            ----------
+            `ied_type`
+                Type of the IED to find
+
+            Returns
+            -------
+            `IED`
+                The loaded IED object
+        """
+
+        for ied1 in self._IEDs:
+            if hasattr(self._IEDs, 'type') and ied1['type'] == ied_type:
+                return ied1
+
+        ied_elems = self._get_IED_elems_by_types([ied_type])
+        result = []
+        for ied2 in ied_elems:
+            ied_name = ied2.get('name')
+            if not hasattr(self._IEDs, ied_name):
+                self._IEDs[ied_name] = IED(self.datatypes, ied2, self._fullattrs)
+
+            result.append(self._IEDs[ied_name])
+
+        return result
+
     def get_IED_names_list(self) -> list:
         """
             Load an IED from the SCD/SCL file by name
@@ -1106,6 +1136,31 @@ class SCD_handler():
             result = [ied for ied in result if ied.get('name') in ied_names_list]
         else:
             result = self._iter_get_IED_elems_by_names(ied_names_list)
+
+        return result
+
+    def _get_IED_elems_by_types(self, ied_types_list: list) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the IED elements by type
+
+            Parameters
+            ----------
+            `ied_types_list`
+                List of ied types to retrieve
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        result = []
+        if self._scl_root is not None:
+            result = self._scl_root.xpath('child::iec61850:IED', namespaces=NS)
+            result = [ied for ied in result if ied.get('type') in ied_types_list]
+        else:
+            result = self._iter_get_IED_elems_by_types(ied_types_list)
 
         return result
 
@@ -1243,6 +1298,33 @@ class SCD_handler():
         for _, ied in context:
             item_name = ied.get('name')
             if item_name in ied_names_list:
+                result.append(ied)
+            else:
+                ied.clear()
+
+        return result
+
+    def _iter_get_IED_elems_by_types(self, ied_types_list: list) -> list:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve the IED elements by type
+
+            Parameters
+            ----------
+            `ied_types_list`
+                List of ied types to retrieve
+
+            Returns
+            -------
+            `[etree.Element]`
+                Array of found etree.Element elements
+        """
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        result = []
+        for _, ied in context:
+            item_type = ied.get('type')
+            if item_type in ied_types_list:
                 result.append(ied)
             else:
                 ied.clear()
