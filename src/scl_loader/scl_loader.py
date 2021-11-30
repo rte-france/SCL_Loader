@@ -296,6 +296,8 @@ class SCDNode:
 
         self.name = self.name or self.tag
 
+        self.name = str(self.name)
+
         if len(self.name) == 0:
             raise AttributeError('Name cannot be set')
 
@@ -552,6 +554,8 @@ class SCDNode:
 
         if node.text and len(node.text.strip()) > 0:
             setattr(self, 'Val', _safe_convert_value(node.text))
+
+        self.name = str(self.name)
 
         if len(self.name) == 0:
             self.name = _get_node_name(node)
