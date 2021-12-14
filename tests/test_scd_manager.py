@@ -145,7 +145,7 @@ class TestSCD_OPEN():
             I Should be able to create a SCL object with its children (except IEDs and Datatype)
         """
         assert self.scd.Header.toolID == 'ggu'  # pylint: disable=maybe-no-member
-        assert self.scd.Communication.Net1.LD_All.GSE.Address.P[0].type == 'VLAN-ID'  # pylint: disable=maybe-no-member
+        assert self.scd.Communication.Net1.LD_All.GSE[0].Address.P[0].type == 'VLAN-ID'  # pylint: disable=maybe-no-member
 
     def test_create_DA_by_kwargs(self):
         """
@@ -335,7 +335,7 @@ def test_open_iop():
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     assert scd
     assert scd.Header.toolID == 'PVR GEN TOOL'  # pylint: disable=maybe-no-member
-    assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE.Address.P[0].type == 'VLAN-PRIORITY'  # pylint: disable=maybe-no-member
+    assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE[0].Address.P[0].type == 'VLAN-PRIORITY'  # pylint: disable=maybe-no-member
     assert scd.Substation[0].SITEP41.name == 'SITEP41'  # pylint: disable=maybe-no-member
     del scd
 
