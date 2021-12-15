@@ -146,9 +146,29 @@ def _safe_convert_value(value: str) -> any:
         return None
 
 
+def _get_tag_without_ns(nstag: str) -> str:
+    """
+        Get the xml tag without namespace
+
+        Parameters
+        ----------
+        nstag
+           The xml element tag
+
+        Returns
+        -------
+        str
+            the tag without namespace
+    """
+    tag_reg = r'(?:{.+})?(\w+)'
+    result = re.match(tag_reg, nstag)
+    if result:
+        return result.group(1)
+
+
 def _get_node_name(node: etree.Element):
     name = None
-    tag = node.tag.split('}')[-1]
+    tag = _get_tag_without_ns(node.tag)
 
     name = node.get('name')
     if not name:
@@ -227,10 +247,6 @@ class DataTypeTemplates:
         return tags
 
 
-# TODO :
-# - Manage BAP/FIP
-# - Gestion des attributs dont le nom comporte des . ou des -
-# - Gestion des noeud étranges (voir SCD de Gilles)
 class SCDNode:
     """
         Basic class to compute SCD nodes
@@ -285,7 +301,7 @@ class SCDNode:
         self._fullattrs = fullattrs
 
         if node_elem is not None:
-            self.tag = node_elem.tag.split('}')[-1]
+            self.tag = _get_tag_without_ns(node_elem.tag)
 
         if node_elem is None and not kwargs:
             msg = 'Please enter a xml Element and/or attributes (kwargs)'
@@ -319,7 +335,7 @@ class SCDNode:
         new_node = None
         attributes = {}
         attributes.update(elem.attrib)
-        _tag = elem.tag.split('}')[-1]
+        _tag = _get_tag_without_ns(elem.tag)
 
         if elem.text:
             val = elem.text.strip()
@@ -333,11 +349,11 @@ class SCDNode:
             new_node = DA(self._datatypes, elem, self._fullattrs, **attributes)
         elif re.fullmatch(REG_DO, elem.tag):
             new_node = DO(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'LN':
+        elif _get_tag_without_ns(elem.tag) == 'LN':
             new_node = LN(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'LN0':
+        elif _get_tag_without_ns(elem.tag) == 'LN0':
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
-        elif elem.tag.split('}')[-1] == 'LDevice':
+        elif _get_tag_without_ns(elem.tag) == 'LDevice':
             new_node = LD(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
@@ -598,7 +614,7 @@ class SCDNode:
 
         for elem in children:
             if not elem.get('id'):  # No instances in datatypes
-                tag = elem.tag.split('}')[-1]
+                tag = _get_tag_without_ns(elem.tag)
                 if tag == 'Val' and elem.text:
                     setattr(self, 'Val', _safe_convert_value(elem.text))
                 elif re.fullmatch(REG_SDI, tag):
@@ -628,7 +644,7 @@ class SCDNode:
         if hasattr(current_node, inst_node.get('name')):
             upd_node = getattr(current_node, inst_node.get('name'))
             if isinstance(upd_node, SCDNode):
-                if inst_node.tag.split('}')[-1] == 'DAI':
+                if _get_tag_without_ns(inst_node.tag) == 'DAI':
                     upd_node._set_attributes_from_elem(inst_node)
 
                 upd_node._set_instances(inst_node)
@@ -936,7 +952,7 @@ class SCD_handler():
         self.Substation = []
         scl_children = self._get_SCL_elems()
         for elem in scl_children:
-            if elem.tag.split('}')[-1] == 'Substation':
+            if _get_tag_without_ns(elem.tag) == 'Substation':
                 self.Substation.append(SCDNode(self.datatypes, elem, self._fullattrs))
             else:
                 elem_name = _get_node_name(elem)
@@ -1270,11 +1286,11 @@ class SCD_handler():
         result = []
         for _, elem in context:
 
-            if elem.tag.split('}')[-1] != 'Private':
+            if _get_tag_without_ns(elem.tag) != 'Private':
                 result.append(elem)
-            elif elem.tag.split('}')[-1] == 'Private' \
-                                            and (elem.xpath('following-sibling::iec61850:Header', namespaces=NS) or
-                                                 elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
+            elif _get_tag_without_ns(elem.tag) == 'Private' and \
+                    (elem.xpath('following-sibling::iec61850:Header', namespaces=NS) or
+                     elem.xpath('preceding-sibling::iec61850:Header', namespaces=NS)):
                 result.append(elem)
             else:
                 elem.clear()
