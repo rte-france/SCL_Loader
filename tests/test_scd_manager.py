@@ -76,7 +76,7 @@ def hashfile(file):
 
 def _get_node_list_by_tag(scd, tag: str) -> list:
     result = []
-    context = etree.iterparse(scd._scd_path, events=("end",), tag=r'{http://www.iec.ch/61850/2003/SCL}' + tag)
+    context = etree.iterparse(scd._scd_path, events=("end",), tag=r'{http://www.iec.ch/61850/2003/SCL}' + tag, remove_comments=True)
     for _, ied in context:
         result.append(ied)
     return result
@@ -352,7 +352,7 @@ def test_get_Data_Type_Definition():
 
 
 def test_extract_sub_SCD():
-    ref_scd2_hash = '517e42b4be8a4e23e51621a4248418182ff4097cfb4d8f8177e5e1b90c8f3057'
+    ref_scd2_hash = '4577fb05ea3cc39d637feb699b684cab2a73c216b2bc9bd8f194d3310e66c005'
     scd = SCD_handler(SCD_OPEN_IOP_PATH)
     ied_list = ['AUT1A_SITE_1', 'IEDTEST_SITE_1']
 
