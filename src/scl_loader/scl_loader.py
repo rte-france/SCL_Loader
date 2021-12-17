@@ -205,7 +205,7 @@ class DataTypeTemplates:
                 xml_path
                     chemin du fichier SCD/SCL contenant les datatypes
         """
-        context = etree.iterparse(xml_path, events=("end",), tag='{}DataTypeTemplates'.format(SCL_NAMESPACE))
+        context = etree.iterparse(xml_path, events=("end",), tag='{}DataTypeTemplates'.format(SCL_NAMESPACE), remove_comments=True)
         _, self._datatypes_root = next(context)
 
     def get_type_by_id(self, id: str) -> etree.Element:
@@ -976,7 +976,7 @@ class SCD_handler():
         path, ext = os.path.splitext(self._scd_path)
         dest_path = '{}-reduced{}'.format(path, ext)
 
-        ctx = etree.iterparse(self._scd_path, events=("start",), tag='{}SCL'.format(SCL_NAMESPACE))
+        ctx = etree.iterparse(self._scd_path, events=("start",), tag='{}SCL'.format(SCL_NAMESPACE), remove_comments=True)
         for _, root in ctx:
             newroot = etree.Element(root.tag, nsmap=root.nsmap, attrib=root.attrib)
             break
@@ -1125,7 +1125,7 @@ class SCD_handler():
         """
         file_size = os.path.getsize(self._scd_path) // (1024 * 1024)
         if file_size < MAX_VALIDATION_SIZE:
-            tree = etree.parse(self._scd_path)
+            tree = etree.parse(self._scd_path, parser=etree.XMLParser(remove_comments=True))
             is_valid = self._schema.validate(tree)
             if not FORCE_ITER_MODE:
                 self._scl_root = tree.getroot()
@@ -1252,7 +1252,7 @@ class SCD_handler():
             `[etree.Element]`
                 Array of found etree.Element elements
         """
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}{}'.format(SCL_NAMESPACE, tag))
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}{}'.format(SCL_NAMESPACE, tag), remove_comments=True)
 
         elem_list = []
         _, elem = next(context)
@@ -1282,7 +1282,7 @@ class SCD_handler():
         for idx, tag in enumerate(tags):
             tags[idx] = '{}{}'.format(SCL_NAMESPACE, tag)
 
-        context = etree.iterparse(self._scd_path, events=("end",), tag=tags)
+        context = etree.iterparse(self._scd_path, events=("end",), tag=tags, remove_comments=True)
         result = []
         for _, elem in context:
 
@@ -1313,7 +1313,7 @@ class SCD_handler():
             `[etree.Element]`
                 Array of found etree.Element elements
         """
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE), remove_comments=True)
         result = []
         for _, ied in context:
             item_name = ied.get('name')
@@ -1340,7 +1340,7 @@ class SCD_handler():
             `[etree.Element]`
                 Array of found etree.Element elements
         """
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE), remove_comments=True)
         result = []
         for _, ied in context:
             item_type = ied.get('type')
@@ -1361,9 +1361,10 @@ class SCD_handler():
                 The found IED names
         """
         result = []
-        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE))
+        context = etree.iterparse(self._scd_path, events=("end",), tag='{}IED'.format(SCL_NAMESPACE), remove_comments=True)
         for _, ied in context:
             result.append(ied.get('name'))
             ied.clear()
 
         return result
+
