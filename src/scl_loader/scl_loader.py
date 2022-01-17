@@ -1036,7 +1036,7 @@ class SCD_handler():
             `IED`
                 The loaded IED object
         """
-        if hasattr(self._IEDs, ied_name):
+        if ied_name in self._IEDs:
             return self._IEDs[ied_name]
 
         ied_elems = self._get_IED_elems_by_names([ied_name])
