@@ -893,7 +893,7 @@ class LD(SCDNode):
 
             Parameters
             ----------
-            `name`
+            `i_ds_name`
                 Name of the DataSet as defined in LD.LLN0.
 
             Returns
@@ -944,8 +944,28 @@ class LD(SCDNode):
                             # create the branch until the end
                             curr_branch[1].append((fcda_tip[i_node_depth], []))
                             curr_branch = curr_branch[1][-1]
-                    o_tree[1].append(fcda_branch)
+            o_tree[1].append(fcda_branch)
         return o_tree
+
+    def get_dataset_da_list(self, i_ds_name):
+        """
+            Get the array of DA intAdr present in a dataset
+
+            Parameters
+            ----------
+            `i_ds_name`
+                Name of the DataSet as defined in LD.LLN0.
+
+            Returns
+            -------
+                DataSet list of DA
+        """
+        dataset_tree = self.get_dataset_as_tree(i_ds_name)
+        dataset_path_list = self._tree_to_list(dataset_tree)
+        dataset_da_list = []
+        for da_path in dataset_path_list:
+            dataset_da_list.append(".".join(da_path[1:]))  # skip 'root' element
+        return dataset_da_list
 
     def get_gsecontrols(self) -> list:
         """
@@ -981,6 +1001,16 @@ class LD(SCDNode):
     def get_LN_by_name(self, ln_Name: str) -> LN:
         if hasattr(self, ln_Name):
             return getattr(self, ln_Name)
+
+    def _tree_to_list(self, n):
+        if len(n[1]):
+            l = []
+            for next_n in n[1]:
+                for e in self._tree_to_list(next_n):
+                    l.append([n[0]] + e)
+            return l
+        else:
+            return [[n[0]]]
 
 
 class IED(SCDNode):
