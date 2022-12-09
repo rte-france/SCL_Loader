@@ -678,6 +678,25 @@ class DA(SCDNode):
         self._all_attributes = NODES_ATTRS['DA']
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
+    def get_associated_fc(self):
+        """
+            Returns the Functional Constraint associated with DA. If absent (SDA case), climb the hierarchy
+
+            Returns
+            -------
+            `fc`
+                Return an the value of the 'fc' field of the DA
+        """
+        if hasattr(self, "fc"):
+            return self.fc
+        else:
+            if isinstance(self.parent(), DA):
+                return self.parent().get_associated_fc()
+            else:
+                err = f'SCD not valid: No FC found for DA "{self.name}"'
+                LOGGER.error(err)
+                raise AttributeError(err)
+
 
 class DO(SCDNode):
     """
@@ -836,6 +855,129 @@ class LD(SCDNode):
 
         return extrefs
 
+    def get_dataset_as_dict(self, name):
+        """
+            Get the DataSet elements as a dictionary with FCDA attributes
+
+            Parameters
+            ----------
+            `name`
+                Name of the DataSet as defined in LD.LLN0.
+
+            Returns
+            -------
+                DataSet element as a dictionary including FCDA
+        """
+        XPATH_DATASET = f'./iec61850:LN0/iec61850:DataSet[@name="{name}"]'
+
+        xpath_result = self._node_elem.xpath(XPATH_DATASET, namespaces=NS)
+
+        if len(xpath_result) > 1:
+            err = f'SCD not valid: multiple instances of DataSet "{name}" found in LDevice "{self.name}"'
+            LOGGER.error(err)
+            raise AttributeError(err)
+
+        dataset = None
+        if xpath_result:
+            dataset = deepcopy(xpath_result[0].attrib)
+            dataset["FCDA"] = []
+            for fcda in list(xpath_result[0]):
+                fcda_itm = deepcopy(fcda.attrib)
+                dataset["FCDA"].append(fcda_itm)
+
+        return dataset
+
+    def get_dataset_as_tree(self, i_ds_name):
+        """
+            Get the DataSet elements as a tree matching the structure of data sent in control blocks
+
+            Parameters
+            ----------
+            `name`
+                Name of the DataSet as defined in LD.LLN0.
+
+            Returns
+            -------
+                DataSet element as a tree of DO and DA.
+                First node of Dataset is named 'root'
+        """
+
+        o_tree = ('root', [])  # tree starting with root, then object ref until node, then subsequent nodes
+        matching_datasets = [ds for ds in self.LLN0.DataSet if ds.name == i_ds_name]
+
+        for fcda in matching_datasets[0].FCDA:
+            fcda_fc = fcda.fc
+            fcda_doName = fcda.doName
+            fcda_prefix = fcda.prefix if hasattr(fcda, "prefix") else ""
+            fcda_daName = fcda.daName if hasattr(fcda, "daName") else ""
+            fcda_lnClass = fcda.lnClass
+            fcda_lnInst = "" if fcda_lnClass == "LLN0" else fcda.lnInst
+            fcda_ln_full_name = fcda_prefix + fcda_lnClass + str(fcda_lnInst)
+            fcda_dataref = f"{self.name}.{fcda_ln_full_name}.{fcda_doName}{'.' + fcda_daName if fcda_daName else ''}"
+
+            path_to_fcda_node = fcda_dataref.split(".")
+            node = self.get_LN_by_name(fcda_ln_full_name)
+            for i in range(1, len(path_to_fcda_node)):
+                if hasattr(node, path_to_fcda_node[i]):
+                    node = getattr(node, path_to_fcda_node[i])
+
+            fcda_leaves = node.get_DA_leaf_nodes()
+            fcda_branch = (fcda_dataref, [])
+
+            # simple case: fcda points to a single leaf node
+            if len(fcda_leaves) == 1:
+                o_tree[1].append(fcda_branch)
+                continue
+
+            # multiple leaves for node: build the branch and append to the root
+            for leaf_intadr, leaf_node in node.get_DA_leaf_nodes().items():
+                if leaf_node.get_associated_fc() == fcda_fc:
+                    if fcda_dataref == leaf_intadr:
+                        o_tree[1].append()
+                    fcda_tip = leaf_intadr.split(fcda_doName + ".")[-1].split(".")
+                    curr_branch = fcda_branch
+                    for i_node_depth in range(len(fcda_tip)):
+                        da_branch_lc = [e for e in curr_branch[1] if e[0] == fcda_tip[i_node_depth]]
+                        if da_branch_lc:
+                            curr_branch = da_branch_lc[0]
+                        else:
+                            # create the branch until the end
+                            curr_branch[1].append((fcda_tip[i_node_depth], []))
+                            curr_branch = curr_branch[1][-1]
+                    o_tree[1].append(fcda_branch)
+        return o_tree
+
+    def get_gsecontrols(self) -> list:
+        """
+            Get the GSEControl list, omitting inner elements (attributes only)
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the GSEControl attributes
+        """
+        XPATH_GSECONTROL = './iec61850:LN0/iec61850:GSEControl'
+        gsecontrols = []
+
+        xpath_result = self._node_elem.xpath(XPATH_GSECONTROL, namespaces=NS)
+
+        for item in xpath_result:
+            itm = deepcopy(item.attrib)
+            gsecontrols.append(itm)
+
+        return gsecontrols
+
+    def get_gsecontrol_by_name(self, name):
+        """
+            Get the GSEControl dict corresponding to input name
+
+            Returns
+            -------
+                GSEControl with input name, None if not found
+        """
+        filtered_gsecontrol = [g for g in self.get_gsecontrols() if "name" in g and g["name"] == name]
+        return filtered_gsecontrol[0] if len(filtered_gsecontrol) == 1 else None
+
     def get_LN_by_name(self, ln_Name: str) -> LN:
         if hasattr(self, ln_Name):
             return getattr(self, ln_Name)
@@ -916,6 +1058,8 @@ class IED(SCDNode):
     def _get_ap_by_name(self, ap_name):
         if hasattr(self, ap_name):
             return getattr(self, ap_name)
+
+
 
 
 class SCD_handler():
