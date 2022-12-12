@@ -428,7 +428,6 @@ class TestSCD_IOP():
         result = ld.get_dataset_da_list("PVR_LLN0_DS_RPT_DQCHG_EXT")
         assert(result == ['LDASLD.LLN0.Beh.q', 'LDASLD.LLN0.Beh.stVal', 'LDASLD.LLN0.Beh.t', 'LDASLD.LLN0.Beh.subEna', 'LDASLD.LLN0.Beh.subID', 'LDASLD.LLN0.Beh.subQ', 'LDASLD.LLN0.Beh.subVal', 'LDASLD.LLN0.Health.q', 'LDASLD.LLN0.Health.stVal', 'LDASLD.LLN0.Health.t', 'LDASLD.LLN0.Health.subEna', 'LDASLD.LLN0.Health.subID', 'LDASLD.LLN0.Health.subQ', 'LDASLD.LLN0.Health.subVal', 'LDASLD.LLN0.NamPlt.paramRev', 'LDASLD.LLN0.NamPlt.valRev', 'LDASLD.PTRC1.Beh.q', 'LDASLD.PTRC1.Beh.stVal', 'LDASLD.PTRC1.Beh.t', 'LDASLD.PTRC1.Beh.subEna', 'LDASLD.PTRC1.Beh.subID', 'LDASLD.PTRC1.Beh.subQ', 'LDASLD.PTRC1.Beh.subVal', 'LDASLD.PTRC1.Tr.general', 'LDASLD.PTRC1.Tr.neut', 'LDASLD.PTRC1.Tr.phsA', 'LDASLD.PTRC1.Tr.phsB', 'LDASLD.PTRC1.Tr.phsC', 'LDASLD.PTRC1.Tr.q', 'LDASLD.PTRC1.Tr.t', 'LDASLD.PTRC1.Tr.originSrc.orCat', 'LDASLD.PTRC1.Tr.originSrc.orIdent', 'LDASLD.PTRC2.Beh.q', 'LDASLD.PTRC2.Beh.stVal', 'LDASLD.PTRC2.Beh.t', 'LDASLD.PTRC2.Beh.subEna', 'LDASLD.PTRC2.Beh.subID', 'LDASLD.PTRC2.Beh.subQ', 'LDASLD.PTRC2.Beh.subVal', 'LDASLD.PTRC2.Tr.general', 'LDASLD.PTRC2.Tr.neut', 'LDASLD.PTRC2.Tr.phsA', 'LDASLD.PTRC2.Tr.phsB', 'LDASLD.PTRC2.Tr.phsC', 'LDASLD.PTRC2.Tr.q', 'LDASLD.PTRC2.Tr.t', 'LDASLD.PTRC2.Tr.originSrc.orCat', 'LDASLD.PTRC2.Tr.originSrc.orIdent', 'LDASLD.PTRC3.Beh.q', 'LDASLD.PTRC3.Beh.stVal', 'LDASLD.PTRC3.Beh.t', 'LDASLD.PTRC3.Beh.subEna', 'LDASLD.PTRC3.Beh.subID', 'LDASLD.PTRC3.Beh.subQ', 'LDASLD.PTRC3.Beh.subVal', 'LDASLD.PTRC3.Tr.general', 'LDASLD.PTRC3.Tr.neut', 'LDASLD.PTRC3.Tr.phsA', 'LDASLD.PTRC3.Tr.phsB', 'LDASLD.PTRC3.Tr.phsC', 'LDASLD.PTRC3.Tr.q', 'LDASLD.PTRC3.Tr.t', 'LDASLD.PTRC3.Tr.originSrc.orCat', 'LDASLD.PTRC3.Tr.originSrc.orIdent', 'LDASLD.RBRF1.Beh.q', 'LDASLD.RBRF1.Beh.stVal', 'LDASLD.RBRF1.Beh.t', 'LDASLD.RBRF1.Beh.subEna', 'LDASLD.RBRF1.Beh.subID', 'LDASLD.RBRF1.Beh.subQ', 'LDASLD.RBRF1.Beh.subVal', 'LDASLD.RBRF1.OpEx.general', 'LDASLD.RBRF1.OpEx.neut', 'LDASLD.RBRF1.OpEx.phsA', 'LDASLD.RBRF1.OpEx.phsB', 'LDASLD.RBRF1.OpEx.phsC', 'LDASLD.RBRF1.OpEx.q', 'LDASLD.RBRF1.OpEx.t', 'LDASLD.RBRF1.OpEx.originSrc.orCat', 'LDASLD.RBRF1.OpEx.originSrc.orIdent', 'LDASLD.RBRF2.Beh.q', 'LDASLD.RBRF2.Beh.stVal', 'LDASLD.RBRF2.Beh.t', 'LDASLD.RBRF2.Beh.subEna', 'LDASLD.RBRF2.Beh.subID', 'LDASLD.RBRF2.Beh.subQ', 'LDASLD.RBRF2.Beh.subVal', 'LDASLD.RBRF2.OpEx.general', 'LDASLD.RBRF2.OpEx.neut', 'LDASLD.RBRF2.OpEx.phsA', 'LDASLD.RBRF2.OpEx.phsB', 'LDASLD.RBRF2.OpEx.phsC', 'LDASLD.RBRF2.OpEx.q', 'LDASLD.RBRF2.OpEx.t', 'LDASLD.RBRF2.OpEx.originSrc.orCat', 'LDASLD.RBRF2.OpEx.originSrc.orIdent', 'LDASLD.RBRF3.Beh.q', 'LDASLD.RBRF3.Beh.stVal', 'LDASLD.RBRF3.Beh.t', 'LDASLD.RBRF3.OpEx.general', 'LDASLD.RBRF3.OpEx.neut', 'LDASLD.RBRF3.OpEx.phsA', 'LDASLD.RBRF3.OpEx.phsB', 'LDASLD.RBRF3.OpEx.phsC', 'LDASLD.RBRF3.OpEx.q', 'LDASLD.RBRF3.OpEx.t', 'LDASLD.RBRF3.OpEx.originSrc.orCat', 'LDASLD.RBRF3.OpEx.originSrc.orIdent', 'LDASLD.LPHD0.NamPlt.paramRev', 'LDASLD.LPHD0.NamPlt.valRev', 'LDASLD.LPHD0.PhyHealth.q', 'LDASLD.LPHD0.PhyHealth.stVal', 'LDASLD.LPHD0.PhyHealth.t', 'LDASLD.LPHD0.PhyHealth.subEna', 'LDASLD.LPHD0.PhyHealth.subID', 'LDASLD.LPHD0.PhyHealth.subQ', 'LDASLD.LPHD0.PhyHealth.subVal', 'LDASLD.LPHD0.Proxy.q', 'LDASLD.LPHD0.Proxy.stVal', 'LDASLD.LPHD0.Proxy.t', 'LDASLD.LPHD0.Proxy.subEna', 'LDASLD.LPHD0.Proxy.subID', 'LDASLD.LPHD0.Proxy.subQ', 'LDASLD.LPHD0.Proxy.subVal', 'LDASLD.LLN0.Mod.q', 'LDASLD.LLN0.Mod.stVal', 'LDASLD.LLN0.Mod.t', 'LDASLD.LLN0.Mod.subEna', 'LDASLD.LLN0.Mod.subID', 'LDASLD.LLN0.Mod.subQ', 'LDASLD.LLN0.Mod.subVal', 'LDASLD.RBRF3.Beh.subEna', 'LDASLD.RBRF3.Beh.subID', 'LDASLD.RBRF3.Beh.subQ', 'LDASLD.RBRF3.Beh.subVal'])
 
-
     def test_get_ld_gsecontrols(self):
         ied = self.scd.get_IED_by_name('BCU_4LINE2_1')
         ld = ied.get_children_LDs()[0]
@@ -443,6 +442,21 @@ class TestSCD_IOP():
 
         assert ld.get_gsecontrol_by_name("toto") is None
         assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT") == {'appID': 'XX_BCU_4LINE2_1_LDADD_1/LLN0.PVR_LLN0_CB_GSE_EXT', 'confRev': '01', 'datSet': 'PVR_LLN0_GSE_EXT', 'fixedOffs': 'false', 'name': 'PVR_LLN0_CB_GSE_EXT', 'securityEnable': 'None', 'type': 'GOOSE'}
+
+    def test_get_ld_reportcontrols(self):
+        ied = self.scd.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_reportcontrols()
+        assert len(result) == 1
+        assert result[0] == {'bufTime': '0', 'buffered': 'true', 'confRev': '01', 'datSet': 'PVR_LLN0_DS_RPT_DQCHG_EXT', 'indexed': 'true', 'intgPd': '0', 'name': 'PVR_LLN0_CB_RPT_DQCHG_EXT', 'rptID': 'XX_BCU_4LINE2_1_LDADD_1/LLN0.PVR_LLN0_CB_RPT_DQCHG_EXT'}
+
+    def test_get_ld_reportcontrol_by_name(self):
+        ied = self.scd.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        assert ld.get_reportcontrol_by_name("toto") is None
+        assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT") == {'bufTime': '0', 'buffered': 'true', 'confRev': '01', 'datSet': 'PVR_LLN0_DS_RPT_DQCHG_EXT', 'indexed': 'true', 'intgPd': '0', 'name': 'PVR_LLN0_CB_RPT_DQCHG_EXT', 'rptID': 'XX_BCU_4LINE2_1_LDADD_1/LLN0.PVR_LLN0_CB_RPT_DQCHG_EXT'}
 
     def test_LD_get_LN_by_name(self):
         ied = self.scd.get_IED_by_name('AUT1A_SITE_1')

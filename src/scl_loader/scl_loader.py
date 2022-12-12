@@ -967,6 +967,27 @@ class LD(SCDNode):
             dataset_da_list.append(".".join(da_path[1:]))  # skip 'root' element
         return dataset_da_list
 
+    def get_dataset_tree_da_path(self, i_ds_name):
+        """
+            Get the array of DA intAdr present in a dataset
+
+            Parameters
+            ----------
+            `i_ds_name`
+                Name of the DataSet as defined in LD.LLN0.
+
+            Returns
+            -------
+                DataSet list of DA
+        """
+        dataset_tree = self.get_dataset_as_tree(i_ds_name)
+        dataset_path_list = self._tree_to_list(dataset_tree)
+        dataset_da_list = []
+        for da_path in dataset_path_list:
+            dataset_da_list.append(".".join(da_path[1:]))  # skip 'root' element
+        return dataset_da_list
+
+
     def get_gsecontrols(self) -> list:
         """
             Get the GSEControl list, omitting inner elements (attributes only)
@@ -997,6 +1018,37 @@ class LD(SCDNode):
         """
         filtered_gsecontrol = [g for g in self.get_gsecontrols() if "name" in g and g["name"] == name]
         return filtered_gsecontrol[0] if len(filtered_gsecontrol) == 1 else None
+
+    def get_reportcontrols(self) -> list:
+        """
+            Get the ReportControl list, omitting inner elements (attributes only)
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the ReportControl attributes
+        """
+        XPATH_REPORTCONTROL = './iec61850:LN0/iec61850:ReportControl'
+        reportcontrols = []
+
+        xpath_result = self._node_elem.xpath(XPATH_REPORTCONTROL, namespaces=NS)
+
+        for item in xpath_result:
+            itm = deepcopy(item.attrib)
+            reportcontrols.append(itm)
+
+        return reportcontrols
+
+    def get_reportcontrol_by_name(self, name):
+        """
+            Get the ReportControl dict corresponding to input name
+
+            Returns
+            -------
+                ReportControl with input name, None if not found
+        """
+        filtered_reportcontrol = [g for g in self.get_reportcontrols() if "name" in g and g["name"] == name]
+        return filtered_reportcontrol[0] if len(filtered_reportcontrol) == 1 else None
 
     def get_LN_by_name(self, ln_Name: str) -> LN:
         if hasattr(self, ln_Name):
