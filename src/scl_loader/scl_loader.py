@@ -412,6 +412,42 @@ class SCDNode:
                     results.append(item)
         return results
 
+    def get_name_subtree(self, fc_filter: str = None):
+        """
+            get_name_subtree
+
+            Return
+            ----------
+            `i_obj_path`
+                Tree of 2-tuple elements (name, [subelem])
+        """
+        tree = {}
+        node_depth = len(self._get_intadr(self).split("."))
+
+        for leaf_path, leaf_node in self.get_DA_leaf_nodes().items():
+            if fc_filter is None or leaf_node.get_associated_fc() == fc_filter:
+                node = tree
+                for level in leaf_path.split(".")[node_depth-1:]:
+                    node = node.setdefault(level, dict())
+        tree_as_tuples = self._recursive_dict_to_tuple(tree)
+        return tree_as_tuples[0]
+
+    def _recursive_dict_to_tuple(self, i_dict):
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Recursive reshaping dict tree in list of
+            2-tuple: < name of the node, list of 2-tuple children>
+
+            Parameters
+            ----------
+            `i_dict` (optional)
+                dict to reshape
+        """
+        if not i_dict:
+            return []
+        return [(k, self._recursive_dict_to_tuple(v)) for k, v in i_dict.items()]
+
     def _create_node(self, node_elem: etree.Element, **kwargs):
         """
             /!\\ PRIVATE : do not use /!\\
@@ -509,14 +545,7 @@ class SCDNode:
         """
         if node is not None:
             if self._is_leaf(node):
-                ancestor = node.parent()
-                IntAdr = node.name
-                while ancestor is not None:
-                    IntAdr = ancestor.name + '.' + IntAdr
-                    if ancestor.parent is not None and ancestor.tag != 'LDevice':
-                        ancestor = ancestor.parent()
-                    else:
-                        ancestor = None
+                IntAdr = self._get_intadr(node)
 
                 mmsAdr = ''
                 u_mmsAdr = ''
@@ -534,6 +563,32 @@ class SCDNode:
                 children = node.get_children()
                 for child in children:
                     self._collect_DA_leaf_nodes(child, leaves, mms)
+
+    def _get_intadr(self, node) -> str:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Get intadr of SCDNode
+
+            Parameters
+            ----------
+            `node`
+                The SCDNode to check
+
+            Returns
+            -------
+            `str`
+                Return the int adr of the node
+        """
+        IntAdr = node.name
+        ancestor = node.parent()
+        while ancestor is not None:
+            IntAdr = ancestor.name + '.' + IntAdr
+            if ancestor.parent is not None and ancestor.tag != 'LDevice':
+                ancestor = ancestor.parent()
+            else:
+                ancestor = None
+        return IntAdr
 
     def _create_by_node_elem(self, node: etree.Element):
         """
@@ -921,30 +976,8 @@ class LD(SCDNode):
                 if hasattr(node, path_to_fcda_node[i]):
                     node = getattr(node, path_to_fcda_node[i])
 
-            fcda_leaves = node.get_DA_leaf_nodes()
-            fcda_branch = (fcda_dataref, [])
+            o_tree[1].append((fcda_dataref, node.get_name_subtree(fc_filter=fcda_fc)[1]))
 
-            # simple case: fcda points to a single leaf node
-            if len(fcda_leaves) == 1:
-                o_tree[1].append(fcda_branch)
-                continue
-
-            # multiple leaves for node: build the branch and append to the root
-            for leaf_intadr, leaf_node in node.get_DA_leaf_nodes().items():
-                if leaf_node.get_associated_fc() == fcda_fc:
-                    if fcda_dataref == leaf_intadr:
-                        o_tree[1].append()
-                    fcda_tip = leaf_intadr.split(fcda_doName + ".")[-1].split(".")
-                    curr_branch = fcda_branch
-                    for i_node_depth in range(len(fcda_tip)):
-                        da_branch_lc = [e for e in curr_branch[1] if e[0] == fcda_tip[i_node_depth]]
-                        if da_branch_lc:
-                            curr_branch = da_branch_lc[0]
-                        else:
-                            # create the branch until the end
-                            curr_branch[1].append((fcda_tip[i_node_depth], []))
-                            curr_branch = curr_branch[1][-1]
-            o_tree[1].append(fcda_branch)
         return o_tree
 
     def get_dataset_da_list(self, i_ds_name):
@@ -1137,11 +1170,24 @@ class IED(SCDNode):
         ln = ld.get_LN_by_name(ln_Name)
         return ln
 
+    def get_node_by_ref(self, data_ref: str, ap_name: str = DEFAULT_AP) -> SCDNode:
+        data_path = data_ref.replace("/", ".").split(".")
+        node = self
+        if len(data_path) > 0:
+            node = self.get_LD_by_inst(data_path.pop(0))
+        if len(data_path) > 0:
+            node = node.get_LN_by_name(data_path.pop(0))
+        while len(data_path) > 0:
+            node = getattr(node, data_path.pop(0))
+        if node is None:
+            err = f'Could not reach data node with reference {data_ref} in IED {self.name}'
+            LOGGER.error(err)
+            raise AttributeError(err)
+        return node
+
     def _get_ap_by_name(self, ap_name):
         if hasattr(self, ap_name):
             return getattr(self, ap_name)
-
-
 
 
 class SCD_handler():
