@@ -7,6 +7,7 @@ import re
 import weakref
 from copy import deepcopy
 from lxml import etree
+from enum import Enum, unique
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 XSD_PATH = os.path.join(HERE, 'resources', 'SCL_Schema', 'SCL.xsd')
@@ -17,7 +18,7 @@ MAX_VALIDATION_SIZE = 500  # taille en Mo
 REG_DA = r'(?:\{.+\})?[BS]?DA'
 REG_DO = r'(?:\{.+\})?S?DO'
 REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
-REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P|DataSet|GSE)'  # |Server)'
+REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P|DataSet|GSE|GSEControl|ReportControl)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 DEFAULT_AP = 'PROCESS_AP'
@@ -107,7 +108,18 @@ NODES_ATTRS = {
         'fc',
         'ix'
     ],
+    'DataSet': [
+        'name'
+    ]
 }
+
+
+@unique
+class ServiceType(str, Enum):
+    Poll = 'Poll'
+    Report = 'Report'
+    GOOSE = 'GOOSE'
+    SMV = 'SMV'
 
 
 def _safe_convert_value(value: str) -> any:
@@ -355,6 +367,8 @@ class SCDNode:
             new_node = LN0(self._datatypes, elem, self._fullattrs, **attributes)
         elif _get_tag_without_ns(elem.tag) == 'LDevice':
             new_node = LD(self._datatypes, elem, self._fullattrs, **attributes)
+        elif _get_tag_without_ns(elem.tag) == 'DataSet':
+            new_node = DataSet(self._datatypes, elem, self._fullattrs, **attributes)
         else:
             new_node = SCDNode(self._datatypes, elem, self._fullattrs, **attributes)
 
@@ -404,17 +418,27 @@ class SCDNode:
         """
 
         results = []
-        for _, item in self.__dict__.items():
+        for key, item in self.__dict__.items():
             if isinstance(item, SCDNode):
                 if tag is None:
                     results.append(item)
                 elif item.tag == tag:
                     results.append(item)
+            elif isinstance(item, list) and re.fullmatch(REG_ARRAY_TAGS, key):
+                if tag is None:
+                    results += item
+                elif key == tag:
+                    results += item
         return results
 
     def get_name_subtree(self, fc_filter: str = None):
         """
             get_name_subtree
+
+            Parameters
+            ----------
+            `fc_filter` (optional)
+                Functional constraint string
 
             Return
             ----------
@@ -580,15 +604,16 @@ class SCDNode:
             `str`
                 Return the int adr of the node
         """
-        IntAdr = node.name
+        assert isinstance(node, (LD, LN, DO, DA)), "Invalid SCDNode level, exected LD, LN, DO or DA"
+        int_adr = node.name
         ancestor = node.parent()
         while ancestor is not None:
-            IntAdr = ancestor.name + '.' + IntAdr
+            int_adr = ancestor.name + '.' + int_adr
             if ancestor.parent is not None and ancestor.tag != 'LDevice':
                 ancestor = ancestor.parent()
             else:
                 ancestor = None
-        return IntAdr
+        return int_adr
 
     def _create_by_node_elem(self, node: etree.Element):
         """
@@ -854,6 +879,124 @@ class LN0(LN):
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
 
+class DataSet(SCDNode):
+    """
+        Class to manage a DataSet
+    """
+    _data_tree = None
+
+    def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
+        """
+            Constructor
+
+            Parameters
+            ----------
+            `datatypes`
+                Instance of the DataTypeTemplates object from the SCD/SCL file.
+
+            `node_elem` (optional)
+                etree.Element element from the SCD/SCL file to build the node object.
+
+            `fullattrs` (optional)
+                If True, all the possible attributes for the SCD objects will be created
+                even if they are not described in the SCD/SCL file.
+
+            `kwargs` (optional)
+                Dictionary of the node attributes.
+
+            /!\\ At least one of node_elem or kwargs must be provided /!\\
+        """
+        self._all_attributes = NODES_ATTRS['DataSet']
+        super().__init__(datatypes, node_elem, fullattrs, **kwargs)
+
+    def as_tree(self) -> dict:
+        """
+            Get the DataSet elements as a tree matching the structure of data sent in control blocks
+            Root node of Dataset is named 'root', e.g.:
+                 ('root', [
+                    ('pathuntilSDA1', [
+                        ('DA1', []),
+                        ('DA2', [
+                            ('SDA21', []),
+                            ('SDA22', [])
+                        ])
+                    ]),
+                    ('pathuntilSDA2', [
+                       ('DA1', []),
+                       ('DA2', [])
+                    ])
+                ])
+
+                
+            Returns
+            -------
+                DataSet element as a tree of DO and DA.
+        """
+        if self._data_tree is not None:
+            return self._data_tree
+
+        self._data_tree = ('root', [])  # tree starting with root, then object ref until node, then subsequent nodes
+        ld = self.parent().parent()  # DataSet is located in LD.LLN0
+
+        for fcda in self.FCDA:
+            fcda_fc = fcda.fc
+            fcda_doName = fcda.doName
+            fcda_prefix = fcda.prefix if hasattr(fcda, "prefix") else ""
+            fcda_daName = fcda.daName if hasattr(fcda, "daName") else ""
+            fcda_lnClass = fcda.lnClass
+            fcda_lnInst = "" if fcda_lnClass == "LLN0" else fcda.lnInst
+            fcda_ln_full_name = fcda_prefix + fcda_lnClass + str(fcda_lnInst)
+            fcda_dataref = f"{ld.name}.{fcda_ln_full_name}.{fcda_doName}{'.' + fcda_daName if fcda_daName else ''}"
+
+            path_to_fcda_node = fcda_dataref.split(".")
+            node = ld.get_LN_by_name(fcda_ln_full_name)
+            for i in range(1, len(path_to_fcda_node)):
+                if hasattr(node, path_to_fcda_node[i]):
+                    node = getattr(node, path_to_fcda_node[i])
+
+            self._data_tree[1].append((fcda_dataref, node.get_name_subtree(fc_filter=fcda_fc)[1]))
+
+        return self._data_tree
+
+    def as_list(self) -> list:
+        """
+            Get the array of DA path present in a dataset
+
+            Returns
+            -------
+                List of DA in DataSet
+        """
+        dataset_path_list = self._tree_to_list(self.as_tree())
+        return [".".join(da_path[1:]) for da_path in dataset_path_list]  # skip 'root' element
+
+    def get_path_in_dataset(self, da_path: str) -> list:
+        """
+            Convert a DA path into a list of keys corresponding to tree nodes
+
+            Parameters
+                ----------
+                `da_path`
+                    DA path (LD.LN.DO[.SDO].DA[.SDA])
+            Returns
+            -------
+                list of keys to reach DA in Dataset tree
+        """
+        seq = [path_list for path_list in self._tree_to_list(self.as_tree()) if ".".join(path_list[1:]) == da_path]
+        if len(seq) == 0:
+            raise AttributeError(f"get_path_in_dataset: DA '{da_path}' not found in DataSet '{self.name}'")
+        return seq[0]
+
+    def _tree_to_list(self, n):
+        if len(n[1]):
+            l = []
+            for next_n in n[1]:
+                for e in self._tree_to_list(next_n):
+                    l.append([n[0]] + e)
+            return l
+        else:
+            return [[n[0]]]
+
+
 class LD(SCDNode):
     """
         Class to manage a LD
@@ -890,16 +1033,17 @@ class LD(SCDNode):
 
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-    def get_inputs_extrefs(self) -> list:
+    def get_inputs_extrefs(self, service_type: ServiceType = None) -> list:
         """
-            Get the input GOOSE extRefs list
+            Get the input extRefs list
 
             Returns
             -------
             `[]`
                 An array of objects containing the extRefs attributes
         """
-        XPATH_INPUTS_EXTREFS = './iec61850:LN0/iec61850:Inputs/iec61850:ExtRef'
+        service_type_str = f'[@serviceType="{service_type.value}"]' if service_type else ''
+        XPATH_INPUTS_EXTREFS = f'./iec61850:LN0/iec61850:Inputs/iec61850:ExtRef{service_type_str}'
         extrefs = []
 
         xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
@@ -910,192 +1054,88 @@ class LD(SCDNode):
 
         return extrefs
 
-    def get_dataset_as_dict(self, name):
+    def get_goose_inputs_extrefs(self) -> list:
         """
-            Get the DataSet elements as a dictionary with FCDA attributes
-
-            Parameters
-            ----------
-            `name`
-                Name of the DataSet as defined in LD.LLN0.
+            Get the GOOSE input extRefs list
 
             Returns
             -------
-                DataSet element as a dictionary including FCDA
+            `[]`
+                An array of objects containing the GOOSE extRefs attributes
         """
-        XPATH_DATASET = f'./iec61850:LN0/iec61850:DataSet[@name="{name}"]'
+        return self.get_inputs_extrefs(ServiceType.GOOSE)
 
-        xpath_result = self._node_elem.xpath(XPATH_DATASET, namespaces=NS)
-
-        if len(xpath_result) > 1:
-            err = f'SCD not valid: multiple instances of DataSet "{name}" found in LDevice "{self.name}"'
-            LOGGER.error(err)
-            raise AttributeError(err)
-
-        dataset = None
-        if xpath_result:
-            dataset = deepcopy(xpath_result[0].attrib)
-            dataset["FCDA"] = []
-            for fcda in list(xpath_result[0]):
-                fcda_itm = deepcopy(fcda.attrib)
-                dataset["FCDA"].append(fcda_itm)
-
-        return dataset
-
-    def get_dataset_as_tree(self, i_ds_name):
+    def get_datasets(self) -> list:
         """
-            Get the DataSet elements as a tree matching the structure of data sent in control blocks
-
-            Parameters
-            ----------
-            `i_ds_name`
-                Name of the DataSet as defined in LD.LLN0.
-
-            Returns
-            -------
-                DataSet element as a tree of DO and DA.
-                First node of Dataset is named 'root'
-        """
-
-        o_tree = ('root', [])  # tree starting with root, then object ref until node, then subsequent nodes
-        matching_datasets = [ds for ds in self.LLN0.DataSet if ds.name == i_ds_name]
-
-        for fcda in matching_datasets[0].FCDA:
-            fcda_fc = fcda.fc
-            fcda_doName = fcda.doName
-            fcda_prefix = fcda.prefix if hasattr(fcda, "prefix") else ""
-            fcda_daName = fcda.daName if hasattr(fcda, "daName") else ""
-            fcda_lnClass = fcda.lnClass
-            fcda_lnInst = "" if fcda_lnClass == "LLN0" else fcda.lnInst
-            fcda_ln_full_name = fcda_prefix + fcda_lnClass + str(fcda_lnInst)
-            fcda_dataref = f"{self.name}.{fcda_ln_full_name}.{fcda_doName}{'.' + fcda_daName if fcda_daName else ''}"
-
-            path_to_fcda_node = fcda_dataref.split(".")
-            node = self.get_LN_by_name(fcda_ln_full_name)
-            for i in range(1, len(path_to_fcda_node)):
-                if hasattr(node, path_to_fcda_node[i]):
-                    node = getattr(node, path_to_fcda_node[i])
-
-            o_tree[1].append((fcda_dataref, node.get_name_subtree(fc_filter=fcda_fc)[1]))
-
-        return o_tree
-
-    def get_dataset_da_list(self, i_ds_name):
-        """
-            Get the array of DA intAdr present in a dataset
-
-            Parameters
-            ----------
-            `i_ds_name`
-                Name of the DataSet as defined in LD.LLN0.
-
-            Returns
-            -------
-                DataSet list of DA
-        """
-        dataset_tree = self.get_dataset_as_tree(i_ds_name)
-        dataset_path_list = self._tree_to_list(dataset_tree)
-        dataset_da_list = []
-        for da_path in dataset_path_list:
-            dataset_da_list.append(".".join(da_path[1:]))  # skip 'root' element
-        return dataset_da_list
-
-    def get_dataset_tree_da_path(self, i_ds_name):
-        """
-            Get the array of DA intAdr present in a dataset
-
-            Parameters
-            ----------
-            `i_ds_name`
-                Name of the DataSet as defined in LD.LLN0.
-
-            Returns
-            -------
-                DataSet list of DA
-        """
-        dataset_tree = self.get_dataset_as_tree(i_ds_name)
-        dataset_path_list = self._tree_to_list(dataset_tree)
-        dataset_da_list = []
-        for da_path in dataset_path_list:
-            dataset_da_list.append(".".join(da_path[1:]))  # skip 'root' element
-        return dataset_da_list
-
-
-    def get_gsecontrols(self) -> list:
-        """
-            Get the GSEControl list, omitting inner elements (attributes only)
+            Get the GSEControl list
 
             Returns
             -------
             `[]`
                 An array of objects containing the GSEControl attributes
         """
-        XPATH_GSECONTROL = './iec61850:LN0/iec61850:GSEControl'
-        gsecontrols = []
+        return self.LLN0.DataSet if hasattr(self.LLN0, "DataSet") else []
 
-        xpath_result = self._node_elem.xpath(XPATH_GSECONTROL, namespaces=NS)
-
-        for item in xpath_result:
-            itm = deepcopy(item.attrib)
-            gsecontrols.append(itm)
-
-        return gsecontrols
-
-    def get_gsecontrol_by_name(self, name):
+    def get_dataset_by_name(self, name: str) -> DataSet:
         """
-            Get the GSEControl dict corresponding to input name
+            Get the DataSet
 
             Returns
             -------
                 GSEControl with input name, None if not found
         """
-        filtered_gsecontrol = [g for g in self.get_gsecontrols() if "name" in g and g["name"] == name]
+        filtered_dataset = [d for d in self.get_datasets() if d.name == name]
+        return filtered_dataset[0] if len(filtered_dataset) == 1 else None
+
+    def get_gsecontrols(self) -> list:
+        """
+            Get the GSEControl list
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the GSEControl attributes
+        """
+        return self.LLN0.GSEControl if hasattr(self.LLN0, "GSEControl") else []
+
+    def get_gsecontrol_by_name(self, name: str) -> SCDNode:
+        """
+            Get the GSEControl
+
+            Returns
+            -------
+                GSEControl with input name, None if not found
+        """
+        filtered_gsecontrol = [g for g in self.get_gsecontrols() if g.name == name]
         return filtered_gsecontrol[0] if len(filtered_gsecontrol) == 1 else None
 
     def get_reportcontrols(self) -> list:
         """
-            Get the ReportControl list, omitting inner elements (attributes only)
+            Get the ReportControl list
 
             Returns
             -------
             `[]`
                 An array of objects containing the ReportControl attributes
         """
-        XPATH_REPORTCONTROL = './iec61850:LN0/iec61850:ReportControl'
-        reportcontrols = []
+        return self.LLN0.ReportControl if hasattr(self.LLN0, "ReportControl") else []
 
-        xpath_result = self._node_elem.xpath(XPATH_REPORTCONTROL, namespaces=NS)
-
-        for item in xpath_result:
-            itm = deepcopy(item.attrib)
-            reportcontrols.append(itm)
-
-        return reportcontrols
-
-    def get_reportcontrol_by_name(self, name):
+    def get_reportcontrol_by_name(self, name: str) -> SCDNode:
         """
-            Get the ReportControl dict corresponding to input name
+            Get the ReportControl
 
             Returns
             -------
                 ReportControl with input name, None if not found
         """
-        filtered_reportcontrol = [g for g in self.get_reportcontrols() if "name" in g and g["name"] == name]
+        filtered_reportcontrol = [r for r in self.get_reportcontrols() if r.name == name]
         return filtered_reportcontrol[0] if len(filtered_reportcontrol) == 1 else None
 
     def get_LN_by_name(self, ln_Name: str) -> LN:
         if hasattr(self, ln_Name):
             return getattr(self, ln_Name)
 
-    def _tree_to_list(self, n):
-        if len(n[1]):
-            l = []
-            for next_n in n[1]:
-                for e in self._tree_to_list(next_n):
-                    l.append([n[0]] + e)
-            return l
-        else:
-            return [[n[0]]]
+
 
 
 class IED(SCDNode):
@@ -1130,25 +1170,27 @@ class IED(SCDNode):
         self._LDs = {}
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-    def get_inputs_extrefs(self) -> list:
+    def get_inputs_extrefs(self, service_type: ServiceType = None) -> list:
         """
-            Get the input GOOSE extRefs list
+            Get the input extRefs list
 
             Returns
             -------
             `[]`
                 An array of objects containing the extRefs attributes
         """
-        XPATH_INPUTS_EXTREFS = './iec61850:AccessPoint[@name="PROCESS_AP"]/*/iec61850:LDevice/iec61850:LN0/iec61850:Inputs/iec61850:ExtRef'
-        extrefs = []
+        return [e for ld in self.get_children_LDs() for e in ld.get_inputs_extrefs(service_type)]
 
-        xpath_result = self._node_elem.xpath(XPATH_INPUTS_EXTREFS, namespaces=NS)
+    def get_goose_inputs_extrefs(self) -> list:
+        """
+            Get the GOOSE input extRefs list
 
-        for item in xpath_result:
-            itm = deepcopy(item.attrib)
-            extrefs.append(itm)
-
-        return extrefs
+            Returns
+            -------
+            `[]`
+                An array of objects containing the GOOSE extRefs attributes
+        """
+        return self.get_inputs_extrefs(ServiceType.GOOSE)
 
     def get_children_LDs(self, ap_name: str = DEFAULT_AP) -> list:
         ap = self._get_ap_by_name(ap_name)
@@ -1171,10 +1213,26 @@ class IED(SCDNode):
         return ln
 
     def get_node_by_ref(self, data_ref: str, ap_name: str = DEFAULT_AP) -> SCDNode:
+        f"""
+            Get a SCDNode from its reference
+
+            Parameters
+            ----------
+            `data_ref`
+                reference in the format 'LD.LN.DO[.SDO(s)].DA[.SDA(s)]'
+
+            `ap_name` (optional)
+                Access point name (default = {DEFAULT_AP})
+
+            Returns
+            -------
+            `node`
+                SCDNode
+        """
         data_path = data_ref.replace("/", ".").split(".")
         node = self
         if len(data_path) > 0:
-            node = self.get_LD_by_inst(data_path.pop(0))
+            node = self.get_LD_by_inst(data_path.pop(0), ap_name)
         if len(data_path) > 0:
             node = node.get_LN_by_name(data_path.pop(0))
         while len(data_path) > 0:
@@ -1188,6 +1246,7 @@ class IED(SCDNode):
     def _get_ap_by_name(self, ap_name):
         if hasattr(self, ap_name):
             return getattr(self, ap_name)
+
 
 
 class SCD_handler():
@@ -1378,6 +1437,15 @@ class SCD_handler():
                                 if iP.Val is not None:
                                     return iP.Val, iCnxAP.apName
             return None, None    # Not found
+
+    def get_GSEs(self, ied_name: str) -> list:
+        for subnet in self.Communication.get_children('SubNetwork'):  # browse all iED SubNetWork
+            if subnet.type != "8-MMS":
+                continue
+            for conn_ap in subnet.get_children('ConnectedAP'):  # browse all Access Point(s) of the iED
+                if conn_ap.iedName == ied_name:
+                    return conn_ap.GSE if hasattr(conn_ap, "GSE") else []
+        return []
 
     def _check_scd_file(self) -> tuple:
         """
