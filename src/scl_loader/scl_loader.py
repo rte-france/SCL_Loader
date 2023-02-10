@@ -461,7 +461,7 @@ class SCDNode:
             /!\\ PRIVATE : do not use /!\\
 
             Recursive reshaping dict tree in list of
-            2-tuple: < name of the node, list of 2-tuple children>
+            2-tuple: ('name of the node', list of 2-tuple children)
 
             Parameters
             ----------
@@ -592,7 +592,7 @@ class SCDNode:
         """
             /!\\ PRIVATE : do not use /!\\
 
-            Get intadr of SCDNode
+            Get int adr of SCDNode
 
             Parameters
             ----------
@@ -927,9 +927,9 @@ class DataSet(SCDNode):
                     ])
                 ])
 
-                
             Returns
             -------
+            `()`
                 DataSet element as a tree of DO and DA.
         """
         if self._data_tree is not None:
@@ -964,6 +964,7 @@ class DataSet(SCDNode):
 
             Returns
             -------
+            `[]`
                 List of DA in DataSet
         """
         dataset_path_list = self._tree_to_list(self.as_tree())
@@ -974,11 +975,13 @@ class DataSet(SCDNode):
             Convert a DA path into a list of keys corresponding to tree nodes
 
             Parameters
-                ----------
-                `da_path`
-                    DA path (LD.LN.DO[.SDO].DA[.SDA])
+            ----------
+            `da_path`
+                DA path (LD.LN.DO[.SDO].DA[.SDA])
+
             Returns
             -------
+            `[]`
                 list of keys to reach DA in Dataset tree
         """
         seq = [path_list for path_list in self._tree_to_list(self.as_tree()) if ".".join(path_list[1:]) == da_path]
@@ -1082,6 +1085,7 @@ class LD(SCDNode):
 
             Returns
             -------
+            `node`
                 GSEControl with input name, None if not found
         """
         filtered_dataset = [d for d in self.get_datasets() if d.name == name]
@@ -1104,6 +1108,7 @@ class LD(SCDNode):
 
             Returns
             -------
+            `node`
                 GSEControl with input name, None if not found
         """
         filtered_gsecontrol = [g for g in self.get_gsecontrols() if g.name == name]
@@ -1126,6 +1131,7 @@ class LD(SCDNode):
 
             Returns
             -------
+            `node``
                 ReportControl with input name, None if not found
         """
         filtered_reportcontrol = [r for r in self.get_reportcontrols() if r.name == name]
@@ -1425,6 +1431,14 @@ class SCD_handler():
         return result
 
     def get_IP_Adr(self, ied_name: str):
+        """
+            Get IP address from GSE for an IED
+
+            Returns
+            -------
+            `str`
+                IP of the IED
+        """
         for iComm in self.Communication.get_children('SubNetwork'):  # browse all iED SubNetWork
             if iComm.type != "8-MMS":  # IP can be found only in MMS access point '.
                 continue
@@ -1439,6 +1453,14 @@ class SCD_handler():
             return None, None    # Not found
 
     def get_GSEs(self, ied_name: str) -> list:
+        """
+            List the GSE SCDNodes of the IED
+
+            Returns
+            -------
+            `[]`
+                List of GSEs
+        """
         for subnet in self.Communication.get_children('SubNetwork'):  # browse all iED SubNetWork
             if subnet.type != "8-MMS":
                 continue
