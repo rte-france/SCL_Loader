@@ -390,8 +390,8 @@ class SCDNode:
             Returns
             -------
             `array`
-                Return an dictionnary of found children SCDNodes : array[IntAdr] = SCDNode
-                (IntAdr is the path build with the names of the ancestors starting at the SCDNode)
+                Return an dictionnary of found children SCDNodes : array[int_addr] = SCDNode
+                (int_addr is the path build with the names of the ancestors starting at the SCDNode)
         """
 
         leaves = {}
@@ -446,7 +446,7 @@ class SCDNode:
                 Tree of 2-tuple elements (name, [subelem])
         """
         tree = {}
-        node_depth = len(self._get_intadr(self).split("."))
+        node_depth = len(self.get_int_addr(self).split("."))
 
         for leaf_path, leaf_node in self.get_DA_leaf_nodes().items():
             if fc_filter is None or leaf_node.get_associated_fc() == fc_filter:
@@ -468,9 +468,7 @@ class SCDNode:
             `i_dict` (optional)
                 dict to reshape
         """
-        if not i_dict:
-            return []
-        return [(k, self._recursive_dict_to_tuple(v)) for k, v in i_dict.items()]
+        return [(k, self._recursive_dict_to_tuple(v)) for k, v in i_dict.items()] if i_dict else []
 
     def _create_node(self, node_elem: etree.Element, **kwargs):
         """
@@ -564,34 +562,20 @@ class SCDNode:
 
             Returns
             -------
-            `{IntAdr : node}`
+            `{int_addr : node}`
                 The found leaves dictionnary.
         """
         if node is not None:
             if self._is_leaf(node):
-                IntAdr = self._get_intadr(node)
+                leaves[self.get_int_addr(node)] = node
 
-                mmsAdr = ''
-                u_mmsAdr = ''
-
-                if mms:  # mms adresses ok only if the root is a LD
-                    for item in IntAdr.split('.'):
-                        mmsAdr += SEP1 + item
-                        u_mmsAdr += SEP2 + item
-                    setattr(node, 'mmsAdr', mmsAdr[1:])
-                    setattr(node, 'u_mmsAdr', u_mmsAdr[1:])
-
-                setattr(node, 'IntAdr', IntAdr)
-                leaves[IntAdr] = node
             else:
                 children = node.get_children()
                 for child in children:
                     self._collect_DA_leaf_nodes(child, leaves, mms)
 
-    def _get_intadr(self, node) -> str:
+    def get_int_addr(self, node) -> str:
         """
-            /!\\ PRIVATE : do not use /!\\
-
             Get int adr of SCDNode
 
             Parameters
@@ -602,18 +586,48 @@ class SCDNode:
             Returns
             -------
             `str`
-                Return the int adr of the node
+                Return the internal address of the node
         """
-        assert isinstance(node, (LD, LN, DO, DA)), "Invalid SCDNode level, exected LD, LN, DO or DA"
-        int_adr = node.name
+        assert isinstance(node, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
+        int_addr = node.name
+        if node.parent is None:
+            logging.debug(f'SCDNode::get_int_addr: parent node of node: {self.name} is None, cannot build int_addr')
+            return None
         ancestor = node.parent()
         while ancestor is not None:
-            int_adr = ancestor.name + '.' + int_adr
+            int_addr = ancestor.name + '.' + int_addr
             if ancestor.parent is not None and ancestor.tag != 'LDevice':
                 ancestor = ancestor.parent()
             else:
                 ancestor = None
-        return int_adr
+        return int_addr
+
+    def get_object_reference(self) -> str:
+        """
+            Get object reference as defined by IEC61850-8-1, section 8.1.3.2.3
+
+            Returns
+            -------
+            `str`
+                Return the object reference of the node
+        """
+        assert isinstance(self, (LD, LN, DO, DA, DataSet)), "Invalid SCDNode level, expect LD, LN, DO, DA or DataSet"
+        if isinstance(self, LD):
+            if hasattr(self, 'ldName'):
+                return self.ldName
+            else:  # ldName is optional, if absent, use <IEDName><LDInst>
+                if self.parent is None:
+                    logging.debug(f'SCDNode::_get_object_reference: parent object not found for LD {self.name}')
+                    return None
+                return self.parent().parent().name + self.name
+
+        else:
+            if self.parent is None:
+                logging.debug(f'SCDNode::_get_object_reference: parent node not found '
+                              f'to build object reference for node with name {self.name}')
+                return None
+            sep = '/' if isinstance(self.parent(), LD) else '.'
+            return self.parent().get_object_reference() + sep + self.name
 
     def _create_by_node_elem(self, node: etree.Element):
         """
@@ -806,7 +820,6 @@ class DO(SCDNode):
         self._all_attributes = NODES_ATTRS['DO']
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
-
 class LN(SCDNode):
     """
         Class to manage a LN
@@ -906,8 +919,8 @@ class DataSet(SCDNode):
 
             /!\\ At least one of node_elem or kwargs must be provided /!\\
         """
-        self._all_attributes = NODES_ATTRS['DataSet']
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
+        self._all_attributes = NODES_ATTRS['DataSet']
 
     def as_tree(self) -> dict:
         """
@@ -1033,7 +1046,6 @@ class LD(SCDNode):
         else:
             inst = kwargs.get('inst')
             kwargs.update({'name': inst})
-
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
     def get_inputs_extrefs(self, service_type: ServiceType = None) -> list:

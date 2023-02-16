@@ -309,9 +309,8 @@ class TestSCD_OPEN():
         assert len(da_list) == 54166
         for da in da_list.values():
             assert da.tag == 'DA' or da.tag == 'BDA'
-            assert hasattr(da, 'mmsAdr')
-            assert hasattr(da, 'u_mmsAdr')
-            assert hasattr(da, 'IntAdr')
+            assert ied.get_int_addr(da) is not None
+
         assert da_list['LD_all.LLN0.OpTmh.blkEna'].name == 'blkEna'
         self._end_perfo_stats()
 
@@ -594,4 +593,14 @@ class TestSCD_IOP():
         assert(ln.Tr.get_name_subtree() == ('Tr',   [('d', []),    ('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]))
         assert(ln.Tr.originSrc.get_name_subtree() == ('originSrc', [('orCat', []), ('orIdent', [])]))
         assert(ln.get_name_subtree("ST") == ('PTRC2', [('Beh', [('q', []), ('stVal', []), ('t', [])]), ('Tr', [('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]))
+
+    def test_object_reference(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        with pytest.raises(AssertionError):
+            ied.get_name_subtree()
+        assert ln.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2'
+        assert ln.Tr.d.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.d'
+        assert ln.Tr.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr'
+        assert ln.Tr.originSrc.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.originSrc'
 
