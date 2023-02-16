@@ -791,6 +791,21 @@ class DA(SCDNode):
                 LOGGER.error(err)
                 raise AttributeError(err)
 
+    def get_mms_var_name(self) -> str:
+        """
+            Get MMS variable name as defined by IEC61850-8-1, section 7.3.4 (including domain name)
+
+            Returns
+            -------
+            `str`
+                Return the MMS variable name of the node
+        """
+        obj_ref = self.get_object_reference()
+        if not obj_ref:
+            raise AttributeError('DO::get_mms_var_name: invalid object reference')
+        obj_ref_parts = obj_ref.split(".")
+        obj_ref_parts[0] += '$' + self.get_associated_fc()
+        return "$".join(obj_ref_parts)
 
 class DO(SCDNode):
     """
@@ -819,6 +834,27 @@ class DO(SCDNode):
         """
         self._all_attributes = NODES_ATTRS['DO']
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
+
+    def get_mms_var_name(self, fc: str) -> str:
+        """
+            Get MMS variable name as defined by IEC61850-8-1, section 7.3.3 (including domain name)
+
+            Parameter
+            -------
+            `fc`
+                Functional constraint string to include in the variable name
+
+            Returns
+            -------
+            `str`
+                Return the MMS variable name of the node
+        """
+        obj_ref = self.get_object_reference()
+        if not obj_ref:
+            raise AttributeError('DO::get_mms_var_name: invalid object reference')
+        obj_ref_parts = obj_ref.split(".")
+        obj_ref_parts[0] += '$' + fc
+        return "$".join(obj_ref_parts)
 
 class LN(SCDNode):
     """

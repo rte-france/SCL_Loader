@@ -594,13 +594,18 @@ class TestSCD_IOP():
         assert(ln.Tr.originSrc.get_name_subtree() == ('originSrc', [('orCat', []), ('orIdent', [])]))
         assert(ln.get_name_subtree("ST") == ('PTRC2', [('Beh', [('q', []), ('stVal', []), ('t', [])]), ('Tr', [('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]))
 
-    def test_object_reference(self):
+    def test_get_object_reference(self):
         ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
-        with pytest.raises(AssertionError):
-            ied.get_name_subtree()
         assert ln.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2'
         assert ln.Tr.d.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.d'
         assert ln.Tr.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr'
         assert ln.Tr.originSrc.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.originSrc'
+
+    def test_get_mms_var_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        assert ln.Tr.d.get_mms_var_name() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$DC$Tr$d'
+        assert ln.Tr.get_mms_var_name('DC') == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$DC$Tr'
+        assert ln.Tr.originSrc.get_mms_var_name() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$ST$Tr$originSrc'
 
