@@ -337,7 +337,7 @@ def test_open_iop():
     assert scd
     assert scd.Header.toolID == 'PVR GEN TOOL'  # pylint: disable=maybe-no-member
     assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE[0].Address.P[0].type == 'VLAN-PRIORITY'  # pylint: disable=maybe-no-member
-    assert scd.Substation[0].SITEP41.name == 'SITEP41'  # pylint: disable=maybe-no-member
+    assert scd.Substation[0].VoltageLevel[0].name == 'SITEP41'  # pylint: disable=maybe-no-member
     del scd
 
 
@@ -621,4 +621,4 @@ class TestSCD_IOP():
     def test_get_GOCB_reference(self):
         ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
         ld = ied.get_children_LDs()[0]
-        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").get_GOCB_reference() == "toto"
+        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").get_GOCB_reference() == "BCU_4LINE2_1LDADD/LLN0$GO$PVR_LLN0_CB_GSE_EXT"

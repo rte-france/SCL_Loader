@@ -645,7 +645,7 @@ class SCDNode:
         ld = self.get_parent_with_class(LD)
         ln = self.get_parent_with_class(LN)  # expected is LLN0
         if ied and ld and ln:
-            return f'{ied.name}{ld.name}/{ln.name}$GO${self.CBName}'
+            return f'{ied.name}{ld.name}/{ln.name}$GO${self.name}'
 
 
     def get_parent_with_class(self, parent_class: type):
