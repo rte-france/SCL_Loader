@@ -390,7 +390,7 @@ class SCDNode:
             Returns
             -------
             `array`
-                Return an dictionnary of found children SCDNodes : array[int_addr] = SCDNode
+                Return an dictionnary of found children SCDNodes : int_addr: SCDNode
                 (int_addr is the path build with the names of the ancestors starting at the SCDNode)
         """
 
@@ -611,7 +611,7 @@ class SCDNode:
             `str`
                 Return the object reference of the node
         """
-        assert isinstance(self, (LD, LN, DO, DA, DataSet)), "Invalid SCDNode level, expect LD, LN, DO, DA or DataSet"
+        assert isinstance(self, (LD, LN, DO, DA, DataSet)), "Invalid SCDNode level, expects LD, LN, DO, DA or DataSet"
         if isinstance(self, LD):
             if hasattr(self, 'ldName'):
                 return self.ldName
@@ -628,6 +628,41 @@ class SCDNode:
                 return None
             sep = '/' if isinstance(self.parent(), LD) else '.'
             return self.parent().get_object_reference() + sep + self.name
+
+    def get_GOCB_reference(self) -> str:
+        """
+            Get GOOSE Control block Reference, with format ldName/lnName$GO$CBName
+                NOTE: If a class GSEControl is created, this should belong to it
+
+            Returns
+            -------
+            `str`
+                Return the reference of the GOOSE Control Block
+        """
+        assert self.tag == 'GSEControl', "Invalid SCDNode, expects tag GSEControl"
+        ied = self.get_parent_with_class(IED)
+        ld = self.get_parent_with_class(LD)
+        ln = self.get_parent_with_class(LN)  # expected is LLN0
+        if ied and ld and ln:
+            return f'{ied.name}{ld.name}/{ln.name}$GO${self.CBName}'
+
+
+    def get_parent_with_class(self, parent_class: type):
+        """
+            Get parent node with input Class (e.g. IED, LD, LN, DO, DA)
+
+            Returns
+            -------
+            `SCDNode`
+                Return the first node matching request, else None
+        """
+        p = self
+        while True:
+            if p.parent is None:
+                return None
+            p = p.parent()
+            if isinstance(p, parent_class):
+                return p
 
     def _create_by_node_elem(self, node: etree.Element):
         """
@@ -804,8 +839,9 @@ class DA(SCDNode):
         if not obj_ref:
             raise AttributeError('DO::get_mms_var_name: invalid object reference')
         obj_ref_parts = obj_ref.split(".")
-        obj_ref_parts[0] += '$' + self.get_associated_fc()
+        obj_ref_parts.insert(1, self.get_associated_fc())
         return "$".join(obj_ref_parts)
+
 
 class DO(SCDNode):
     """

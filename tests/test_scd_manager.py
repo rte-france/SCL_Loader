@@ -493,7 +493,7 @@ class TestSCD_IOP():
         ld = ied.get_children_LDs()[0]
 
         result = ld.get_gsecontrols()
-        print(result[0].__dict__)
+
         assert len(result) == 1
         assert result[0].type == 'GOOSE'
         assert result[0].datSet == 'PVR_LLN0_GSE_EXT'
@@ -502,8 +502,7 @@ class TestSCD_IOP():
     def test_LD_get_gsecontrol_by_name(self):
         ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
         ld = ied.get_children_LDs()[0]
-        print(isinstance(ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT"), SCDNode))
-        print(ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").__dict__)
+
         assert ld.get_gsecontrol_by_name("toto") is None
         assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").name == "PVR_LLN0_CB_GSE_EXT"
         assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").datSet == "PVR_LLN0_GSE_EXT"
@@ -609,3 +608,17 @@ class TestSCD_IOP():
         assert ln.Tr.get_mms_var_name('DC') == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$DC$Tr'
         assert ln.Tr.originSrc.get_mms_var_name() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$ST$Tr$originSrc'
 
+    def test_get_parent_with_class(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        da = ied.PROCESS_AP.Server.LDASLD.PTRC2.Tr.originSrc
+        assert ied.get_parent_with_class(LD) is None
+        assert da.get_parent_with_class(DO).name == 'Tr'
+        assert da.get_parent_with_class(LN).name == 'PTRC2'
+        assert da.get_parent_with_class(LD).name == 'LDASLD'
+        assert da.get_parent_with_class(IED).name == 'AUT1A_SITE_1'
+        assert da.get_parent_with_class(DA) is None
+
+    def test_get_GOCB_reference(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").get_GOCB_reference() == "toto"
