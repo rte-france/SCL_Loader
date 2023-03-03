@@ -601,6 +601,15 @@ class TestSCD_IOP():
         assert ln.Tr.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr'
         assert ln.Tr.originSrc.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.originSrc'
 
+    def test_get_DO_nodes(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.PROCESS_AP.Server.LDASLD
+
+        assert len(ld.get_DO_nodes()) == 27
+        assert "LDASLD.PTRC2.Tr" in ld.PTRC2.Tr.get_DO_nodes()
+        assert "LDASLD.PTRC2.Tr" in ld.PTRC2.Tr.originSrc.get_DO_nodes()
+        assert ld.PTRC2.Tr.originSrc.get_DO_nodes()["LDASLD.PTRC2.Tr"].cdc == 'ACT'
+
     def test_get_mms_var_name(self):
         ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ln = ied.PROCESS_AP.Server.LDASLD.PTRC2

@@ -396,11 +396,30 @@ class SCDNode:
         """
 
         leaves = {}
-        mms = False
-        if self.tag in ['IED', 'LN', 'LN0', 'LDevice']:
-            mms = True
-        self._collect_DA_leaf_nodes(self, leaves, mms)
+        self._collect_DA_leaf_nodes(self, leaves)
         return leaves
+
+    def get_DO_nodes(self) -> dict:
+        """
+            Recursively retrieve the leaf DO of the current node.
+
+            Returns
+            -------
+            `array`
+                Return an dictionnary of found children SCDNodes : int_addr: SCDNode
+                (int_addr is the path build with the names of the ancestors starting at the SCDNode)
+        """
+        do_nodes = {}
+        if isinstance(self, (DA, DO)):
+            node = self
+            while node.parent is not None:
+                if isinstance(node.parent(), LN):
+                    do_nodes[self.get_int_addr(node)] = node
+                node = node.parent()
+        else:
+            self._collect_DO_nodes(self, do_nodes)
+
+        return do_nodes
 
     def get_children(self, tag: str = None) -> list:
         """
@@ -544,7 +563,7 @@ class SCDNode:
 
         return len(node.get_children()) == 0 and isinstance(node, DA) and hasattr(node, 'parent')
 
-    def _collect_DA_leaf_nodes(self, node, leaves: dict, mms: bool = False) -> dict:
+    def _collect_DA_leaf_nodes(self, node, leaves: dict) -> dict:
         """
             /!\\ PRIVATE : do not use /!\\
 
@@ -558,9 +577,6 @@ class SCDNode:
             `leaves`
                 The found leaves dictionnary
 
-            `mms`
-                If True, compute the mms and u_mms adresses
-
             Returns
             -------
             `{int_addr : node}`
@@ -573,7 +589,36 @@ class SCDNode:
             else:
                 children = node.get_children()
                 for child in children:
-                    self._collect_DA_leaf_nodes(child, leaves, mms)
+                    self._collect_DA_leaf_nodes(child, leaves)
+
+    def _collect_DO_nodes(self, node, do_nodes: dict) -> dict:
+        """
+            /!\\ PRIVATE : do not use /!\\
+
+            Retrieve DO nodes
+
+            Parameters
+            ----------
+            `node`
+                SCDNode to compute
+
+            `do`
+                The found do
+
+            Returns
+            -------
+            `{int_addr : node}`
+                The found leaves dictionnary.
+        """
+        if node is not None:
+            if isinstance(node, DO):
+                do_nodes[self.get_int_addr(node)] = node
+
+            else:
+                children = node.get_children()
+                for child in children:
+                    self._collect_DO_nodes(child, do_nodes)
+
 
     def get_int_addr(self, node) -> str:
         """
