@@ -1348,7 +1348,7 @@ class IED(SCDNode):
         ln = ld.get_LN_by_name(ln_Name)
         return ln
 
-    def get_node_by_ref(self, data_ref: str, ap_name: str = DEFAULT_AP) -> SCDNode:
+    def get_node_by_path(self, data_ref: str, ap_name: str = DEFAULT_AP) -> SCDNode:
         f"""
             Get a SCDNode from its reference
 

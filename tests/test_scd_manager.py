@@ -441,16 +441,16 @@ class TestSCD_IOP():
     def test_IED_get_node_by_ref(self):
         ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
 
-        assert ied.get_node_by_ref('LDASLD').name == 'LDASLD'
-        assert ied.get_node_by_ref('LDASLD.LLN0').name == 'LLN0'
-        assert ied.get_node_by_ref('LDASLD.LLN0.Beh').name == 'Beh'
-        assert ied.get_node_by_ref('LDASLD/LLN0.Beh').name == 'Beh'
-        assert ied.get_node_by_ref('LDASLD.LLN0.Beh.stVal').name == 'stVal'
-        assert ied.get_node_by_ref('LDASLD.PTRC3.Beh.subQ').name == 'subQ'
+        assert ied.get_node_by_path('LDASLD').name == 'LDASLD'
+        assert ied.get_node_by_path('LDASLD.LLN0').name == 'LLN0'
+        assert ied.get_node_by_path('LDASLD.LLN0.Beh').name == 'Beh'
+        assert ied.get_node_by_path('LDASLD/LLN0.Beh').name == 'Beh'
+        assert ied.get_node_by_path('LDASLD.LLN0.Beh.stVal').name == 'stVal'
+        assert ied.get_node_by_path('LDASLD.PTRC3.Beh.subQ').name == 'subQ'
         with pytest.raises(AttributeError):
-            ied.get_node_by_ref('toto')
+            ied.get_node_by_path('toto')
         with pytest.raises(AttributeError):
-            ied.get_node_by_ref('')
+            ied.get_node_by_path('')
 
 
     def test_DataSet_as_tree(self):
