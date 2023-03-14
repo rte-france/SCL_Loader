@@ -1367,6 +1367,8 @@ class IED(SCDNode):
         """
         data_path = data_ref.replace("/", ".").split(".")
         node = self
+        if len(data_path) > 0 and data_path[0] == self.name:
+            data_path.pop(0)  # remove IED name if present
         if len(data_path) > 0:
             node = self.get_LD_by_inst(data_path.pop(0), ap_name)
         if len(data_path) > 0:
