@@ -44,7 +44,7 @@
 	</xs:attributeGroup>
 	<xs:attributeGroup name="agLNRef">
 		<xs:attributeGroup ref="agLDRef"/>
-		<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+		<xs:attribute name="prefix" type="tPrefix" use="optional" default=""/>
 		<xs:attribute name="lnClass" type="tLNClassEnum" use="required"/>
 		<xs:attribute name="lnInst" type="tLNInstOrEmpty" use="required"/>
 	</xs:attributeGroup>
@@ -355,7 +355,7 @@
 	<xs:complexType name="tLN">
 		<xs:complexContent>
 			<xs:extension base="tAnyLN">
-				<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+				<xs:attribute name="prefix" type="tPrefix" use="optional" default=""/>
 				<xs:attribute name="lnClass" type="tLNClassEnum" use="required"/>
 				<xs:attribute name="inst" type="tLNInst" use="required"/>
 			</xs:extension>
@@ -386,7 +386,7 @@
 	</xs:complexType>
 	<xs:complexType name="tFCDA">
 		<xs:attribute name="ldInst" type="tLDInst" use="optional"/>
-		<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+		<xs:attribute name="prefix" type="tPrefix" use="optional" default=""/>
 		<xs:attribute name="lnClass" type="tLNClassEnum" use="optional"/>
 		<xs:attribute name="lnInst" type="tLNInst" use="optional"/>
 		<xs:attribute name="doName" type="tFullDOName" use="optional"/>
@@ -462,7 +462,7 @@
 		<xs:complexContent>
 			<xs:extension base="tControlWithTriggerOpt">
 				<xs:attribute name="ldInst" type="tLDInst" use="optional"/>
-				<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+				<xs:attribute name="prefix" type="tPrefix" use="optional" default=""/>
 				<xs:attribute name="lnClass" type="tLNClassEnum" use="optional" default="LLN0"/>
 				<xs:attribute name="lnInst" type="tLNInst" use="optional"/>
 				<xs:attribute name="logName" type="tLogName" use="required"/>
