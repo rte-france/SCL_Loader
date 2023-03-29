@@ -116,7 +116,7 @@
 		<xs:restriction base="xs:normalizedString">
 			<xs:maxLength value="11"/>
 			<xs:pattern value="[A-Za-z][0-9A-Za-z_]*"/>
-			<xs:pattern value=" "/>
+			<xs:pattern value=""/>
 		</xs:restriction>
 	</xs:simpleType>
 	<xs:simpleType name="tLNInst">

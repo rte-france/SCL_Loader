@@ -429,7 +429,7 @@
 			<xs:extension base="tUnNaming">
 				<xs:attribute name="iedName" type="tIEDNameOrNone" use="optional" default="None"/>
 				<xs:attribute name="ldInst" type="tLDInstOrEmpty" use="optional" default=""/>
-				<xs:attribute name="prefix" type="tPrefix" use="optional" default=" "/>
+				<xs:attribute name="prefix" type="tPrefix" use="optional" default=""/>
 				<xs:attribute name="lnClass" type="tLNClassEnum" use="required"/>
 				<xs:attribute name="lnInst" type="tLNInstOrEmpty" use="optional" default=""/>
 				<xs:attribute name="lnType" type="tName" use="optional"/>
