@@ -24,6 +24,7 @@ from scl_loader import DO
 from scl_loader import DA
 from scl_loader import SCDNode
 from scl_loader import DataTypeTemplates
+from scl_loader import ServiceType
 
 LOGGER = logging.getLogger(__name__)
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -272,6 +273,7 @@ class TestSCD_OPEN():
         assert len(ln0.get_children('ReportControl')) == 157
         assert len(ln0.get_children('GSEControl')) == 157
         assert len(ln0.get_children('DO')) == 8
+        assert len(ln0.get_children()) == 479
         assert isinstance(getattr(ln0, 'Diag'), DO)
 
     def test_create_LD(self):
@@ -307,9 +309,8 @@ class TestSCD_OPEN():
         assert len(da_list) == 54166
         for da in da_list.values():
             assert da.tag == 'DA' or da.tag == 'BDA'
-            assert hasattr(da, 'mmsAdr')
-            assert hasattr(da, 'u_mmsAdr')
-            assert hasattr(da, 'IntAdr')
+            assert ied.get_int_addr(da) is not None
+
         assert da_list['LD_all.LLN0.OpTmh.blkEna'].name == 'blkEna'
         self._end_perfo_stats()
 
@@ -336,7 +337,7 @@ def test_open_iop():
     assert scd
     assert scd.Header.toolID == 'PVR GEN TOOL'  # pylint: disable=maybe-no-member
     assert scd.Communication.RSPACE_PROCESS_NETWORK.AUT1A_SITE_1.GSE[0].Address.P[0].type == 'VLAN-PRIORITY'  # pylint: disable=maybe-no-member
-    assert scd.Substation[0].SITEP41.name == 'SITEP41'  # pylint: disable=maybe-no-member
+    assert scd.Substation[0].VoltageLevel[0].name == 'SITEP41'  # pylint: disable=maybe-no-member
     del scd
 
 
@@ -371,44 +372,177 @@ def test_get_IP_Adr():
     (ip2, apName2) = scd.get_IP_Adr('IEDTEST_SITE_1')
     assert ip2 == '127.0.0.1'
     assert apName2 == "PROCESS_AP"
-    return True
 
 
 class TestSCD_IOP():
+    '''
+    !!! SCD_HANDLER set as class attribute because tests are not altering it
+    Set back SCD_HANDLER in setup/teadown methods if it is altered by any test
+    '''
+
+    SCD_HANDLER = SCD_handler(SCD_OPEN_IOP_PATH)
     def setup_method(self):
-        self.scd = SCD_handler(SCD_OPEN_IOP_PATH)
-        self.tIED = self.scd.get_all_IEDs()
+        pass
+        # self.SCD_HANDLER = SCD_handler(SCD_OPEN_IOP_PATH)
 
     def teardown_method(self):
-        del self.scd
-        del self.tIED
+        pass
+        # del self.SCD_HANDLER
 
-    def test_get_ied_extrefs(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+    def test_get_all_GSE(self):
+        all_gse = self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")
+        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].cbName == "PVR_LLN0_CB_GSE_INT")
+        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].Address.P[0].type == "VLAN-PRIORITY")
+        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].Address.P[0].Val == 4)
+        assert (len(self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")) == 11)
+        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_666") == [])
 
-        result = ied.get_inputs_goose_extrefs()
+    def test_extract_sub_SCD(self):
+        ref_scd2_hash = '4577fb05ea3cc39d637feb699b684cab2a73c216b2bc9bd8f194d3310e66c005'
+        ied_list = ['AUT1A_SITE_1', 'IEDTEST_SITE_1']
 
-        assert len(result) == 535
-        assert result[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3'}
-        assert result[525] == {'iedName': 'SCU1B_SITE_1', 'ldInst': 'LDITFUA', 'lnClass': 'SBAT', 'lnInst': '2', 'doName': 'BatEF', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'SBAT', 'pDO': 'BatEF', 'pServT': 'GOOSE', 'srcLDInst': 'LDITFUA', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDTGSEC_Terre Batterie UA_2_BOOLEAN_1_stVal_2'}
+        dest_path = self.SCD_HANDLER.extract_sub_SCD(ied_list)
+        assert 'AUT1A_SITE_1' in self.SCD_HANDLER._iter_get_IED_names_list()
+        assert os.path.exists(dest_path)
+        assert ref_scd2_hash == hashfile(dest_path)
 
-    def test_get_ied_lds(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+    def test_get_IP_Adr(self):
+        (ip1, apName1) = self.SCD_HANDLER.get_IP_Adr('AUT1A_SITE_1')
+        assert ip1 == '127.0.0.1'
+        assert apName1 == "PROCESS_AP"
+
+        (ip2, apName2) = self.SCD_HANDLER.get_IP_Adr('IEDTEST_SITE_1')
+        assert ip2 == '127.0.0.1'
+        assert apName2 == "PROCESS_AP"
+
+    def test_IED_get_extrefs(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+
+        extrefs = ied.get_inputs_extrefs()
+        assert len(extrefs) == 535
+        assert extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3'}
+        assert extrefs[525] == {'iedName': 'SCU1B_SITE_1', 'ldInst': 'LDITFUA', 'lnClass': 'SBAT', 'lnInst': '2', 'doName': 'BatEF', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'SBAT', 'pDO': 'BatEF', 'pServT': 'GOOSE', 'srcLDInst': 'LDITFUA', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDTGSEC_Terre Batterie UA_2_BOOLEAN_1_stVal_2'}
+
+        goose_extrefs = ied.get_goose_inputs_extrefs()
+        assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3'}
+        assert len(goose_extrefs) == 526
+
+        assert len(ied.get_inputs_extrefs(ServiceType.SMV)) == 0
+        assert len(ied.get_inputs_extrefs(ServiceType.Report)) == 0
+        assert len(ied.get_inputs_extrefs(ServiceType.Poll)) == 0
+
+    def test_IED_get_lds(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
 
         result = ied.get_children_LDs()
         assert len(result) == 11
         assert isinstance(result[0], LD)
 
-    def test_get_ld_extrefs(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+    def test_IED_get_node_by_ref(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+
+        assert ied.get_node_by_path('LDASLD').name == 'LDASLD'
+        assert ied.get_node_by_path('LDASLD.LLN0').name == 'LLN0'
+        assert ied.get_node_by_path('LDASLD.LLN0.Beh').name == 'Beh'
+        assert ied.get_node_by_path('LDASLD/LLN0.Beh').name == 'Beh'
+        assert ied.get_node_by_path('LDASLD.LLN0.Beh.stVal').name == 'stVal'
+        assert ied.get_node_by_path('LDASLD.PTRC3.Beh.subQ').name == 'subQ'
+        with pytest.raises(AttributeError):
+            ied.get_node_by_path('toto')
+        with pytest.raises(AttributeError):
+            ied.get_node_by_path('')
+
+
+    def test_DataSet_as_tree(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ld = ied.get_children_LDs()[0]
 
-        result = ld.get_inputs_goose_extrefs()
-        assert len(result) == 42
-        assert result[0] == {'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1'}
+        result = ld.get_dataset_by_name("PVR_LLN0_DS_RPT_DQCHG_EXT").as_tree()
+        assert(result == ('root', [('LDASLD.LLN0.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.LLN0.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.LLN0.Health', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.LLN0.Health',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.LLN0.NamPlt', [('paramRev', []), ('valRev', [])]),  ('LDASLD.PTRC1.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.PTRC1.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.PTRC1.Tr',   [('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.PTRC2.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.PTRC2.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.PTRC2.Tr',   [('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.PTRC3.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.PTRC3.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.PTRC3.Tr',   [('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.RBRF1.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.RBRF1.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.RBRF1.OpEx',   [('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.RBRF2.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.RBRF2.Beh',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.RBRF2.OpEx',   [('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.RBRF3.Beh', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.RBRF3.OpEx',   [('general', []),    ('neut', []), ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]),  ('LDASLD.LPHD0.NamPlt', [('paramRev', []), ('valRev', [])]),  ('LDASLD.LPHD0.PhyHealth', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.LPHD0.PhyHealth',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.LPHD0.Proxy', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.LPHD0.Proxy',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.LLN0.Mod', [('q', []), ('stVal', []), ('t', [])]),  ('LDASLD.LLN0.Mod',   [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])]),  ('LDASLD.RBRF3.Beh', [('subEna', []), ('subID', []), ('subQ', []), ('subVal', [])])]))
+
+    def test_DataSet_as_list(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_dataset_by_name("PVR_LLN0_DS_RPT_DQCHG_EXT").as_list()
+        assert(result == ['LDASLD.LLN0.Beh.q', 'LDASLD.LLN0.Beh.stVal', 'LDASLD.LLN0.Beh.t', 'LDASLD.LLN0.Beh.subEna', 'LDASLD.LLN0.Beh.subID', 'LDASLD.LLN0.Beh.subQ', 'LDASLD.LLN0.Beh.subVal', 'LDASLD.LLN0.Health.q', 'LDASLD.LLN0.Health.stVal', 'LDASLD.LLN0.Health.t', 'LDASLD.LLN0.Health.subEna', 'LDASLD.LLN0.Health.subID', 'LDASLD.LLN0.Health.subQ', 'LDASLD.LLN0.Health.subVal', 'LDASLD.LLN0.NamPlt.paramRev', 'LDASLD.LLN0.NamPlt.valRev', 'LDASLD.PTRC1.Beh.q', 'LDASLD.PTRC1.Beh.stVal', 'LDASLD.PTRC1.Beh.t', 'LDASLD.PTRC1.Beh.subEna', 'LDASLD.PTRC1.Beh.subID', 'LDASLD.PTRC1.Beh.subQ', 'LDASLD.PTRC1.Beh.subVal', 'LDASLD.PTRC1.Tr.general', 'LDASLD.PTRC1.Tr.neut', 'LDASLD.PTRC1.Tr.phsA', 'LDASLD.PTRC1.Tr.phsB', 'LDASLD.PTRC1.Tr.phsC', 'LDASLD.PTRC1.Tr.q', 'LDASLD.PTRC1.Tr.t', 'LDASLD.PTRC1.Tr.originSrc.orCat', 'LDASLD.PTRC1.Tr.originSrc.orIdent', 'LDASLD.PTRC2.Beh.q', 'LDASLD.PTRC2.Beh.stVal', 'LDASLD.PTRC2.Beh.t', 'LDASLD.PTRC2.Beh.subEna', 'LDASLD.PTRC2.Beh.subID', 'LDASLD.PTRC2.Beh.subQ', 'LDASLD.PTRC2.Beh.subVal', 'LDASLD.PTRC2.Tr.general', 'LDASLD.PTRC2.Tr.neut', 'LDASLD.PTRC2.Tr.phsA', 'LDASLD.PTRC2.Tr.phsB', 'LDASLD.PTRC2.Tr.phsC', 'LDASLD.PTRC2.Tr.q', 'LDASLD.PTRC2.Tr.t', 'LDASLD.PTRC2.Tr.originSrc.orCat', 'LDASLD.PTRC2.Tr.originSrc.orIdent', 'LDASLD.PTRC3.Beh.q', 'LDASLD.PTRC3.Beh.stVal', 'LDASLD.PTRC3.Beh.t', 'LDASLD.PTRC3.Beh.subEna', 'LDASLD.PTRC3.Beh.subID', 'LDASLD.PTRC3.Beh.subQ', 'LDASLD.PTRC3.Beh.subVal', 'LDASLD.PTRC3.Tr.general', 'LDASLD.PTRC3.Tr.neut', 'LDASLD.PTRC3.Tr.phsA', 'LDASLD.PTRC3.Tr.phsB', 'LDASLD.PTRC3.Tr.phsC', 'LDASLD.PTRC3.Tr.q', 'LDASLD.PTRC3.Tr.t', 'LDASLD.PTRC3.Tr.originSrc.orCat', 'LDASLD.PTRC3.Tr.originSrc.orIdent', 'LDASLD.RBRF1.Beh.q', 'LDASLD.RBRF1.Beh.stVal', 'LDASLD.RBRF1.Beh.t', 'LDASLD.RBRF1.Beh.subEna', 'LDASLD.RBRF1.Beh.subID', 'LDASLD.RBRF1.Beh.subQ', 'LDASLD.RBRF1.Beh.subVal', 'LDASLD.RBRF1.OpEx.general', 'LDASLD.RBRF1.OpEx.neut', 'LDASLD.RBRF1.OpEx.phsA', 'LDASLD.RBRF1.OpEx.phsB', 'LDASLD.RBRF1.OpEx.phsC', 'LDASLD.RBRF1.OpEx.q', 'LDASLD.RBRF1.OpEx.t', 'LDASLD.RBRF1.OpEx.originSrc.orCat', 'LDASLD.RBRF1.OpEx.originSrc.orIdent', 'LDASLD.RBRF2.Beh.q', 'LDASLD.RBRF2.Beh.stVal', 'LDASLD.RBRF2.Beh.t', 'LDASLD.RBRF2.Beh.subEna', 'LDASLD.RBRF2.Beh.subID', 'LDASLD.RBRF2.Beh.subQ', 'LDASLD.RBRF2.Beh.subVal', 'LDASLD.RBRF2.OpEx.general', 'LDASLD.RBRF2.OpEx.neut', 'LDASLD.RBRF2.OpEx.phsA', 'LDASLD.RBRF2.OpEx.phsB', 'LDASLD.RBRF2.OpEx.phsC', 'LDASLD.RBRF2.OpEx.q', 'LDASLD.RBRF2.OpEx.t', 'LDASLD.RBRF2.OpEx.originSrc.orCat', 'LDASLD.RBRF2.OpEx.originSrc.orIdent', 'LDASLD.RBRF3.Beh.q', 'LDASLD.RBRF3.Beh.stVal', 'LDASLD.RBRF3.Beh.t', 'LDASLD.RBRF3.OpEx.general', 'LDASLD.RBRF3.OpEx.neut', 'LDASLD.RBRF3.OpEx.phsA', 'LDASLD.RBRF3.OpEx.phsB', 'LDASLD.RBRF3.OpEx.phsC', 'LDASLD.RBRF3.OpEx.q', 'LDASLD.RBRF3.OpEx.t', 'LDASLD.RBRF3.OpEx.originSrc.orCat', 'LDASLD.RBRF3.OpEx.originSrc.orIdent', 'LDASLD.LPHD0.NamPlt.paramRev', 'LDASLD.LPHD0.NamPlt.valRev', 'LDASLD.LPHD0.PhyHealth.q', 'LDASLD.LPHD0.PhyHealth.stVal', 'LDASLD.LPHD0.PhyHealth.t', 'LDASLD.LPHD0.PhyHealth.subEna', 'LDASLD.LPHD0.PhyHealth.subID', 'LDASLD.LPHD0.PhyHealth.subQ', 'LDASLD.LPHD0.PhyHealth.subVal', 'LDASLD.LPHD0.Proxy.q', 'LDASLD.LPHD0.Proxy.stVal', 'LDASLD.LPHD0.Proxy.t', 'LDASLD.LPHD0.Proxy.subEna', 'LDASLD.LPHD0.Proxy.subID', 'LDASLD.LPHD0.Proxy.subQ', 'LDASLD.LPHD0.Proxy.subVal', 'LDASLD.LLN0.Mod.q', 'LDASLD.LLN0.Mod.stVal', 'LDASLD.LLN0.Mod.t', 'LDASLD.LLN0.Mod.subEna', 'LDASLD.LLN0.Mod.subID', 'LDASLD.LLN0.Mod.subQ', 'LDASLD.LLN0.Mod.subVal', 'LDASLD.RBRF3.Beh.subEna', 'LDASLD.RBRF3.Beh.subID', 'LDASLD.RBRF3.Beh.subQ', 'LDASLD.RBRF3.Beh.subVal'])
+
+    def test_DataSet_get_path_in_dataset(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.get_children_LDs()[0]
+        ds = ld.get_dataset_by_name("PVR_LLN0_DS_RPT_DQCHG_EXT")
+        assert ds.get_path_in_dataset('LDASLD.LLN0.Beh.stVal') == ['root', 'LDASLD.LLN0.Beh', "stVal"]
+        with pytest.raises(AttributeError):
+            ds.get_path_in_dataset('toto')
+
+    def test_LD_get_extrefs(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        extrefs = ld.get_inputs_extrefs()
+        assert len(extrefs) == 58
+        assert extrefs[0] == {'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1'}
+
+        goose_extrefs = ld.get_goose_inputs_extrefs()
+        assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3'}
+        assert len(goose_extrefs) == 21
+
+
+    def test_LD_get_gsecontrols(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_gsecontrols()
+
+        assert len(result) == 1
+        assert result[0].type == 'GOOSE'
+        assert result[0].datSet == 'PVR_LLN0_GSE_EXT'
+        assert result[0].name == 'PVR_LLN0_CB_GSE_EXT'
+
+    def test_LD_get_gsecontrol_by_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        assert ld.get_gsecontrol_by_name("toto") is None
+        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").name == "PVR_LLN0_CB_GSE_EXT"
+        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").datSet == "PVR_LLN0_GSE_EXT"
+
+    def test_LD_get_reportcontrols(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_reportcontrols()
+        assert len(result) == 1
+        assert result[0].buffered is True
+        assert result[0].datSet == 'PVR_LLN0_DS_RPT_DQCHG_EXT'
+
+    def test_LD_get_reportcontrol_by_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        assert ld.get_reportcontrol_by_name("toto") is None
+        assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT").buffered is True
+        assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT").datSet == 'PVR_LLN0_DS_RPT_DQCHG_EXT'
+
+    def test_LD_get_datasets(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        result = ld.get_datasets()
+        assert len(result) == 2
+        assert result[0].name == "PVR_LLN0_GSE_EXT"
+        assert len(result[0].FCDA) == 2
+
+    def test_LD_get_dataset_by_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+
+        assert ld.get_dataset_by_name("toto") is None
+        assert ld.get_dataset_by_name("PVR_LLN0_GSE_EXT").name == "PVR_LLN0_GSE_EXT"
+        assert len(ld.get_dataset_by_name("PVR_LLN0_GSE_EXT").FCDA) == 2
 
     def test_LD_get_LN_by_name(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ld = ied.get_children_LDs()[0]
         ln_name = 'PTRC1'
 
@@ -417,7 +551,7 @@ class TestSCD_IOP():
         assert result.name == ln_name
 
     def test_IED_get_LN_by_name(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ld_inst = 'LDASLD'
         ln_name = 'PTRC1'
 
@@ -426,7 +560,7 @@ class TestSCD_IOP():
         assert result.name == ln_name
 
     def test_IED_get_LD_by_inst(self):
-        ied = self.scd.get_IED_by_name('AUT1A_SITE_1')
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
         ld_inst = 'LDASLD'
 
         result = ied.get_LD_by_inst(ld_inst)
@@ -434,6 +568,66 @@ class TestSCD_IOP():
         assert result.name == ld_inst
 
     def test_get_ieds_by_type(self):
-        ieds = self.scd.get_IED_by_type('TYPE1')
+        ieds = self.SCD_HANDLER.get_IED_by_type('TYPE1')
         assert len(ieds) == 2
         assert isinstance(ieds[0], IED)
+
+    def test_get_associated_fc(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+
+        assert(ln.Tr.originSrc.orIdent.get_associated_fc() == "ST")
+        assert(ln.Tr.d.get_associated_fc() == "DC")
+        with pytest.raises(AttributeError):
+            ln.get_associated_fc()
+
+    def test_get_name_subtree(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        with pytest.raises(AssertionError):
+            ied.get_name_subtree()
+        assert(ied.PROCESS_AP.Server.LDASLD.get_name_subtree() == ('blkEna', []))
+        assert(ln.get_name_subtree() == ('PTRC2', [('Beh',   [('blkEna', []),    ('d', []),    ('q', []),    ('stVal', []),    ('subEna', []),    ('subID', []),    ('subQ', []),    ('subVal', []),    ('t', [])]),  ('Tr',   [('d', []),    ('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])])]))
+        assert(ln.Tr.d.get_name_subtree() == ('d', []) )
+        assert(ln.Tr.get_name_subtree() == ('Tr',   [('d', []),    ('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]))
+        assert(ln.Tr.originSrc.get_name_subtree() == ('originSrc', [('orCat', []), ('orIdent', [])]))
+        assert(ln.get_name_subtree("ST") == ('PTRC2', [('Beh', [('q', []), ('stVal', []), ('t', [])]), ('Tr', [('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]))
+
+    def test_get_object_reference(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        assert ln.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2'
+        assert ln.Tr.d.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.d'
+        assert ln.Tr.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr'
+        assert ln.Tr.originSrc.get_object_reference() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2.Tr.originSrc'
+
+    def test_get_DO_nodes(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ld = ied.PROCESS_AP.Server.LDASLD
+
+        assert len(ld.get_DO_nodes()) == 27
+        assert "LDASLD.PTRC2.Tr" in ld.PTRC2.Tr.get_DO_nodes()
+        assert "LDASLD.PTRC2.Tr" in ld.PTRC2.Tr.originSrc.get_DO_nodes()
+        assert ld.PTRC2.Tr.originSrc.get_DO_nodes()["LDASLD.PTRC2.Tr"].cdc == 'ACT'
+
+    def test_get_mms_var_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        assert ln.Tr.d.get_mms_var_name() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$DC$Tr$d'
+        assert ln.Tr.get_mms_var_name('DC') == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$DC$Tr'
+        assert ln.Tr.originSrc.get_mms_var_name() == 'XX_AUT1A_SITE_1_LDASLD_1/PTRC2$ST$Tr$originSrc'
+
+    def test_get_parent_with_class(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        da = ied.PROCESS_AP.Server.LDASLD.PTRC2.Tr.originSrc
+        assert ied.get_parent_with_class(LD) is None
+        assert da.get_parent_with_class(DO).name == 'Tr'
+        assert da.get_parent_with_class(LN).name == 'PTRC2'
+        assert da.get_parent_with_class(LD).name == 'LDASLD'
+        assert da.get_parent_with_class(IED).name == 'AUT1A_SITE_1'
+        assert da.get_parent_with_class(DA) is None
+
+    def test_get_GOCB_reference(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')
+        ld = ied.get_children_LDs()[0]
+        assert ld.get_gsecontrol_by_name("PVR_LLN0_CB_GSE_EXT").get_GOCB_reference() == "BCU_4LINE2_1LDADD/LLN0$GO$PVR_LLN0_CB_GSE_EXT"
