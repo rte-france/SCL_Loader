@@ -414,7 +414,7 @@ class SCDNode:
             node = self
             while node.parent is not None:
                 if isinstance(node.parent(), LN):
-                    do_nodes[self.get_int_addr(node)] = node
+                    do_nodes[node.get_path_from_ld()] = node
                 node = node.parent()
         else:
             self._collect_DO_nodes(self, do_nodes)
@@ -466,7 +466,7 @@ class SCDNode:
                 Tree of 2-tuple elements (name, [subelem])
         """
         tree = {}
-        node_depth = len(self.get_int_addr(self).split("."))
+        node_depth = len(self.get_path_from_ld().split("."))
 
         for leaf_path, leaf_node in self.get_DA_leaf_nodes().items():
             if fc_filter is None or leaf_node.get_associated_fc() == fc_filter:
@@ -584,7 +584,7 @@ class SCDNode:
         """
         if node is not None:
             if self._is_leaf(node):
-                leaves[self.get_int_addr(node)] = node
+                leaves[node.get_path_from_ld()] = node
 
             else:
                 children = node.get_children()
@@ -612,15 +612,14 @@ class SCDNode:
         """
         if node is not None:
             if isinstance(node, DO):
-                do_nodes[self.get_int_addr(node)] = node
+                do_nodes[node.get_path_from_ld()] = node
 
             else:
                 children = node.get_children()
                 for child in children:
                     self._collect_DO_nodes(child, do_nodes)
 
-
-    def get_int_addr(self, node) -> str:
+    def get_path_from_ld(self) -> str:
         """
             Get int adr of SCDNode
 
@@ -632,21 +631,23 @@ class SCDNode:
             Returns
             -------
             `str`
-                Return the internal address of the node
+                Return the path of the node from LD (format LD.LN.DO.DA)
         """
-        assert isinstance(node, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
-        int_addr = node.name
-        if node.parent is None:
-            logging.debug(f'SCDNode::get_int_addr: parent node of node: {self.name} is None, cannot build int_addr')
+        assert isinstance(self, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
+        path = self.name
+        if isinstance(self, LD):
+            return path
+        if self.parent is None:
+            logging.debug(f'SCDNode::get_path_from_ld: parent node of node: {self.name} is None, cannot build path')
             return None
-        ancestor = node.parent()
+        ancestor = self.parent()
         while ancestor is not None:
-            int_addr = ancestor.name + '.' + int_addr
+            path = ancestor.name + '.' + path
             if ancestor.parent is not None and ancestor.tag != 'LDevice':
                 ancestor = ancestor.parent()
             else:
                 ancestor = None
-        return int_addr
+        return path
 
     def get_object_reference(self) -> str:
         """
