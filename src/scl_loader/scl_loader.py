@@ -1528,16 +1528,12 @@ class SCD_handler():
                 The loaded IED object
         """
 
-        for ied1 in self._IEDs:
-            if hasattr(self._IEDs, 'type') and ied1['type'] == ied_type:
-                return ied1
-
         ied_elems = self._get_IED_elems_by_types([ied_type])
         result = []
-        for ied2 in ied_elems:
-            ied_name = ied2.get('name')
-            if not hasattr(self._IEDs, ied_name):
-                self._IEDs[ied_name] = IED(self.datatypes, ied2, self._fullattrs)
+        for ied_elem in ied_elems:
+            ied_name = ied_elem.get('name')
+            if ied_name not in self._IEDs:
+                self._IEDs[ied_name] = IED(self.datatypes, ied_elem, self._fullattrs)
 
             result.append(self._IEDs[ied_name])
 
