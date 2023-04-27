@@ -329,6 +329,7 @@ class SCDNode:
 
         if len(self.name) == 0:
             raise AttributeError('Name cannot be set')
+        self._path_from_ld = None
 
     def add_subnode_by_elem(self, elem: etree.Element):
         """
@@ -633,20 +634,16 @@ class SCDNode:
             `str`
                 Return the path of the node from LD (format LD.LN.DO.DA)
         """
+        if self._path_from_ld is not None:
+            return self._path_from_ld
         assert isinstance(self, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
         path = self.name
-        if isinstance(self, LD):
-            return path
-        if self.parent is None:
-            logging.debug(f'SCDNode::get_path_from_ld: parent node of node: {self.name} is None, cannot build path')
-            return None
-        ancestor = self.parent()
-        while ancestor is not None:
-            path = ancestor.name + '.' + path
-            if ancestor.parent is not None and ancestor.tag != 'LDevice':
-                ancestor = ancestor.parent()
-            else:
-                ancestor = None
+        if not isinstance(self, LD):
+            if self.parent is None:
+                logging.debug(f'SCDNode::get_path_from_ld: parent node of node: {self.name} is None, cannot build path')
+                return None
+            path = self.parent().get_path_from_ld() + '.' + path
+        self._path_from_ld = path
         return path
 
     def get_object_reference(self) -> str:
