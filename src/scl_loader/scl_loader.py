@@ -123,6 +123,10 @@ class ServiceType(str, Enum):
     SMV = 'SMV'
 
 
+class SCLLoaderError(AttributeError):
+    pass
+
+
 def _safe_convert_value(value: str) -> any:
     """
         Convert a string value in typed value une valeur string en valeur typée.
@@ -258,7 +262,6 @@ class DataTypeTemplates:
             tags[tag_key] = self._datatypes_root.xpath(item_xpath, namespaces=NS)
 
         return tags
-
 
 class SCDNode:
     """
@@ -823,10 +826,18 @@ class SCDNode:
                 upd_node._set_instances(inst_node)
 
 
+
+
 class DA(SCDNode):
     """
         Class to manage a DA / SDA / DAI
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -891,6 +902,12 @@ class DO(SCDNode):
     """
         Class to manage a DO / SDO / DOI
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -940,6 +957,13 @@ class LN(SCDNode):
     """
         Class to manage a LN
     """
+
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -1133,6 +1157,12 @@ class LD(SCDNode):
     """
         Class to manage a LD
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -1277,6 +1307,9 @@ class IED(SCDNode):
         Class to manage an IED
     """
     DEFAULT_AP = 'PROCESS_AP'
+
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'".format(type(self).__name__, self.name, item))
 
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
