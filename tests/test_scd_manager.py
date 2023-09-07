@@ -423,7 +423,7 @@ class TestSCD_IOP():
         assert extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3'}
         assert extrefs[525] == {'iedName': 'SCU1B_SITE_1', 'ldInst': 'LDITFUA', 'lnClass': 'SBAT', 'lnInst': '2', 'doName': 'BatEF', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'SBAT', 'pDO': 'BatEF', 'pServT': 'GOOSE', 'srcLDInst': 'LDITFUA', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDTGSEC_Terre Batterie UA_2_BOOLEAN_1_stVal_2'}
 
-        goose_extrefs = ied.get_goose_inputs_extrefs()
+        goose_extrefs = ied.get_inputs_goose_extrefs()
         assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'lnClass': 'CSWI', 'lnInst': '0', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDSL_1', 'srcCBName': 'PVR_LLN0_CB_GSE_EXT', 'desc': 'DYN_LDASLD_Position filtree sectionneur_5_Dbpos_1_stVal_3'}
         assert len(goose_extrefs) == 526
 
@@ -483,7 +483,7 @@ class TestSCD_IOP():
         assert len(extrefs) == 58
         assert extrefs[0] == {'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3', 'doName': 'Pos', 'iedName': 'IEDTEST_SITE_1', 'intAddr': 'VDF', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'pDO': 'Pos', 'pLN': 'CSWI', 'pServT': 'GOOSE', 'serviceType': 'GOOSE', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1'}
 
-        goose_extrefs = ld.get_goose_inputs_extrefs()
+        goose_extrefs = ld.get_inputs_goose_extrefs()
         assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3'}
         assert len(goose_extrefs) == 21
 
