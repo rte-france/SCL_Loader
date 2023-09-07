@@ -1187,7 +1187,7 @@ class LD(SCDNode):
 
         return extrefs
 
-    def get_goose_inputs_extrefs(self) -> list:
+    def get_inputs_goose_extrefs(self) -> list:
         """
             Get the GOOSE input extRefs list
 
@@ -1317,7 +1317,7 @@ class IED(SCDNode):
         """
         return [e for ld in self.get_children_LDs() for e in ld.get_inputs_extrefs(service_type)]
 
-    def get_goose_inputs_extrefs(self) -> list:
+    def get_inputs_goose_extrefs(self) -> list:
         """
             Get the GOOSE input extRefs list
 
