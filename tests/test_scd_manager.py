@@ -309,7 +309,7 @@ class TestSCD_OPEN():
         assert len(da_list) == 54166
         for da in da_list.values():
             assert da.tag == 'DA' or da.tag == 'BDA'
-            assert ied.get_int_addr(da) is not None
+            assert da.get_path_from_ld() is not None
 
         assert da_list['LD_all.LLN0.OpTmh.blkEna'].name == 'blkEna'
         self._end_perfo_stats()
@@ -586,12 +586,23 @@ class TestSCD_IOP():
         ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
         with pytest.raises(AssertionError):
             ied.get_name_subtree()
-        assert(ied.PROCESS_AP.Server.LDASLD.get_name_subtree() == ('blkEna', []))
+        assert(ied.PROCESS_AP.Server.LDASLD.get_name_subtree() == ('LDASLD', [('LLN0', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('Health', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('InRef1', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef2', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef3', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef4', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef5', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef6', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('InRef7', [('d', []), ('intAddr', []), ('purpose', []), ('setSrcCB', []), ('setSrcRef', []), ('setTstCB', []), ('setTstRef', []), ('tstEna', [])]), ('Mod', [('ctlModel', []), ('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('NamPlt', [('ldNs', []), ('d', []), ('paramRev', []), ('valRev', []), ('vendor', [])])]), ('RBRF2', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('OpEx', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]), ('RBRF1', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('OpEx', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]), ('PTRC2', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('Tr', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]), ('PTRC1', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('Tr', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]), ('RBRF3', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('OpEx', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]), ('LPHD0', [('NamPlt', [('configRev', []), ('d', []), ('paramRev', []), ('swRev', []), ('valRev', []), ('vendor', [])]), ('PhyHealth', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('PhyNam', [('d', []), ('hwRev', []), ('location', []), ('mRID', []), ('model', []), ('serNum', []), ('swRev', []), ('vendor', [])]), ('Proxy', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])])]), ('PTRC3', [('Beh', [('blkEna', []), ('d', []), ('q', []), ('stVal', []), ('subEna', []), ('subID', []), ('subQ', []), ('subVal', []), ('t', [])]), ('Tr', [('d', []), ('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])])]))
         assert(ln.get_name_subtree() == ('PTRC2', [('Beh',   [('blkEna', []),    ('d', []),    ('q', []),    ('stVal', []),    ('subEna', []),    ('subID', []),    ('subQ', []),    ('subVal', []),    ('t', [])]),  ('Tr',   [('d', []),    ('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])])]))
         assert(ln.Tr.d.get_name_subtree() == ('d', []) )
         assert(ln.Tr.get_name_subtree() == ('Tr',   [('d', []),    ('general', []),    ('neut', []),    ('phsA', []),    ('phsB', []),    ('phsC', []),    ('q', []),    ('t', []),    ('originSrc', [('orCat', []), ('orIdent', [])])]))
         assert(ln.Tr.originSrc.get_name_subtree() == ('originSrc', [('orCat', []), ('orIdent', [])]))
         assert(ln.get_name_subtree("ST") == ('PTRC2', [('Beh', [('q', []), ('stVal', []), ('t', [])]), ('Tr', [('general', []), ('neut', []), ('phsA', []), ('phsB', []), ('phsC', []), ('q', []), ('t', []), ('originSrc', [('orCat', []), ('orIdent', [])])])]))
+
+    def test_get_path_from_ld(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')
+        ln = ied.PROCESS_AP.Server.LDASLD.PTRC2
+        with pytest.raises(AssertionError):
+            ied.get_path_from_ld()
+        assert ied.PROCESS_AP.Server.LDASLD.get_path_from_ld() == "LDASLD"
+        assert ln.get_path_from_ld() == 'LDASLD.PTRC2'
+        assert ln.Tr.d.get_path_from_ld() =='LDASLD.PTRC2.Tr.d'
+        assert ln.Tr.get_path_from_ld() == 'LDASLD.PTRC2.Tr'
+        assert ln.Tr.originSrc.orCat.get_path_from_ld() == 'LDASLD.PTRC2.Tr.originSrc.orCat'
 
     def test_get_object_reference(self):
         ied = self.SCD_HANDLER.get_IED_by_name('AUT1A_SITE_1')

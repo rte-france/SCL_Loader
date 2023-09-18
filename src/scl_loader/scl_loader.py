@@ -123,6 +123,10 @@ class ServiceType(str, Enum):
     SMV = 'SMV'
 
 
+class SCLLoaderError(AttributeError):
+    pass
+
+
 def _safe_convert_value(value: str) -> any:
     """
         Convert a string value in typed value une valeur string en valeur typée.
@@ -259,7 +263,6 @@ class DataTypeTemplates:
 
         return tags
 
-
 class SCDNode:
     """
         Basic class to compute SCD nodes
@@ -329,6 +332,7 @@ class SCDNode:
 
         if len(self.name) == 0:
             raise AttributeError('Name cannot be set')
+        self._path_from_ld = None
 
     def add_subnode_by_elem(self, elem: etree.Element):
         """
@@ -414,7 +418,7 @@ class SCDNode:
             node = self
             while node.parent is not None:
                 if isinstance(node.parent(), LN):
-                    do_nodes[self.get_int_addr(node)] = node
+                    do_nodes[node.get_path_from_ld()] = node
                 node = node.parent()
         else:
             self._collect_DO_nodes(self, do_nodes)
@@ -466,7 +470,7 @@ class SCDNode:
                 Tree of 2-tuple elements (name, [subelem])
         """
         tree = {}
-        node_depth = len(self.get_int_addr(self).split("."))
+        node_depth = len(self.get_path_from_ld().split("."))
 
         for leaf_path, leaf_node in self.get_DA_leaf_nodes().items():
             if fc_filter is None or leaf_node.get_associated_fc() == fc_filter:
@@ -584,7 +588,7 @@ class SCDNode:
         """
         if node is not None:
             if self._is_leaf(node):
-                leaves[self.get_int_addr(node)] = node
+                leaves[node.get_path_from_ld()] = node
 
             else:
                 children = node.get_children()
@@ -612,15 +616,14 @@ class SCDNode:
         """
         if node is not None:
             if isinstance(node, DO):
-                do_nodes[self.get_int_addr(node)] = node
+                do_nodes[node.get_path_from_ld()] = node
 
             else:
                 children = node.get_children()
                 for child in children:
                     self._collect_DO_nodes(child, do_nodes)
 
-
-    def get_int_addr(self, node) -> str:
+    def get_path_from_ld(self) -> str:
         """
             Get int adr of SCDNode
 
@@ -632,21 +635,19 @@ class SCDNode:
             Returns
             -------
             `str`
-                Return the internal address of the node
+                Return the path of the node from LD (format LD.LN.DO.DA)
         """
-        assert isinstance(node, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
-        int_addr = node.name
-        if node.parent is None:
-            logging.debug(f'SCDNode::get_int_addr: parent node of node: {self.name} is None, cannot build int_addr')
-            return None
-        ancestor = node.parent()
-        while ancestor is not None:
-            int_addr = ancestor.name + '.' + int_addr
-            if ancestor.parent is not None and ancestor.tag != 'LDevice':
-                ancestor = ancestor.parent()
-            else:
-                ancestor = None
-        return int_addr
+        if self._path_from_ld is not None:
+            return self._path_from_ld
+        assert isinstance(self, (LD, LN, DO, DA)), "Invalid SCDNode level, expect LD, LN, DO or DA"
+        path = self.name
+        if not isinstance(self, LD):
+            if self.parent is None:
+                logging.debug(f'SCDNode::get_path_from_ld: parent node of node: {self.name} is None, cannot build path')
+                return None
+            path = self.parent().get_path_from_ld() + '.' + path
+        self._path_from_ld = path
+        return path
 
     def get_object_reference(self) -> str:
         """
@@ -825,10 +826,18 @@ class SCDNode:
                 upd_node._set_instances(inst_node)
 
 
+
+
 class DA(SCDNode):
     """
         Class to manage a DA / SDA / DAI
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -893,6 +902,12 @@ class DO(SCDNode):
     """
         Class to manage a DO / SDO / DOI
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -942,6 +957,13 @@ class LN(SCDNode):
     """
         Class to manage a LN
     """
+
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -1135,6 +1157,12 @@ class LD(SCDNode):
     """
         Class to manage a LD
     """
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'"
+                             .format(type(self).__name__,
+                                     self.get_parent_with_class(IED).name + '.' + self.get_path_from_ld(),
+                                     item))
+
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
             Constructor
@@ -1279,6 +1307,9 @@ class IED(SCDNode):
         Class to manage an IED
     """
     DEFAULT_AP = 'PROCESS_AP'
+
+    def __getattr__(self, item):
+        raise SCLLoaderError("'{}' {} has no attribute '{}'".format(type(self).__name__, self.name, item))
 
     def __init__(self, datatypes: DataTypeTemplates, node_elem: etree.Element = None, fullattrs: bool = False, **kwargs: dict):
         """
@@ -1528,16 +1559,12 @@ class SCD_handler():
                 The loaded IED object
         """
 
-        for ied1 in self._IEDs:
-            if hasattr(self._IEDs, 'type') and ied1['type'] == ied_type:
-                return ied1
-
         ied_elems = self._get_IED_elems_by_types([ied_type])
         result = []
-        for ied2 in ied_elems:
-            ied_name = ied2.get('name')
-            if not hasattr(self._IEDs, ied_name):
-                self._IEDs[ied_name] = IED(self.datatypes, ied2, self._fullattrs)
+        for ied_elem in ied_elems:
+            ied_name = ied_elem.get('name')
+            if ied_name not in self._IEDs:
+                self._IEDs[ied_name] = IED(self.datatypes, ied_elem, self._fullattrs)
 
             result.append(self._IEDs[ied_name])
 
