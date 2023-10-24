@@ -478,7 +478,7 @@ class SCDNode:
                 for level in leaf_path.split(".")[node_depth-1:]:
                     node = node.setdefault(level, dict())
         tree_as_tuples = self._recursive_dict_to_tuple(tree)
-        return tree_as_tuples[0]
+        return tree_as_tuples[0] if len(tree_as_tuples) > 0 else []
 
     def _recursive_dict_to_tuple(self, i_dict):
         """
@@ -548,24 +548,22 @@ class SCDNode:
             dt_node_elem = self._datatypes.get_type_by_id(dtype_id)
             self._create_by_node_elem(dt_node_elem)
 
-    def _is_leaf(self, node) -> bool:
+    def _is_leaf(self) -> bool:
         """
             /!\\ PRIVATE : do not use /!\\
 
             Check if a SCDNode is leaf
-
-            Parameters
-            ----------
-            `node`
-                The SCDNode to check
 
             Returns
             -------
             `bool`
                 Return True if the node is leaf.
         """
+        # return len(node.get_children()) == 0 and isinstance(node, DA) and hasattr(node, 'parent')
 
-        return len(node.get_children()) == 0 and isinstance(node, DA) and hasattr(node, 'parent')
+        return isinstance(self, DA) \
+               and hasattr(self, 'parent') \
+               and len([n for n in self.get_children() if isinstance(n, DA)]) == 0
 
     def _collect_DA_leaf_nodes(self, node, leaves: dict) -> dict:
         """
@@ -587,7 +585,7 @@ class SCDNode:
                 The found leaves dictionnary.
         """
         if node is not None:
-            if self._is_leaf(node):
+            if node._is_leaf():
                 leaves[node.get_path_from_ld()] = node
 
             else:
