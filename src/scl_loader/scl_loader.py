@@ -559,11 +559,9 @@ class SCDNode:
             `bool`
                 Return True if the node is leaf.
         """
-        # return len(node.get_children()) == 0 and isinstance(node, DA) and hasattr(node, 'parent')
-
         return isinstance(self, DA) \
                and hasattr(self, 'parent') \
-               and len([n for n in self.get_children() if isinstance(n, DA)]) == 0
+               and not any(isinstance(n, DA) for n in self.get_children())
 
     def _collect_DA_leaf_nodes(self, node, leaves: dict) -> dict:
         """
