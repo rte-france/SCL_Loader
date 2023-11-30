@@ -1355,7 +1355,6 @@ class IED(SCDNode):
         """
         self._all_attributes = []
         self._all_attributes.extend(NODES_ATTRS['IED'])
-        self._LDs = {}
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
     def get_inputs_extrefs(self, service_type: ServiceType = None) -> list:
@@ -1386,14 +1385,11 @@ class IED(SCDNode):
             return ap.Server.get_children('LDevice')
 
     def get_LD_by_inst(self, ld_inst: str, ap_name: str = DEFAULT_AP) -> LD:
-        if hasattr(self._LDs, ld_inst):
-            return self._LDs[ld_inst]
-
         ap = self._get_ap_by_name(ap_name)
         if ap and hasattr(ap.Server, ld_inst):
-            result = getattr(ap.Server, ld_inst)
-            self._LDs[ld_inst] = result
-            return self._LDs[ld_inst]
+            return getattr(ap.Server, ld_inst)
+        raise SCLLoaderError(f"LDevice with inst '{ld_inst}' does not exist for "
+                             f"IED: '{self.name}' / AccessPoint: '{ap_name}'")
 
     def get_LN_by_name(self, ld_inst: str, ln_Name: str, ap_name: str = DEFAULT_AP) -> LN:
         ld = self.get_LD_by_inst(ld_inst, ap_name)

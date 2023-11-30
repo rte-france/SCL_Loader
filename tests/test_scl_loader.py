@@ -487,6 +487,11 @@ class TestSCD_IOP():
         assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3'}
         assert len(goose_extrefs) == 21
 
+    def test_get_LD_by_inst_ko(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('MUA_4BUS1_1')
+        with pytest.raises(scdl.SCLLoaderError):
+            ied.get_LD_by_inst("LDTM2")
+
     def test_LD_get_sampledvaluecontrols(self):
         ied = self.SCD_HANDLER.get_IED_by_name('MUA_4BUS1_1')
         ld = ied.get_LD_by_inst("LDTM")
