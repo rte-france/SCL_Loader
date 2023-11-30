@@ -487,6 +487,25 @@ class TestSCD_IOP():
         assert goose_extrefs[0] == {'iedName': 'IEDTEST_SITE_1', 'ldInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'lnClass': 'CSWI', 'lnInst': '1', 'doName': 'Pos', 'intAddr': 'VDF', 'serviceType': 'GOOSE', 'pLN': 'CSWI', 'pDO': 'Pos', 'pServT': 'GOOSE', 'srcLDInst': 'XX_BCU_4LINE2_1_LDCMDDJ_1', 'srcCBName': 'PVR_LLN0_CB_GSE_INT', 'desc': 'DYN_LDADD_Position filtree du DJ_1_Dbpos_1_stVal_3'}
         assert len(goose_extrefs) == 21
 
+    def test_LD_get_sampledvaluecontrols(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('MUA_4BUS1_1')
+        ld = ied.get_LD_by_inst("LDTM")
+
+        result = ld.get_sampledvaluecontrols()
+
+        assert len(result) == 1
+        assert result[0].smvID == 'XX_MUA_4BUS1_1_LDTM_1/LLN0.PVR_LLN0_CB_SMV_INT'
+        assert result[0].datSet == 'PVR_LLN0_DS_SMV_INT'
+        assert result[0].name == 'PVR_LLN0_CB_SMV_INT'
+
+    def test_LD_get_sampledvaluecontrol_by_name(self):
+        ied = self.SCD_HANDLER.get_IED_by_name('MUA_4BUS1_1')
+        ld = ied.get_LD_by_inst("LDTM")
+
+        assert ld.get_sampledvaluecontrol_by_name("toto") is None
+        assert ld.get_sampledvaluecontrol_by_name("PVR_LLN0_CB_SMV_INT").name == "PVR_LLN0_CB_SMV_INT"
+        assert ld.get_sampledvaluecontrol_by_name("PVR_LLN0_CB_SMV_INT").datSet == "PVR_LLN0_DS_SMV_INT"
+
 
     def test_LD_get_gsecontrols(self):
         ied = self.SCD_HANDLER.get_IED_by_name('BCU_4LINE2_1')

@@ -19,7 +19,7 @@ REG_DA = r'(?:\{.+\})?[BS]?DA'
 REG_DO = r'(?:\{.+\})?S?DO'
 REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P|DataSet|GSE' \
-                 r'|GSEControl|ReportControl|VoltageLevel)'  # |Server)'
+                 r'|GSEControl|ReportControl|SampledValueControl|VoltageLevel)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 DEFAULT_AP = 'PROCESS_AP'
@@ -1267,6 +1267,29 @@ class LD(SCDNode):
         """
         filtered_gsecontrol = [g for g in self.get_gsecontrols() if g.name == name]
         return filtered_gsecontrol[0] if len(filtered_gsecontrol) == 1 else None
+
+    def get_sampledvaluecontrols(self) -> list:
+        """
+            Get the SampledValueControl list
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the SampledValueControl attributes
+        """
+        return self.LLN0.SampledValueControl if hasattr(self.LLN0, "SampledValueControl") else []
+
+    def get_sampledvaluecontrol_by_name(self, name: str) -> SCDNode:
+        """
+            Get the SampledValueControl
+
+            Returns
+            -------
+            `node`
+                SampledValueControl with input name, None if not found
+        """
+        filtered_sampledvaluecontrol = [g for g in self.get_sampledvaluecontrols() if g.name == name]
+        return filtered_sampledvaluecontrol[0] if len(filtered_sampledvaluecontrol) == 1 else None
 
     def get_reportcontrols(self) -> list:
         """
