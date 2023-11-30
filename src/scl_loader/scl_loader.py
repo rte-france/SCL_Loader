@@ -224,6 +224,9 @@ class DataTypeTemplates:
         """
         context = etree.iterparse(xml_path, events=("end",), tag='{}DataTypeTemplates'.format(SCL_NAMESPACE), remove_comments=True)
         _, self._datatypes_root = next(context)
+        self._datatypes_index = {datatype.attrib["id"]: datatype for datatype in self._datatypes_root.getchildren()
+                                 if "id" in datatype.attrib}
+        print(self._datatypes_index)
 
     def get_type_by_id(self, id: str) -> etree.Element:
         """
@@ -239,8 +242,7 @@ class DataTypeTemplates:
                 etree.Element
                     L'élément etree (xml) du datatype
         """
-        item_xpath = 'child::*[@id="{}"]'.format(id)
-        return self._datatypes_root.xpath(item_xpath, namespaces=NS)[0]
+        return self._datatypes_index.get(id)
 
     def get_Data_Type_Definitions(self) -> dict:
 
