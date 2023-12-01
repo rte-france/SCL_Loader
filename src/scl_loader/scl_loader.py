@@ -19,7 +19,7 @@ REG_DA = r'(?:\{.+\})?[BS]?DA'
 REG_DO = r'(?:\{.+\})?S?DO'
 REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P|DataSet|GSE' \
-                 r'|GSEControl|ReportControl|VoltageLevel)'  # |Server)'
+                 r'|GSEControl|ReportControl|SampledValueControl|VoltageLevel)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 DEFAULT_AP = 'PROCESS_AP'
@@ -224,6 +224,9 @@ class DataTypeTemplates:
         """
         context = etree.iterparse(xml_path, events=("end",), tag='{}DataTypeTemplates'.format(SCL_NAMESPACE), remove_comments=True)
         _, self._datatypes_root = next(context)
+        self._datatypes_index = {datatype.attrib["id"]: datatype for datatype in self._datatypes_root.getchildren()
+                                 if "id" in datatype.attrib}
+        print(self._datatypes_index)
 
     def get_type_by_id(self, id: str) -> etree.Element:
         """
@@ -239,8 +242,7 @@ class DataTypeTemplates:
                 etree.Element
                     L'élément etree (xml) du datatype
         """
-        item_xpath = 'child::*[@id="{}"]'.format(id)
-        return self._datatypes_root.xpath(item_xpath, namespaces=NS)[0]
+        return self._datatypes_index.get(id)
 
     def get_Data_Type_Definitions(self) -> dict:
 
@@ -1268,6 +1270,29 @@ class LD(SCDNode):
         filtered_gsecontrol = [g for g in self.get_gsecontrols() if g.name == name]
         return filtered_gsecontrol[0] if len(filtered_gsecontrol) == 1 else None
 
+    def get_sampledvaluecontrols(self) -> list:
+        """
+            Get the SampledValueControl list
+
+            Returns
+            -------
+            `[]`
+                An array of objects containing the SampledValueControl attributes
+        """
+        return self.LLN0.SampledValueControl if hasattr(self.LLN0, "SampledValueControl") else []
+
+    def get_sampledvaluecontrol_by_name(self, name: str) -> SCDNode:
+        """
+            Get the SampledValueControl
+
+            Returns
+            -------
+            `node`
+                SampledValueControl with input name, None if not found
+        """
+        filtered_sampledvaluecontrol = [g for g in self.get_sampledvaluecontrols() if g.name == name]
+        return filtered_sampledvaluecontrol[0] if len(filtered_sampledvaluecontrol) == 1 else None
+
     def get_reportcontrols(self) -> list:
         """
             Get the ReportControl list
@@ -1330,7 +1355,6 @@ class IED(SCDNode):
         """
         self._all_attributes = []
         self._all_attributes.extend(NODES_ATTRS['IED'])
-        self._LDs = {}
         super().__init__(datatypes, node_elem, fullattrs, **kwargs)
 
     def get_inputs_extrefs(self, service_type: ServiceType = None) -> list:
@@ -1361,14 +1385,11 @@ class IED(SCDNode):
             return ap.Server.get_children('LDevice')
 
     def get_LD_by_inst(self, ld_inst: str, ap_name: str = DEFAULT_AP) -> LD:
-        if hasattr(self._LDs, ld_inst):
-            return self._LDs[ld_inst]
-
         ap = self._get_ap_by_name(ap_name)
         if ap and hasattr(ap.Server, ld_inst):
-            result = getattr(ap.Server, ld_inst)
-            self._LDs[ld_inst] = result
-            return self._LDs[ld_inst]
+            return getattr(ap.Server, ld_inst)
+        raise SCLLoaderError(f"LDevice with inst '{ld_inst}' does not exist for "
+                             f"IED: '{self.name}' / AccessPoint: '{ap_name}'")
 
     def get_LN_by_name(self, ld_inst: str, ln_Name: str, ap_name: str = DEFAULT_AP) -> LN:
         ld = self.get_LD_by_inst(ld_inst, ap_name)
