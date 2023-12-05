@@ -226,7 +226,6 @@ class DataTypeTemplates:
         _, self._datatypes_root = next(context)
         self._datatypes_index = {datatype.attrib["id"]: datatype for datatype in self._datatypes_root.getchildren()
                                  if "id" in datatype.attrib}
-        print(self._datatypes_index)
 
     def get_type_by_id(self, id: str) -> etree.Element:
         """
