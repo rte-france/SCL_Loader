@@ -19,7 +19,7 @@ REG_DA = r'(?:\{.+\})?[BS]?DA'
 REG_DO = r'(?:\{.+\})?S?DO'
 REG_SDI = r'(?:\{.+\})?S?D[OA]?I'
 REG_ARRAY_TAGS = r'(?:\{.+\})?(?:FCDA|ClientLN|IEDName|FIP|BAP|ExtRef|Terminal|P|DataSet|GSE' \
-                 r'|GSEControl|ReportControl|SampledValueControl|VoltageLevel)'  # |Server)'
+                 r'|GSEControl|ReportControl|SampledValueControl|VoltageLevel|Private)'  # |Server)'
 REG_DT_NODE = r'(?:.*\})?((?:[BS]?D[AO])|(?:LN0?))'
 REF_SCL_NODES = r'(?:\{.+\})?(?:Header|Substation|Private|Communication)'
 DEFAULT_AP = 'PROCESS_AP'
