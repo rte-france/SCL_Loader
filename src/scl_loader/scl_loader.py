@@ -127,42 +127,6 @@ class SCLLoaderError(AttributeError):
     pass
 
 
-def _safe_convert_value(value: str) -> any:
-    """
-        Convert a string value in typed value une valeur string en valeur typée.
-
-        Parameters
-        ----------
-        value
-            La string contenant la valeur à convertir
-
-        Returns
-        -------
-        any
-            la valeur convertie
-    """
-    if value is None:
-        return None
-
-    p_num = re.compile(r'^-?([0-9]+)(\.[0-9]+)?$')
-    value = value.strip()
-    low_val = str.lower(value)
-    if low_val == 'false':
-        return False
-    elif low_val == 'true':
-        return True
-    elif p_num.match(value) is not None:
-        if p_num.match(value).group(2):
-            return float(value)
-        else:
-            return int(value)
-    else:
-        val = value.strip()
-        if len(val) > 0:
-            return val
-        return None
-
-
 def _get_tag_without_ns(nstag: str) -> str:
     """
         Get the xml tag without namespace
@@ -361,7 +325,7 @@ class SCDNode:
                 attributes['Val'] = val
 
         if _tag == 'Val' and 'Val' in attributes:
-            setattr(self, 'Val', _safe_convert_value(attributes['Val']) or '')
+            setattr(self, 'Val', attributes['Val']or '')
             return
         elif re.fullmatch(REG_DA, elem.tag):
             new_node = DA(self._datatypes, elem, self._fullattrs, **attributes)
@@ -522,7 +486,7 @@ class SCDNode:
             self._create_from_etree_element(dt_node_elem)
 
         for key, value in kwargs.items():
-            setattr(self, key, _safe_convert_value(value))
+            setattr(self, key, value)
 
     def _create_from_etree_element(self, node_elem: etree.Element):
         """
@@ -739,10 +703,10 @@ class SCDNode:
         """
 
         for key, value in node.attrib.items():
-            setattr(self, key, _safe_convert_value(value))
+            setattr(self, key, value)
 
         if node.text and len(node.text.strip()) > 0:
-            setattr(self, 'Val', _safe_convert_value(node.text))
+            setattr(self, 'Val', node.text)
 
         self.name = str(self.name)
 
@@ -789,7 +753,7 @@ class SCDNode:
             if not elem.get('id'):  # No instances in datatypes
                 tag = _get_tag_without_ns(elem.tag)
                 if tag == 'Val' and elem.text:
-                    setattr(self, 'Val', _safe_convert_value(elem.text))
+                    setattr(self, 'Val', elem.text)
                 elif re.fullmatch(REG_SDI, tag):
                     self._manage_SDI(elem)
                 else:

@@ -83,26 +83,6 @@ def _get_node_list_by_tag(scd, tag: str) -> list:
     return result
 
 
-def test_safe_convert_value():
-    """
-        I should be able to convert a value in
-        string format to typed format.
-        Typed formats supported : bool, int, float
-    """
-    assert scdl._safe_convert_value('abc123') == 'abc123'
-    assert scdl._safe_convert_value('false') is False
-    assert scdl._safe_convert_value('False') is False
-    assert scdl._safe_convert_value('true') is True
-    assert scdl._safe_convert_value('TRUE') is True
-    assert scdl._safe_convert_value('123') == 123
-    assert scdl._safe_convert_value('-123') == -123
-    assert scdl._safe_convert_value('.123') == '.123'
-    assert scdl._safe_convert_value('01.23') == 1.23
-    assert scdl._safe_convert_value('-1.23') == -1.23
-    assert scdl._safe_convert_value('01b23') == '01b23'
-    assert scdl._safe_convert_value('#{~[~]{@^|`@`~\\/') == '#{~[~]{@^|`@`~\\/'
-
-
 def test_valid_scd():
     assert SCD_handler(SCD_OPEN_PATH)
     with pytest.raises(AttributeError):
@@ -160,32 +140,32 @@ class TestSCD_OPEN():
             DA(self.scd.datatypes)
         simple_da_inst = DA(self.scd.datatypes, None, None, **simple_da)
         assert getattr(simple_da_inst, 'fc') == 'ST'
-        assert getattr(simple_da_inst, 'dchg') is False
-        assert getattr(simple_da_inst, 'qchg') is True
-        assert getattr(simple_da_inst, 'dupd') is False
+        assert getattr(simple_da_inst, 'dchg') == 'false'
+        assert getattr(simple_da_inst, 'qchg') == 'true'
+        assert getattr(simple_da_inst, 'dupd') == 'false'
         assert getattr(simple_da_inst, 'name') == 'q'
         assert getattr(simple_da_inst, 'bType') == 'Quality'
 
         simple2_da_inst = DA(self.scd.datatypes, None, None, **simple2_da)
         assert getattr(simple2_da_inst, 'fc') == 'DC'
-        assert getattr(simple2_da_inst, 'dchg') is False
-        assert getattr(simple2_da_inst, 'qchg') is False
-        assert getattr(simple2_da_inst, 'dupd') is False
+        assert getattr(simple2_da_inst, 'dchg') == 'false'
+        assert getattr(simple2_da_inst, 'qchg') == 'false'
+        assert getattr(simple2_da_inst, 'dupd') == 'false'
         assert getattr(simple2_da_inst, 'name') == 'd'
         assert getattr(simple2_da_inst, 'bType') == 'VisString255'
         assert getattr(simple2_da_inst, 'valKind') == 'RO'
-        assert getattr(simple2_da_inst, 'valImport') is False
+        assert getattr(simple2_da_inst, 'valImport') == 'false'
 
         enum_da_inst = DA(self.scd.datatypes, None, None, **enum_da)
         assert getattr(enum_da_inst, 'fc') == 'CF'
-        assert getattr(enum_da_inst, 'dchg') is True
-        assert getattr(enum_da_inst, 'qchg') is False
-        assert getattr(enum_da_inst, 'dupd') is False
+        assert getattr(enum_da_inst, 'dchg') == 'true'
+        assert getattr(enum_da_inst, 'qchg') == 'false'
+        assert getattr(enum_da_inst, 'dupd') == 'false'
         assert getattr(enum_da_inst, 'name') == 'ctlModel'
         assert getattr(enum_da_inst, 'bType') == 'Enum'
         assert getattr(enum_da_inst, 'valKind') == 'RO'
         assert getattr(enum_da_inst, 'type') == 'CtlModelKind'
-        assert getattr(enum_da_inst, 'valImport') is False
+        assert getattr(enum_da_inst, 'valImport') == 'false'
 
     def test_create_struct_DA_by_kwargs(self):
         struct_da = {'name': 'originSrc', 'fc': 'ST', 'bType': 'Struct', 'type': 'Originator'}
@@ -236,7 +216,7 @@ class TestSCD_OPEN():
         ln_inst = LN(self.scd.datatypes, None, **kwargs)
         assert getattr(ln_inst, 'lnType') == 'GAPC'
         assert getattr(ln_inst, 'lnClass') == 'GAPC'
-        assert getattr(ln_inst, 'inst') == 0
+        assert getattr(ln_inst, 'inst') == '0'
         assert getattr(ln_inst, 'name') == 'GAPC0'
         assert getattr(ln_inst, 'desc') == 'This is a GAPC'
         assert isinstance(getattr(ln_inst, 'Alm1'), DO)
@@ -393,7 +373,7 @@ class TestSCD_IOP():
         all_gse = self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")
         assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].cbName == "PVR_LLN0_CB_GSE_INT")
         assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].Address.P[0].type == "VLAN-PRIORITY")
-        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].Address.P[0].Val == 4)
+        assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")[0].Address.P[0].Val == '4')
         assert (len(self.SCD_HANDLER.get_GSEs("AUT1A_SITE_1")) == 11)
         assert (self.SCD_HANDLER.get_GSEs("AUT1A_SITE_666") == [])
 
@@ -537,7 +517,7 @@ class TestSCD_IOP():
 
         result = ld.get_reportcontrols()
         assert len(result) == 1
-        assert result[0].buffered is True
+        assert result[0].buffered == 'true'
         assert result[0].datSet == 'PVR_LLN0_DS_RPT_DQCHG_EXT'
 
     def test_LD_get_reportcontrol_by_name(self):
@@ -545,7 +525,7 @@ class TestSCD_IOP():
         ld = ied.get_children_LDs()[0]
 
         assert ld.get_reportcontrol_by_name("toto") is None
-        assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT").buffered is True
+        assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT").buffered == 'true'
         assert ld.get_reportcontrol_by_name("PVR_LLN0_CB_RPT_DQCHG_EXT").datSet == 'PVR_LLN0_DS_RPT_DQCHG_EXT'
 
     def test_LD_get_datasets(self):
